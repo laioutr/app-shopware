@@ -1,4 +1,4 @@
-import { defineLaioutrPlugin } from '@laioutr/kit';
+import { defineLaioutrPlugin } from '@laioutr/kit/build';
 import { setup, getProducts } from '@shopware-pwa/shopware-6-client';
 
 interface PluginOptions {
