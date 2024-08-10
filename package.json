@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@laioutr/kit": "workspace:^",
+    "@laioutr/frontend": "workspace:^",
     "@shopware-pwa/commons": "^1.6.1",
     "@shopware-pwa/shopware-6-client": "^1.6.1"
   }
