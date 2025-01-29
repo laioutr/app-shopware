@@ -22,11 +22,11 @@
     "dist"
   ],
   "scripts": {
-    "build": "nuxt-module-build build",
+    "build": "rm -rf dist && nuxt-module-build build",
     "dev": "nodemon -e ts --watch src --exec 'pnpm nuxi dev playground'",
     "lint": "eslint --cache --cache-location ../../.eslintcache",
     "release": "pnpm build && pnpm publish",
-    "setup": "nuxi prepare playground",
+    "setup": "nuxt-module-build prepare && nuxi prepare playground",
     "stub": "nuxt-module-build build --stub",
     "test": "vitest run && nuxi typecheck",
     "test:watch": "vitest watch"
