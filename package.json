@@ -1,0 +1,66 @@
+{
+  "name": "@laioutr-app/shopware",
+  "version": "1.0.0",
+  "description": "Shopware integration for laioutr",
+  "license": "UNLICENSED",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/module.mjs",
+      "require": "./dist/module.cjs"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "import": "./dist/runtime/index.js"
+    }
+  },
+  "main": "./dist/module.cjs",
+  "types": "./dist/types.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "nuxt-module-build build",
+    "dev": "nodemon -e ts --watch src --exec 'pnpm nuxi dev playground'",
+    "lint": "eslint --cache --cache-location ../../.eslintcache",
+    "release": "pnpm build && pnpm publish",
+    "setup": "nuxi prepare playground",
+    "stub": "nuxt-module-build build --stub",
+    "test": "vitest run && nuxi typecheck",
+    "test:watch": "vitest watch"
+  },
+  "lint-staged": {
+    "*.{js,mjs,jsx,ts,tsx,vue}": [
+      "pnpm lint --fix",
+      "prettier --cache --write"
+    ],
+    "*.{css,scss,md,html,json}": "prettier --cache --write"
+  },
+  "dependencies": {
+    "@laioutr-core/canonical-types": "workspace:*",
+    "@laioutr-core/kit": "workspace:*",
+    "@laioutr-core/orchestr": "workspace:*",
+    "@nuxt/kit": "^3.11.2",
+    "@shopware/api-client": "^1.0.2",
+    "defu": "^6.1.4"
+  },
+  "devDependencies": {
+    "@laioutr/eslint-config": "workspace:*",
+    "@nuxt/devtools": "^1.6.0",
+    "@nuxt/module-builder": "^0.8.4",
+    "@nuxt/schema": "^3.11.2",
+    "@nuxt/test-utils": "^3.14.4",
+    "@types/node": "latest",
+    "@vue/test-utils": "^2.4.6",
+    "nodemon": "^3.1.7",
+    "nuxt": "^3.11.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.4",
+    "vue-tsc": "^2.1.10"
+  },
+  "publishConfig": {
+    "registry": "https://npm.laioutr.cloud/"
+  }
+}

@@ -1,0 +1,60 @@
+/* eslint-disable import-x/export, @typescript-eslint/no-empty-object-type */
+import { createResolver, defineNuxtModule } from '@nuxt/kit';
+import { defu } from 'defu';
+import { registerLaioutrExtension } from '@laioutr-core/kit';
+import type { NuxtModule } from '@nuxt/schema';
+import { name, version } from '../package.json';
+
+/**
+ * The options the module adds to the nuxt.config.ts.
+ */
+export interface ModuleOptions {
+  endpoint: string;
+  accessToken: string;
+}
+
+/**
+ * The config the module adds to nuxt.runtimeConfig.public['@laioutr-app/shopware']
+ */
+export interface RuntimeConfigModulePublic {}
+
+/**
+ * The config the module adds to nuxt.runtimeConfig['@laioutr-app/shopware']
+ */
+export interface RuntimeConfigModulePrivate extends ModuleOptions {}
+
+const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
+  meta: {
+    name,
+    version,
+    configKey: name,
+  },
+  defaults: {},
+  setup(options, nuxt) {
+    const { resolve } = createResolver(import.meta.url);
+    const resolveRuntimeModule = (path: string) => resolve('./runtime', path);
+
+    nuxt.options.build.transpile.push(resolve('./runtime'));
+
+    // Runtime configuration for this module
+    nuxt.options.runtimeConfig[name] = defu(nuxt.options.runtimeConfig[name] as any, options);
+
+    registerLaioutrExtension({
+      name,
+      orchestrDirs: [resolveRuntimeModule('server/orchestr')],
+    });
+
+    // Shared
+    // Imports and other stuff which is shared between client and server
+
+    // Client
+    // Add plugins, composables, etc.
+
+    // Server
+    // Add server-only imports, etc.
+  },
+});
+
+export default module;
+
+export * from './globalExtensions';
