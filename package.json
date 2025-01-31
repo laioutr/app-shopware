@@ -28,6 +28,7 @@
     "release": "pnpm build && pnpm publish",
     "setup": "nuxt-module-build prepare && nuxi prepare playground",
     "stub": "nuxt-module-build build --stub",
+    "stub:setup": "pnpm run setup",
     "test": "vitest run && nuxi typecheck",
     "test:watch": "vitest watch"
   },
