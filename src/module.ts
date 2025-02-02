@@ -1,5 +1,5 @@
 /* eslint-disable import-x/export, @typescript-eslint/no-empty-object-type */
-import { createResolver, defineNuxtModule } from '@nuxt/kit';
+import { createResolver, defineNuxtModule, installModule } from '@nuxt/kit';
 import { defu } from 'defu';
 import { registerLaioutrApp } from '@laioutr-core/kit';
 import type { NuxtModule } from '@nuxt/schema';
@@ -43,6 +43,11 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       name,
       orchestrDirs: [resolveRuntimeModule('server/orchestr')],
     });
+
+    // Install peer-dependency modules only on prepare-step. Needs to be added in the playground as well.
+    if (nuxt.options._prepare) {
+      installModule('@laioutr-core/orchestr');
+    }
 
     // Shared
     // Imports and other stuff which is shared between client and server

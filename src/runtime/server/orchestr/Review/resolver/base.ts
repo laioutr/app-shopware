@@ -1,3 +1,4 @@
+import { defineComponentResolver } from '#imports';
 import { ReviewBase } from '@laioutr-core/canonical-types/orchestr/review';
 
 export default defineComponentResolver({

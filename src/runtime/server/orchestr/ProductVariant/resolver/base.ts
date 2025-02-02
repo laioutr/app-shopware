@@ -1,3 +1,4 @@
+import { defineComponentResolver } from '#imports';
 import { ProductVariantBase } from '@laioutr-core/canonical-types/orchestr/product-variant';
 import type { components } from '../../../types/storeApiTypes';
 

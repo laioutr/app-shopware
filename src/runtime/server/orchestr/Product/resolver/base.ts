@@ -1,3 +1,4 @@
+import { defineComponentResolver } from '#imports';
 import { ProductBase, ProductMedia, ProductPrices } from '@laioutr-core/canonical-types/orchestr/product';
 import { shopwareClientFactory } from '../../../client/shopwareClientFactory';
 import { matchAndMap } from '../../../orchestr-helper/matchAndMap';
