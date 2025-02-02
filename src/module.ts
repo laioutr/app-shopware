@@ -1,7 +1,7 @@
 /* eslint-disable import-x/export, @typescript-eslint/no-empty-object-type */
 import { createResolver, defineNuxtModule } from '@nuxt/kit';
 import { defu } from 'defu';
-import { registerLaioutrExtension } from '@laioutr-core/kit';
+import { registerLaioutrApp } from '@laioutr-core/kit';
 import type { NuxtModule } from '@nuxt/schema';
 import { name, version } from '../package.json';
 
@@ -39,7 +39,7 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     // Runtime configuration for this module
     nuxt.options.runtimeConfig[name] = defu(nuxt.options.runtimeConfig[name] as any, options);
 
-    registerLaioutrExtension({
+    registerLaioutrApp({
       name,
       orchestrDirs: [resolveRuntimeModule('server/orchestr')],
     });
