@@ -1,0 +1,11 @@
+{
+  "name": "@laioutr-app/shopware-playground",
+  "private": true,
+  "type": "module",
+  "main": "fake-main.js",
+  "dependencies": {
+    "@laioutr-app/shopware": "workspace:*",
+    "@laioutr-core/orchestr": "workspace:*",
+    "nuxt": "^3.11.2"
+  }
+}
