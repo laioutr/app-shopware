@@ -3,9 +3,12 @@
   "private": true,
   "type": "module",
   "main": "fake-main.js",
+  "scripts": {
+    "build": "nuxt build"
+  },
   "dependencies": {
     "@laioutr-app/shopware": "workspace:*",
     "@laioutr-core/orchestr": "workspace:*",
-    "nuxt": "^3.11.2"
+    "nuxt": "3.12.0"
   }
 }
