@@ -1,5 +1,5 @@
 /* eslint-disable import-x/export, @typescript-eslint/no-empty-object-type */
-import { createResolver, defineNuxtModule, installModule } from '@nuxt/kit';
+import { addServerHandler, createResolver, defineNuxtModule, installModule } from '@nuxt/kit';
 import { defu } from 'defu';
 import { registerLaioutrApp } from '@laioutr-core/kit';
 import type { NuxtModule } from '@nuxt/schema';
@@ -11,6 +11,9 @@ import { name, version } from '../package.json';
 export interface ModuleOptions {
   endpoint: string;
   accessToken: string;
+  adminEndpoint: string;
+  adminClientId: string;
+  adminClientSecret: string;
 }
 
 /**
@@ -56,6 +59,11 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     // Server
     // Add server-only imports, etc.
+    // TODO move to frontend-core, only provide library adapter here
+    addServerHandler({
+      route: '/api/laioutr/media',
+      handler: resolveRuntimeModule('server/api/laioutr/media.post.ts'),
+    });
   },
 });
 
