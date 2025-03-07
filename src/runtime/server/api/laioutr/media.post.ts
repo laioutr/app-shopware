@@ -7,6 +7,10 @@ export default defineEventHandler(async (event) => {
   const api = shopwareAdminClientFactory();
   const args = await readValidatedBody(event, ProviderStudioMediaArgs.parse);
 
+  if (args.library !== 'shopware') {
+    return { items: [], total: 0 };
+  }
+
   const response = await api.invoke('searchMedia post /search/media', {
     body: {
       limit: args.limit,
