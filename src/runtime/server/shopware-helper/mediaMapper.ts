@@ -2,13 +2,14 @@ import { Media, MediaSourceImage, MediaSourceVideo } from '@laioutr-core/canonic
 import { Schemas } from '../types/storeApiTypes';
 
 type SwMedia = Schemas['Media'];
-type SwMediaThumbnail = Schemas['MediaThumbnail'];
 
+// Source and thumbnails are encoded in a valid url like this:
+// /original-source.jpg#/thumbnail-1.jpg 100x100, /thumbnail-2.jpg 200x200
 export const mediaToSrc = (media: SwMedia) => {
   const thumbnails = media.thumbnails ?? [];
   const thumbnailSrc = thumbnails.map((thumb) => `${thumb.url} ${thumb.width}x${thumb.height}`);
   const orgSrc = `${media.url} ${media.metaData?.width ?? 0}x${media.metaData?.height ?? 0}`;
-  return [...thumbnailSrc, orgSrc].join(', ');
+  return `${media.url}#${encodeURIComponent([...thumbnailSrc, orgSrc].join(', '))}`;
 };
 
 export const mapMediaSourceImage = (media: SwMedia): MediaSourceImage =>
@@ -17,7 +18,6 @@ export const mapMediaSourceImage = (media: SwMedia): MediaSourceImage =>
     width: media.metaData?.width ?? 0,
     height: media.metaData?.height ?? 0,
     src: mediaToSrc(media),
-    orgSrc: media.url as any,
   }) satisfies MediaSourceImage;
 
 export const mapMediaSourceVideo = (media: SwMedia): MediaSourceVideo =>
