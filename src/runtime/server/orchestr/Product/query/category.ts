@@ -1,16 +1,19 @@
 import { z } from 'zod';
+import { defineQueryHandler } from '#imports';
 import { shopwareClientFactory } from '../../../client/shopwareClientFactory';
 import { mapShopwareSortingToOrchestr } from '../../../shopware-helper/sortingMapper';
 
 export default defineQueryHandler({
+  app: '@laioutr-app/shopware',
   queryName: 'category',
-  label: 'Shopware Demo Category Product Resolver',
-  entityType: 'LtrProduct',
+  label: 'Shopware Category Products',
+  description: 'Fetch products from a specific category',
+  entityType: 'Product',
   arguments: z.object({
-    categoryId: z.string(),
+    categoryId: z.string().describe('The category id to fetch products from'),
   }),
   defaultLimit: 48,
-  handle: async ({ arguments: args, pagination, sorting }) => {
+  handle: async ({ args, pagination, sorting }) => {
     const shopwareClient = shopwareClientFactory();
 
     const swResponse = await shopwareClient.invoke('readProductListing post /product-listing/{categoryId}', {
