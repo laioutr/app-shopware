@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   modules: [
     // @ts-expect-error ModuleOptions type doesn't match
     srcModule,
+    '@laioutr-core/frontend-core',
     '@laioutr-core/orchestr',
   ],
   alias: {
