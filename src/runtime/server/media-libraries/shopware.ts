@@ -14,7 +14,7 @@ const generateSearchFilter = (search: string) => [
 export default defineMediaLibraryProvider({
   name: 'shopware',
   label: 'Shopware',
-  invoke: async (args) => {
+  list: async (args) => {
     const api = shopwareAdminClientFactory();
     const response = await api.invoke('searchMedia post /search/media', {
       body: {

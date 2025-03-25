@@ -48,10 +48,10 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       nuxtImageProviders: {
         shopware: {
           name: 'shopware',
-          provider: resolveRuntimeModule('./app/image/providers/shopware.ts'),
+          provider: resolveRuntimeModule('./app/image/providers/shopware'),
         },
       },
-      mediaLibraryProviders: [resolveRuntimeModule('./server/media-libraries/shopware.ts')],
+      mediaLibraryProviders: [resolveRuntimeModule('./server/media-libraries/shopware')],
     });
 
     // Install peer-dependency modules only on prepare-step. Needs to be added in the playground as well.
