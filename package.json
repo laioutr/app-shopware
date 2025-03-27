@@ -44,8 +44,8 @@
     "@laioutr-core/frontend-core": "workspace:*",
     "@laioutr-core/kit": "workspace:*",
     "@nuxt/kit": "3.12.0",
-    "@shopware/api-client": "^1.0.2",
-    "defu": "^6.1.4"
+    "@shopware/api-client": "1.2.1",
+    "defu": "6.1.4"
   },
   "devDependencies": {
     "@laioutr/eslint-config": "workspace:*",
