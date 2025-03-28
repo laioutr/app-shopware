@@ -11,6 +11,9 @@ import { name, version } from '../package.json';
 export interface ModuleOptions {
   endpoint: string;
   accessToken: string;
+  adminEndpoint: string;
+  adminClientId: string;
+  adminClientSecret: string;
 }
 
 /**
@@ -29,7 +32,7 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     version,
     configKey: name,
   },
-  setup(options, nuxt) {
+  async setup(options, nuxt) {
     const { resolve } = createResolver(import.meta.url);
     const resolveRuntimeModule = (path: string) => resolve('./runtime', path);
 
@@ -38,14 +41,22 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     // Runtime configuration for this module
     nuxt.options.runtimeConfig[name] = defu(nuxt.options.runtimeConfig[name] as any, options);
 
-    registerLaioutrApp({
+    await registerLaioutrApp({
       name,
+      version,
       orchestrDirs: [resolveRuntimeModule('server/orchestr')],
+      nuxtImageProviders: {
+        shopware: {
+          name: 'shopware',
+          provider: resolveRuntimeModule('./app/image/providers/shopware'),
+        },
+      },
+      mediaLibraryProviders: [resolveRuntimeModule('./server/media-libraries/shopware')],
     });
 
     // Install peer-dependency modules only on prepare-step. Needs to be added in the playground as well.
     if (nuxt.options._prepare) {
-      installModule('@laioutr-core/orchestr');
+      installModule('@laioutr-core/frontend-core');
     }
 
     // Shared
