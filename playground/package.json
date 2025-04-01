@@ -4,7 +4,8 @@
   "type": "module",
   "main": "fake-main.js",
   "scripts": {
-    "build": "nuxt build"
+    "build": "nuxt build",
+    "setup": "nuxt prepare"
   },
   "dependencies": {
     "@laioutr-app/shopware": "workspace:*",
