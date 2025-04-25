@@ -1,7 +1,11 @@
 import { createAdminAPIClient } from '@shopware/api-client';
 import { useRuntimeConfig } from '#imports';
 
-export const shopwareAdminClientFactory = () => {
+type ShopwareAdminClient = ReturnType<typeof createAdminAPIClient>;
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore shopware client type is not exported
+export const shopwareAdminClientFactory = (): ShopwareAdminClient => {
   const { adminClientId, adminClientSecret, adminEndpoint } = useRuntimeConfig()['@laioutr-app/shopware'];
   return createAdminAPIClient({
     baseURL: adminEndpoint,
