@@ -1,11 +1,12 @@
+import { defineLinkResolver } from '#imports';
 import { shopwareClientFactory } from '../../../client/shopwareClientFactory';
 import { matchAndMap } from '../../../orchestr-helper/matchAndMap';
 
-export default defineReferenceResolver({
+export default defineLinkResolver({
   label: 'Shopware Product Breadcrumb Connector',
   sourceEntityType: 'Product',
   targetEntityType: 'Category',
-  referenceName: 'breadcrumbs',
+  linkName: 'breadcrumbs',
   resolve: async ({ entityIds }) => {
     const shopwareClient = await shopwareClientFactory();
     const swResponse = await shopwareClient.invoke('readProduct post /product', {
@@ -19,7 +20,7 @@ export default defineReferenceResolver({
     const shopwareProducts = swResponse.data.elements ?? [];
 
     return {
-      references: matchAndMap(
+      links: matchAndMap(
         entityIds,
         shopwareProducts,
         (id, product) => product.id === id,
