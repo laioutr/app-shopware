@@ -1,12 +1,25 @@
+import { Money } from '@screeny05/ts-money';
+import slug from 'slug';
 import { defineComponentResolver } from '#imports';
-import { ProductBase, ProductMedia, ProductPrices } from '@laioutr-core/canonical-types/orchestr/product';
+import {
+  ProductAvailableVariants,
+  ProductBase,
+  ProductFlags,
+  ProductInfo,
+  ProductMedia,
+  ProductPrices,
+} from '@laioutr-core/canonical-types/orchestr/product';
 import { shopwareClientFactory } from '../../../client/shopwareClientFactory';
+import { FALLBACK_IMAGE } from '../../../const/fallbacks';
+import { addComponent } from '../../../orchestr-helper/addComponent';
 import { matchAndMap } from '../../../orchestr-helper/matchAndMap';
+import { swTranslated } from '../../../shopware-helper/getTranslated';
+import { mapMedia } from '../../../shopware-helper/mediaMapper';
 
 export default defineComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
-  provides: [ProductBase, ProductPrices, ProductMedia],
+  provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductAvailableVariants],
   resolve: async ({ entityIds }) => {
     const shopwareClient = shopwareClientFactory();
     const swResponse = await shopwareClient.invoke('readProduct post /product', {
@@ -21,33 +34,56 @@ export default defineComponentResolver({
         entityIds,
         shopwareProducts,
         (id, product) => product.id === id,
-        (rawProduct) => ({
-          base: {
-            name: rawProduct.translated.name ?? rawProduct.name,
-            sku: rawProduct.translated.productNumber ?? rawProduct.productNumber,
-            slug: 'asdasda',
-          },
-          media: {
-            cover: {
-              type: 'image' as const,
-              provider: 'url',
-              src: rawProduct.cover?.media?.url ?? '',
-            },
-            images: [],
-          },
-          prices: {
-            price: {
-              amount: Math.round((rawProduct.calculatedCheapestPrice?.unitPrice ?? rawProduct.calculatedPrice.unitPrice) * 100),
-              currency: 'EUR',
-            },
-            priceNet: {
-              amount: Math.round((rawProduct.calculatedCheapestPrice?.unitPrice ?? rawProduct.calculatedPrice.unitPrice) * 100),
-              currency: 'EUR',
-            },
-            isOnSale: false,
-            isStartingFrom: false,
-          },
-        })
+        (rawProduct) => {
+          const mappedCover = rawProduct.cover?.media ? mapMedia(rawProduct.cover.media) : FALLBACK_IMAGE;
+
+          return {
+            ...addComponent(ProductBase, () => ({
+              name: swTranslated(rawProduct, 'name'),
+              sku: swTranslated(rawProduct, 'productNumber'),
+              slug: rawProduct.seoUrls?.[0].seoPathInfo ?? slug(swTranslated(rawProduct, 'name')),
+            })),
+
+            ...addComponent(ProductInfo, () => ({
+              cover: mappedCover,
+              shortDescription: swTranslated(rawProduct, 'description'),
+              brand: rawProduct.manufacturer?.translated?.name ?? rawProduct.manufacturer?.name,
+            })),
+
+            ...addComponent(ProductMedia, () => {
+              const mappedMedia = rawProduct.media?.map((image) => mapMedia(image.media)) ?? [];
+              return {
+                cover: mappedCover,
+                media: mappedMedia,
+                images: mappedMedia.filter((media) => media.type === 'image'),
+              };
+            }),
+
+            ...addComponent(ProductPrices, () => {
+              const rawListPrice = rawProduct.calculatedCheapestPrice?.listPrice?.price ?? rawProduct.calculatedPrice.listPrice?.price;
+              const listPrice = rawListPrice ? Money.fromDecimal(rawListPrice, 'EUR') : undefined;
+              const totalPrice = Money.fromDecimal(
+                rawProduct.calculatedCheapestPrice?.totalPrice ?? rawProduct.calculatedPrice.totalPrice,
+                'EUR'
+              );
+
+              const hasSavings = typeof listPrice === 'object' && listPrice.greaterThan(totalPrice);
+
+              const savingsPercent = hasSavings ? Math.round(100 - (totalPrice.toDecimal() / listPrice.toDecimal()) * 100) : undefined;
+
+              return {
+                price: totalPrice,
+                strikethroughPrice: hasSavings ? listPrice : undefined,
+                savingsPercent,
+                isOnSale: hasSavings,
+                isStartingFrom: rawProduct.calculatedCheapestPrice?.hasRange || rawProduct.calculatedPrice.hasRange,
+              };
+            }),
+
+            ...addComponent(ProductAvailableVariants, () => [] as any[]),
+            ...addComponent(ProductFlags, () => [] as any[]),
+          };
+        }
       ),
     };
   },

@@ -1,3 +1,5 @@
+const isEntry = (obj: any[] | undefined): obj is any[] => typeof obj !== 'undefined';
+
 export const matchAndMap = <T, U>(
   entityIds: string[],
   sourceData: T[] | undefined,
@@ -8,6 +10,15 @@ export const matchAndMap = <T, U>(
     return {};
   }
 
-  // TODO remove the !
-  return Object.fromEntries(entityIds.map((id) => [id, mapCb(sourceData.find((entry) => matchEntityCb(id, entry))!)]));
+  return Object.fromEntries(
+    entityIds
+      .map((id) => {
+        const rawEntity = sourceData.find((entry) => matchEntityCb(id, entry));
+        if (!rawEntity) {
+          return undefined;
+        }
+        return [id, mapCb(rawEntity)];
+      })
+      .filter(isEntry)
+  );
 };
