@@ -9,6 +9,7 @@ export default defineQueryHandler({
   label: 'Shopware Category Products',
   description: 'Fetch products from a specific category',
   entityType: 'Product',
+  // TODO how to configure this?
   arguments: z.object({
     categoryId: z.string().describe('The category id to fetch products from'),
   }),

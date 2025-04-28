@@ -1,15 +1,16 @@
+import { defineLinkResolver } from '#imports';
 import type { components } from '../../../types/storeApiTypes';
 
-export default defineReferenceResolver({
+export default defineLinkResolver({
   label: 'Product Variants',
-  referenceName: 'variants',
+  linkName: 'variants',
   sourceEntityType: 'Product',
   targetEntityType: 'ProductVariant',
   resolve: async ({ entityIds, entityData, context }) => {
     const shopwareProducts = (entityData?.shopware ?? []) as components['schemas']['Product'][];
 
     return {
-      references: Object.fromEntries(
+      links: Object.fromEntries(
         shopwareProducts.map((product) => [
           product.id,
           {
