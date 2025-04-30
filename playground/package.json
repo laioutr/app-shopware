@@ -10,6 +10,6 @@
   "dependencies": {
     "@laioutr-app/shopware": "workspace:*",
     "@laioutr-core/orchestr": "workspace:*",
-    "nuxt": "3.16.2"
+    "nuxt": "3.12.4"
   }
 }
