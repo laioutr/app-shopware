@@ -3,8 +3,9 @@ import { useRuntimeConfig } from '#imports';
 
 import type { operations } from '../types/storeApiTypes';
 
+// Shopware client type is not exported
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore shopware client type is not exported
+// @ts-ignore
 export const shopwareClientFactory = () => {
   const config = useRuntimeConfig()['@laioutr-app/shopware'];
   const client = createAPIClient<operations>({
