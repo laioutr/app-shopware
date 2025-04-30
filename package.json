@@ -1,6 +1,6 @@
 {
   "name": "@laioutr-app/shopware",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Shopware integration for laioutr",
   "license": "UNLICENSED",
   "sideEffects": false,
@@ -41,7 +41,7 @@
     "@laioutr-core/canonical-types": "workspace:*",
     "@laioutr-core/frontend-core": "workspace:*",
     "@laioutr-core/kit": "workspace:*",
-    "@nuxt/kit": "3.16.2",
+    "@nuxt/kit": "3.12.4",
     "@screeny05/ts-money": "1.0.1",
     "@shopware/api-client": "1.2.1",
     "defu": "6.1.4",
@@ -49,18 +49,18 @@
   },
   "devDependencies": {
     "@laioutr/eslint-config": "workspace:*",
-    "@nuxt/devtools": "2.4.0",
-    "@nuxt/module-builder": "^1.0.1",
-    "@nuxt/schema": "3.16.2",
+    "@nuxt/devtools": "^1.6.0",
+    "@nuxt/module-builder": "^0.8.4",
+    "@nuxt/schema": "3.12.4",
     "@nuxt/test-utils": "^3.17.2",
     "@types/node": "latest",
     "@types/slug": "^5.0.7",
     "@vue/test-utils": "^2.4.6",
     "nodemon": "^3.1.7",
-    "nuxt": "3.16.2",
-    "typescript": "^5.8.3",
-    "vitest": "3.1.2",
-    "vue-tsc": "^2.2.10"
+    "nuxt": "3.12.4",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.4",
+    "vue-tsc": "^2.1.10"
   },
   "publishConfig": {
     "registry": "https://npm.laioutr.cloud/"
