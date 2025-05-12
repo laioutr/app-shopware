@@ -4,12 +4,13 @@
   "type": "module",
   "main": "fake-main.js",
   "scripts": {
-    "build": "nuxt build",
-    "setup": "nuxt prepare"
+    "dev": "infisical run -- nuxi dev",
+    "setup": "infisical run -- nuxi prepare"
   },
   "dependencies": {
     "@laioutr-app/shopware": "workspace:*",
     "@laioutr-core/orchestr": "workspace:*",
+    "@laioutr-core/orchestr-devtools": "workspace:*",
     "nuxt": "3.12.4"
   }
 }

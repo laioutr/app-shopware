@@ -1,1 +1,3 @@
-<template>Hello from @laioutr-app/shopware playground!</template>
+<template>
+  <LfcOrchestrRequestEditor />
+</template>
