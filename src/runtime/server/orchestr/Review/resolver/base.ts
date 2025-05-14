@@ -8,70 +8,70 @@ export default defineComponentResolver({
   resolve: async ({ entityIds }) => ({
     componentData: {
       1: {
-        base: {
+        base: () => ({
           title: 'Title 1',
           content: 'Review 1',
-        },
+        }),
       },
       2: {
-        base: {
+        base: () => ({
           title: 'Title 2',
           content: 'Review 2',
-        },
+        }),
       },
       3: {
-        base: {
+        base: () => ({
           title: 'Title 3',
           content: 'Review 3',
-        },
+        }),
       },
       4: {
-        base: {
+        base: () => ({
           title: 'Title 4',
           content: 'Review 4',
-        },
+        }),
       },
       5: {
-        base: {
+        base: () => ({
           title: 'Title 5',
           content: 'Review 5',
-        },
+        }),
       },
       6: {
-        base: {
+        base: () => ({
           title: 'Title 6',
           content: 'Review 6',
-        },
+        }),
       },
       7: {
-        base: {
+        base: () => ({
           title: 'Title 7',
           content: 'Review 7',
-        },
+        }),
       },
       8: {
-        base: {
+        base: () => ({
           title: 'Title 8',
           content: 'Review 8',
-        },
+        }),
       },
       9: {
-        base: {
+        base: () => ({
           title: 'Title 9',
           content: 'Review 9',
-        },
+        }),
       },
       10: {
-        base: {
+        base: () => ({
           title: 'Title 10',
           content: 'Review 10',
-        },
+        }),
       },
       11: {
-        base: {
+        base: () => ({
           title: 'Title 11',
           content: 'Review 11',
-        },
+        }),
       },
     },
   }),
