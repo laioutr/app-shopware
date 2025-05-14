@@ -21,10 +21,10 @@ export default defineComponentResolver({
         swResponse.data.elements,
         (id, child) => child.id === id,
         (entity) => ({
-          base: {
+          base: () => ({
             name: entity.name,
             slug: entity.seoUrls?.find((url) => url.isCanonical)?.seoPathInfo ?? entity.seoUrls?.[0]?.seoPathInfo ?? entity.id,
-          },
+          }),
         })
       ),
     };

@@ -1,5 +1,4 @@
 import { Money } from '@screeny05/ts-money';
-import slug from 'slug';
 import { defineComponentResolver } from '#imports';
 import {
   ProductAvailableVariants,
@@ -13,14 +12,15 @@ import { shopwareClientFactory } from '../../../client/shopwareClientFactory';
 import { FALLBACK_IMAGE } from '../../../const/fallbacks';
 import { addComponent } from '../../../orchestr-helper/addComponent';
 import { matchAndMap } from '../../../orchestr-helper/matchAndMap';
-import { swTranslated } from '../../../shopware-helper/getTranslated';
+import { productToSlug } from '../../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../../shopware-helper/mediaMapper';
+import { swTranslated } from '../../../shopware-helper/swTranslated';
 
 export default defineComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
   provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductAvailableVariants],
-  resolve: async ({ entityIds }) => {
+  resolve: async ({ entityIds, context }) => {
     const shopwareClient = shopwareClientFactory();
     const swResponse = await shopwareClient.invoke('readProduct post /product', {
       body: {
@@ -41,7 +41,7 @@ export default defineComponentResolver({
             ...addComponent(ProductBase, () => ({
               name: swTranslated(rawProduct, 'name'),
               sku: swTranslated(rawProduct, 'productNumber'),
-              slug: rawProduct.seoUrls?.[0].seoPathInfo ?? slug(swTranslated(rawProduct, 'name')),
+              slug: productToSlug(rawProduct),
             })),
 
             ...addComponent(ProductInfo, () => ({
@@ -61,15 +61,15 @@ export default defineComponentResolver({
 
             ...addComponent(ProductPrices, () => {
               const rawListPrice = rawProduct.calculatedCheapestPrice?.listPrice?.price ?? rawProduct.calculatedPrice.listPrice?.price;
-              const listPrice = rawListPrice ? Money.fromDecimal(rawListPrice, 'EUR') : undefined;
+              const listPrice = rawListPrice ? Money.fromDecimal(rawListPrice, context.currency) : undefined;
               const totalPrice = Money.fromDecimal(
                 rawProduct.calculatedCheapestPrice?.totalPrice ?? rawProduct.calculatedPrice.totalPrice,
-                'EUR'
+                context.currency
               );
 
               const hasSavings = typeof listPrice === 'object' && listPrice.greaterThan(totalPrice);
 
-              const savingsPercent = hasSavings ? Math.round(100 - (totalPrice.toDecimal() / listPrice.toDecimal()) * 100) : undefined;
+              const savingsPercent = hasSavings ? 100 - totalPrice.percentageOf(listPrice) : undefined;
 
               return {
                 price: totalPrice,
