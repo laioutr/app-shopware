@@ -21,10 +21,9 @@
   ],
   "scripts": {
     "build": "rm -rf dist && nuxt-module-build build",
-    "dev": "nodemon -e ts --watch src --exec 'pnpm nuxi dev playground'",
     "lint": "eslint --cache --cache-location ../../.eslintcache",
     "release": "pnpm build && pnpm publish",
-    "setup": "nuxt-module-build prepare && nuxi prepare playground",
+    "setup": "nuxt-module-build prepare",
     "stub": "nuxt-module-build build --stub",
     "stub:setup": "pnpm run setup",
     "test": "vitest run && nuxi typecheck",
@@ -42,7 +41,7 @@
     "@laioutr-core/frontend-core": "workspace:*",
     "@laioutr-core/kit": "workspace:*",
     "@nuxt/kit": "3.12.4",
-    "@screeny05/ts-money": "1.0.1",
+    "@screeny05/ts-money": "1.1.0",
     "@shopware/api-client": "1.2.1",
     "defu": "6.1.4",
     "slug": "^8.2.3"

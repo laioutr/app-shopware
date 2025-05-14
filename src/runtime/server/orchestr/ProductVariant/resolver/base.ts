@@ -14,11 +14,11 @@ export default defineComponentResolver({
         shopwareProducts.map((product) => [
           product.id,
           {
-            base: {
+            base: () => ({
               sku: product.productNumber,
               name: product.translated.name ?? product.name,
               ean: product.ean,
-            },
+            }),
           },
         ])
       ),
