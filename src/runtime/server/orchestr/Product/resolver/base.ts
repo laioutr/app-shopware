@@ -16,15 +16,20 @@ import { productToSlug } from '../../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../../shopware-helper/mediaMapper';
 import { swTranslated } from '../../../shopware-helper/swTranslated';
 
+const addAssociation = (name: string, add: boolean) => (add ? { [name]: {} } : {});
+
 export default defineComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
   provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductAvailableVariants],
-  resolve: async ({ entityIds, context }) => {
+  resolve: async ({ entityIds, context, requestedComponents }) => {
     const shopwareClient = shopwareClientFactory();
     const swResponse = await shopwareClient.invoke('readProduct post /product', {
       body: {
         ids: entityIds,
+        associations: {
+          ...addAssociation('media', requestedComponents.includes(ProductMedia.componentName)),
+        },
       },
     });
     const shopwareProducts = swResponse.data.elements ?? [];
@@ -52,10 +57,13 @@ export default defineComponentResolver({
 
             ...addComponent(ProductMedia, () => {
               const mappedMedia = rawProduct.media?.map((image) => mapMedia(image.media)) ?? [];
+              // Shopwares product.media does not include the cover, so we add it manually
+              const allMedia = [mappedCover, ...mappedMedia];
+
               return {
                 cover: mappedCover,
-                media: mappedMedia,
-                images: mappedMedia.filter((media) => media.type === 'image'),
+                media: allMedia,
+                images: allMedia.filter((media) => media.type === 'image'),
               };
             }),
 
