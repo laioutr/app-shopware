@@ -1,24 +1,32 @@
 import { defineAction } from '#imports';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
 import { shopwareClientFactory } from '../client/shopwareClientFactory';
-import { getSystemIds } from '../shopware-helper/system/getSystemIds';
+import { getCurrentSystemEntities } from '../shopware-helper/system/getCurrentSystemEntities';
+import { getSystemEntities } from '../shopware-helper/system/getSystemEntities';
 
-export const defineShopwareAction = defineAction
+export const defineShopware = defineAction
   .meta({
     app: '@laioutr-core/shopware',
   })
-  .use(async (args, next) =>
-    next({
+  .use(async (args, next) => {
+    const storefrontClient = shopwareClientFactory();
+    const adminClient = shopwareAdminClientFactory();
+    const systemEntities = await getSystemEntities(storefrontClient);
+    const currentSystemEntities = getCurrentSystemEntities(systemEntities, args.clientEnv);
+
+    // Set the currency and language headers for the storefront client.
+    storefrontClient.defaultHeaders['sw-currency-id'] = currentSystemEntities.currency.id;
+    storefrontClient.defaultHeaders['sw-language-id'] = currentSystemEntities.locale.languageId;
+
+    return next({
       context: {
-        storefront: shopwareClientFactory(),
-        admin: shopwareAdminClientFactory(),
+        storefrontClient,
+        adminClient,
+        systemEntities,
+        currentSystemEntities,
       },
-    })
-  )
-  .use(async (args, next) =>
-    next({
-      context: {
-        systemIds: await getSystemIds(args.context.storefront),
-      },
-    })
-  );
+    });
+  });
+
+export const defineShopwareAction = defineShopware.actionHandler;
+export const defineShopwareQuery = defineShopware.queryHandler;

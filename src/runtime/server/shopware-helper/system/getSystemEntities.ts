@@ -1,7 +1,23 @@
 import { StorefrontClient } from '../../types/shopware';
 import { swTranslated } from '../swTranslated';
 
-export const getSystemIds = async (client: StorefrontClient) => {
+/* declare const storefrontId: string;
+declare const cacheSet: (namespace: string, key: string, version: number, tags: string[], data: unknown) => void;
+
+cacheSet('shopware', 'SystemIds', 1, [`storefront:${storefrontId}`], {
+  currencies: [],
+  salutations: [],
+  countries: [],
+  locales: [],
+});*/
+
+export type SwSystemEntities = Awaited<ReturnType<typeof getSystemEntities>>;
+
+/**
+ * Shopware wants us to send ids for certain system entities.
+ * This function fetches all of the relevant ones and returns them aggregated for further use.
+ */
+export const getSystemEntities = async (client: StorefrontClient) => {
   const rawCurrencies = await client.invoke('readCurrency post /currency');
   const currencies = rawCurrencies.data.map((currency) => ({
     id: currency.id,

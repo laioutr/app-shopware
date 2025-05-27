@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { CategoryProductsQuery } from '@laioutr-core/canonical-types/query';
 import type { QueryWireRequest } from '@laioutr-core/orchestr/types';
 
 const defaultRequest = {
   queries: [
     {
       id: 'cp17r0j24ts002324tv1',
-      queryName: 'category',
+      queryName: CategoryProductsQuery,
       entityType: 'Product',
       arguments: {
         categoryId: '01916af8b36d722693574e6f2043a719',
@@ -18,7 +19,7 @@ const defaultRequest = {
       components: ['base'],
     },
   ],
-  context: {
+  clientEnv: {
     locale: 'de-DE',
     currency: 'EUR',
     custom: {},
