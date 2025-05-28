@@ -7,7 +7,6 @@ const defaultRequest = {
     {
       id: 'cp17r0j24ts002324tv1',
       queryName: CategoryProductsQuery,
-      entityType: 'Product',
       arguments: {
         categoryId: '01916af8b36d722693574e6f2043a719',
       },
