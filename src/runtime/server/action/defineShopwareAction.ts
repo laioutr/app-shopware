@@ -30,3 +30,4 @@ export const defineShopware = defineAction
 
 export const defineShopwareAction = defineShopware.actionHandler;
 export const defineShopwareQuery = defineShopware.queryHandler;
+export const defineShopwareLink = defineShopware.linkHandler;
