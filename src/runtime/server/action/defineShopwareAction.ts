@@ -24,6 +24,8 @@ export const defineShopware = defineAction
         adminClient,
         systemEntities,
         currentSystemEntities,
+        /** The systems current currency iso code */
+        swCurrency: currentSystemEntities.currency.iso,
       },
     });
   });
@@ -31,3 +33,4 @@ export const defineShopware = defineAction
 export const defineShopwareAction = defineShopware.actionHandler;
 export const defineShopwareQuery = defineShopware.queryHandler;
 export const defineShopwareLink = defineShopware.linkHandler;
+export const defineShopwareComponentResolver = defineShopware.componentResolver;

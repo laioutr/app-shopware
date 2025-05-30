@@ -1,13 +1,13 @@
-import { defineComponentResolver } from '#imports';
 import { ProductVariantBase } from '@laioutr-core/canonical-types/orchestr/product-variant';
 import type { components } from '../../../types/storeApiTypes';
+import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
 
-export default defineComponentResolver({
+export default defineShopwareComponentResolver({
   entityType: 'ProductVariant',
   label: 'Shopware Product Variant Connector',
   provides: [ProductVariantBase],
-  resolve: async ({ entityData }) => {
-    const shopwareProducts = (entityData?.shopware ?? []) as components['schemas']['Product'][];
+  resolve: async () => {
+    const shopwareProducts = [] as components['schemas']['Product'][];
 
     return {
       componentData: Object.fromEntries(
