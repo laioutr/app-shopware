@@ -1,7 +1,7 @@
-import { defineComponentResolver } from '#imports';
 import { ReviewBase } from '@laioutr-core/canonical-types/orchestr/review';
+import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
 
-export default defineComponentResolver({
+export default defineShopwareComponentResolver({
   label: 'Shopware Review Connector',
   entityType: 'Review',
   provides: [ReviewBase],

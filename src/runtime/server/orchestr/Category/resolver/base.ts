@@ -1,15 +1,13 @@
-import { defineComponentResolver } from '#imports';
 import { CategoryBase } from '@laioutr-core/canonical-types/orchestr/category';
-import { shopwareClientFactory } from '../../../client/shopwareClientFactory';
+import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
 import { matchAndMap } from '../../../orchestr-helper/matchAndMap';
 
-export default defineComponentResolver({
+export default defineShopwareComponentResolver({
   label: 'Category Base',
   entityType: 'Category',
   provides: [CategoryBase],
   resolve: async ({ entityIds, context }) => {
-    const shopwareClient = await shopwareClientFactory();
-    const swResponse = await shopwareClient.invoke('readCategoryList post /category', {
+    const swResponse = await context.storefrontClient.invoke('readCategoryList post /category', {
       body: {
         ids: entityIds,
       },

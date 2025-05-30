@@ -1,5 +1,4 @@
 import { Money } from '@screeny05/ts-money';
-import { defineComponentResolver } from '#imports';
 import {
   ProductAvailableVariants,
   ProductBase,
@@ -8,7 +7,7 @@ import {
   ProductMedia,
   ProductPrices,
 } from '@laioutr-core/canonical-types/orchestr/product';
-import { shopwareClientFactory } from '../../../client/shopwareClientFactory';
+import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
 import { FALLBACK_IMAGE } from '../../../const/fallbacks';
 import { addComponent } from '../../../orchestr-helper/addComponent';
 import { matchAndMap } from '../../../orchestr-helper/matchAndMap';
@@ -18,13 +17,12 @@ import { swTranslated } from '../../../shopware-helper/swTranslated';
 
 const addAssociation = (name: string, add: boolean) => (add ? { [name]: {} } : {});
 
-export default defineComponentResolver({
+export default defineShopwareComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
   provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductAvailableVariants],
-  resolve: async ({ entityIds, context, requestedComponents }) => {
-    const shopwareClient = shopwareClientFactory();
-    const swResponse = await shopwareClient.invoke('readProduct post /product', {
+  resolve: async ({ entityIds, requestedComponents, context }) => {
+    const swResponse = await context.storefrontClient.invoke('readProduct post /product', {
       body: {
         ids: entityIds,
         associations: {
@@ -69,10 +67,10 @@ export default defineComponentResolver({
 
             ...addComponent(ProductPrices, () => {
               const rawListPrice = rawProduct.calculatedCheapestPrice?.listPrice?.price ?? rawProduct.calculatedPrice.listPrice?.price;
-              const listPrice = rawListPrice ? Money.fromDecimal(rawListPrice, context.currency) : undefined;
+              const listPrice = rawListPrice ? Money.fromDecimal(rawListPrice, context.swCurrency) : undefined;
               const totalPrice = Money.fromDecimal(
                 rawProduct.calculatedCheapestPrice?.totalPrice ?? rawProduct.calculatedPrice.totalPrice,
-                context.currency
+                context.swCurrency
               );
 
               const hasSavings = typeof listPrice === 'object' && listPrice.greaterThan(totalPrice);

@@ -6,16 +6,9 @@ export default defineShopwareLink(ProductVariantsLink, async ({ entityIds, conte
   const shopwareProducts = [] as components['schemas']['Product'][];
 
   return {
-    links: Object.fromEntries(
-      shopwareProducts.map((product) => [
-        product.id,
-        {
-          entityIds: product.children?.map((child) => child.id) ?? [product.id],
-        },
-      ])
-    ),
-    customData: {
-      shopware: shopwareProducts,
-    },
+    links: shopwareProducts.map((product) => ({
+      sourceId: product.id,
+      targetIds: product.children?.map((child) => child.id) ?? [product.id],
+    })),
   };
 });
