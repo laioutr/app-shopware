@@ -10,18 +10,14 @@ export default defineShopwareComponentResolver({
     const shopwareProducts = [] as components['schemas']['Product'][];
 
     return {
-      componentData: Object.fromEntries(
-        shopwareProducts.map((product) => [
-          product.id,
-          {
-            base: () => ({
-              sku: product.productNumber,
-              name: product.translated.name ?? product.name,
-              ean: product.ean,
-            }),
-          },
-        ])
-      ),
+      entities: shopwareProducts.map((product) => ({
+        id: product.id,
+        base: () => ({
+          sku: product.productNumber,
+          name: product.translated.name ?? product.name,
+          ean: product.ean,
+        }),
+      })),
     };
   },
 });
