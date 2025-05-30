@@ -1,10 +1,10 @@
-import { defineAction } from '#imports';
+import { defineOrchestr } from '#imports';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
 import { shopwareClientFactory } from '../client/shopwareClientFactory';
 import { getCurrentSystemEntities } from '../shopware-helper/system/getCurrentSystemEntities';
 import { getSystemEntities } from '../shopware-helper/system/getSystemEntities';
 
-export const defineShopware = defineAction
+export const defineShopware = defineOrchestr
   .meta({
     app: '@laioutr-core/shopware',
   })
