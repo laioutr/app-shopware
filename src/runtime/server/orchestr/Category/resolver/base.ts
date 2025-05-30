@@ -1,6 +1,5 @@
 import { CategoryBase } from '@laioutr-core/canonical-types/orchestr/category';
 import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
-import { matchAndMap } from '../../../orchestr-helper/matchAndMap';
 
 export default defineShopwareComponentResolver({
   label: 'Category Base',
@@ -14,17 +13,14 @@ export default defineShopwareComponentResolver({
     });
 
     return {
-      componentData: matchAndMap(
-        entityIds,
-        swResponse.data.elements,
-        (id, child) => child.id === id,
-        (entity) => ({
+      entities:
+        swResponse.data.elements?.map((entity) => ({
+          id: entity.id,
           base: () => ({
             name: entity.name,
             slug: entity.seoUrls?.find((url) => url.isCanonical)?.seoPathInfo ?? entity.seoUrls?.[0]?.seoPathInfo ?? entity.id,
           }),
-        })
-      ),
+        })) ?? [],
     };
   },
 });

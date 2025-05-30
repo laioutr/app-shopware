@@ -2,7 +2,12 @@ import slug from 'slug';
 import { ShopwareProduct, ShopwareSeoUrl, WithSeoUrl } from '../../types/shopware';
 import { swTranslated } from '../swTranslated';
 
-const seoUrlToSlug = (seoUrl: ShopwareSeoUrl): string => seoUrl.seoPathInfo.split('/').at(-1)!.toLowerCase();
+const extractSlugFromPath = (path: string): string => path.split('/').at(-1)!.toLowerCase();
+
+const seoUrlToSlug = (seoUrl: ShopwareSeoUrl): string => extractSlugFromPath(seoUrl.seoPathInfo);
+
+/** Determine whether a given slug matches a seoPath */
+export const isSlugMatchingSeoPath = (slug: string, seoPath: string) => extractSlugFromPath(seoPath) === slug.toLowerCase();
 
 /** Map a generic entity with seoUrls to a slug */
 export const entityToSlug = (rawEntity: WithSeoUrl): string | undefined =>

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { defineQueryToken } from '@laioutr-core/canonical-types/query';
 import { defineShopwareQuery } from '../../../action/defineShopwareAction';
+import { isSlugMatchingSeoPath } from '../../../shopware-helper/mappers/slugMapper';
 
 const ProductBySlug = defineQueryToken('ecommerce/product/by-slug', {
   entity: 'Product',
@@ -17,14 +18,16 @@ export default defineShopwareQuery(ProductBySlug, async ({ context, input }) => 
       filter: [
         {
           field: 'seoPathInfo',
-          type: 'equals',
+          type: 'contains',
           value: input.slug,
         },
       ],
     },
   });
 
-  const productId = swResponse.data.elements.at(0)?.foreignKey;
+  const bestMatch = swResponse.data.elements.find((element) => isSlugMatchingSeoPath(input.slug, element.seoPathInfo));
+  const productId = bestMatch?.foreignKey;
+
   if (!productId) {
     throw new Error(`No product found for slug: ${input.slug}`);
   }
