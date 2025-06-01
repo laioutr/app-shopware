@@ -13,6 +13,7 @@ import { productToSlug } from '../../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../../shopware-helper/mediaMapper';
 import { swTranslated } from '../../../shopware-helper/swTranslated';
 
+/** Add a empty association object to the shopware-request if the component is requested */
 const addAssociation = (name: string, add: boolean) => (add ? { [name]: {} } : {});
 
 export default defineShopwareComponentResolver({
@@ -24,7 +25,7 @@ export default defineShopwareComponentResolver({
       body: {
         ids: entityIds,
         associations: {
-          ...addAssociation('media', requestedComponents.includes(ProductMedia.componentName)),
+          ...addAssociation('media', requestedComponents.includes(ProductMedia)),
         },
       },
     });
