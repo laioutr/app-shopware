@@ -1,4 +1,4 @@
-import { ProductVariantsLink } from '@laioutr-core/canonical-types/query';
+import { ProductVariantsLink } from '@laioutr-core/canonical-types/ecommerce';
 import type { components } from '../../../types/storeApiTypes';
 import { defineShopwareLink } from '../../../action/defineShopwareAction';
 

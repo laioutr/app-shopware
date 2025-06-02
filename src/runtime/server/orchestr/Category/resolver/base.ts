@@ -1,4 +1,4 @@
-import { CategoryBase } from '@laioutr-core/canonical-types/orchestr/category';
+import { CategoryBase } from '@laioutr-core/canonical-types/entity/category';
 import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
 
 export default defineShopwareComponentResolver({

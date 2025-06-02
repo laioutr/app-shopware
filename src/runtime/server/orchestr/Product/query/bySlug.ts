@@ -1,4 +1,4 @@
-import { ProductBySlugQuery } from '@laioutr-core/canonical-types/query';
+import { ProductBySlugQuery } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareQuery } from '../../../action/defineShopwareAction';
 import { isSlugMatchingSeoPath } from '../../../shopware-helper/mappers/slugMapper';
 

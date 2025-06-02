@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { CategoryProductsQuery } from '@laioutr-core/canonical-types/query';
+import { ProductsByCategoryIdQuery } from '@laioutr-core/canonical-types/ecommerce';
 import type { QueryWireRequest } from '@laioutr-core/orchestr/types';
 
 const defaultRequest = {
   queries: [
     {
       id: 'cp17r0j24ts002324tv1',
-      queryName: CategoryProductsQuery,
+      queryName: ProductsByCategoryIdQuery,
       arguments: {
         categoryId: '01916af8b36d722693574e6f2043a719',
       },
