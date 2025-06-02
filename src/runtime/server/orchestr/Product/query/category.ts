@@ -1,8 +1,8 @@
-import { CategoryProductsQuery } from '@laioutr-core/canonical-types/query';
+import { ProductsByCategoryIdQuery } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareQuery } from '../../../action/defineShopwareAction';
 import { mapShopwareSortingToOrchestr } from '../../../shopware-helper/sortingMapper';
 
-export default defineShopwareQuery(CategoryProductsQuery, async ({ context, input, pagination, sorting }) => {
+export default defineShopwareQuery(ProductsByCategoryIdQuery, async ({ context, input, pagination, sorting }) => {
   const swResponse = await context.storefrontClient.invoke('readProductListing post /product-listing/{categoryId}', {
     pathParams: {
       categoryId: input.categoryId,

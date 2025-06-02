@@ -1,4 +1,4 @@
-import { ProductVariantBase } from '@laioutr-core/canonical-types/orchestr/product-variant';
+import { ProductVariantBase } from '@laioutr-core/canonical-types/entity/product-variant';
 import type { components } from '../../../types/storeApiTypes';
 import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
 

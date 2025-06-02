@@ -6,7 +6,7 @@ import {
   ProductInfo,
   ProductMedia,
   ProductPrices,
-} from '@laioutr-core/canonical-types/orchestr/product';
+} from '@laioutr-core/canonical-types/entity/product';
 import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
 import { FALLBACK_IMAGE } from '../../../const/fallbacks';
 import { productToSlug } from '../../../shopware-helper/mappers/slugMapper';

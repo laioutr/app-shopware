@@ -1,4 +1,4 @@
-import { ProductCanonicalCategoryLink } from '@laioutr-core/canonical-types/query';
+import { ProductCanonicalCategoryLink } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareLink } from '../../../action/defineShopwareAction';
 import { isLinkSingle } from '../../../orchestr-helper/isLinkSingle';
 

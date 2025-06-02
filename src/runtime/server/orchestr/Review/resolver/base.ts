@@ -1,4 +1,4 @@
-import { ReviewBase } from '@laioutr-core/canonical-types/orchestr/review';
+import { ReviewBase } from '@laioutr-core/canonical-types/entity/review';
 import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
 
 export default defineShopwareComponentResolver({
