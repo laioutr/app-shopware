@@ -2,10 +2,12 @@ import { Money } from '@screeny05/ts-money';
 import {
   ProductAvailableVariants,
   ProductBase,
+  ProductDescription,
   ProductFlags,
   ProductInfo,
   ProductMedia,
   ProductPrices,
+  ProductSeo,
 } from '@laioutr-core/canonical-types/entity/product';
 import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
 import { FALLBACK_IMAGE } from '../../../const/fallbacks';
@@ -13,13 +15,13 @@ import { productToSlug } from '../../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../../shopware-helper/mediaMapper';
 import { swTranslated } from '../../../shopware-helper/swTranslated';
 
-/** Add a empty association object to the shopware-request if the component is requested */
+/** Add an empty association object to the shopware-request if the component is requested */
 const addAssociation = (name: string, add: boolean) => (add ? { [name]: {} } : {});
 
 export default defineShopwareComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
-  provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductAvailableVariants],
+  provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductAvailableVariants, ProductSeo, ProductDescription],
   resolve: async ({ entityIds, requestedComponents, context, $entity }) => {
     const swResponse = await context.storefrontClient.invoke('readProduct post /product', {
       body: {
@@ -47,6 +49,13 @@ export default defineShopwareComponentResolver({
           cover: mappedCover,
           shortDescription: swTranslated(rawProduct, 'description'),
           brand: rawProduct.manufacturer?.translated?.name ?? rawProduct.manufacturer?.name,
+        },
+
+        description: swTranslated(rawProduct, 'description'),
+
+        seo: {
+          title: swTranslated(rawProduct, 'metaTitle'),
+          description: swTranslated(rawProduct, 'metaDescription'),
         },
 
         media: () => {
