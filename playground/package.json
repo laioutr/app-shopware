@@ -11,6 +11,6 @@
     "@laioutr-app/shopware": "workspace:*",
     "@laioutr-core/orchestr": "workspace:*",
     "@laioutr-core/orchestr-devtools": "workspace:*",
-    "nuxt": "3.12.4"
+    "nuxt": "catalog:nuxt-core"
   }
 }
