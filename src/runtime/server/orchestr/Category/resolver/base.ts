@@ -1,10 +1,10 @@
-import { CategoryBase } from '@laioutr-core/canonical-types/entity/category';
+import { MenuItemBase } from '@laioutr-core/canonical-types/entity/menuItem';
 import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
 
 export default defineShopwareComponentResolver({
   label: 'Category Base',
-  entityType: 'Category',
-  provides: [CategoryBase],
+  entityType: 'MenuItem',
+  provides: [MenuItemBase],
   resolve: async ({ entityIds, context }) => {
     const swResponse = await context.storefrontClient.invoke('readCategoryList post /category', {
       body: {
