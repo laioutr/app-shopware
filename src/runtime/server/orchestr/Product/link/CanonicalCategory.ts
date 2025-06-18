@@ -18,7 +18,9 @@ export default defineShopwareLink(ProductCanonicalMenuItemLink, async ({ context
     links: shopwareProducts
       .map((rawProduct) => ({
         sourceId: rawProduct.id,
-        targetId: (rawProduct.seoCategory?.id as string | undefined) ?? rawProduct.mainCategories?.[0]?.id ?? rawProduct.categoryIds?.[0],
+        targetIds: [
+          (rawProduct.seoCategory?.id as string | undefined) ?? rawProduct.mainCategories?.[0]?.id ?? rawProduct.categoryIds?.[0],
+        ].filter(Boolean) as string[],
       }))
       .filter(isLinkSingle),
   };
