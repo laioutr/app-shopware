@@ -6,7 +6,7 @@ export const FALLBACK_IMAGE: MediaImage = {
   type: 'image',
   sources: [
     {
-      provider: 'raw',
+      provider: 'none',
       width: 1010,
       height: 730,
       src: FALLBACK_IMAGE_URL,

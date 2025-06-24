@@ -7,7 +7,7 @@ interface ParsedShopwareThumbnail {
 }
 
 /**
- * Allow a tolerance for matching the best thumbnail.
+ * Allow a tolerance for matching the best thumbnail (in pixels).
  */
 const THUMBNAIL_MATCH_TOLERANCE = 2;
 
