@@ -1,5 +1,28 @@
 # @laioutr-app/shopware
 
+## 0.5.9
+
+### Patch Changes
+
+- Updated dependencies [833af58]
+  - @laioutr-core/frontend-core@0.13.0
+
+## 0.5.8
+
+### Patch Changes
+
+- Updated dependencies [66afaf5]
+  - @laioutr-core/frontend-core@0.12.0
+
+## 0.5.7
+
+### Patch Changes
+
+- Updated dependencies [217d249]
+  - @laioutr-core/frontend-core@0.11.0
+  - @laioutr-core/canonical-types@0.7.5
+  - @laioutr-core/kit@0.7.1
+
 ## 0.5.6
 
 ### Patch Changes
