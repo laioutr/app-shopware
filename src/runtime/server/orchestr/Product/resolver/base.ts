@@ -1,6 +1,5 @@
 import { Money } from '@screeny05/ts-money';
 import {
-  ProductAvailableVariants,
   ProductBase,
   ProductDescription,
   ProductFlags,
@@ -21,7 +20,7 @@ const addAssociation = (name: string, add: boolean) => (add ? { [name]: {} } : {
 export default defineShopwareComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
-  provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductAvailableVariants, ProductSeo, ProductDescription],
+  provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductSeo, ProductDescription],
   resolve: async ({ entityIds, requestedComponents, context, $entity }) => {
     const swResponse = await context.storefrontClient.invoke('readProduct post /product', {
       body: {
@@ -91,7 +90,6 @@ export default defineShopwareComponentResolver({
           };
         },
 
-        availableVariants: [] as any[],
         flags: [] as any[],
       });
     });
