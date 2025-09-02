@@ -1,5 +1,5 @@
 import { ReviewBase } from '@laioutr-core/canonical-types/entity/review';
-import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
+import { defineShopwareComponentResolver } from '../../../middleware/defineShopware';
 
 export default defineShopwareComponentResolver({
   label: 'Shopware Review Connector',

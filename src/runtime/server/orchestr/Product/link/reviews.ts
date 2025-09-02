@@ -1,5 +1,5 @@
 import { ProductReviewsLink } from '@laioutr-core/canonical-types/ecommerce';
-import { defineShopwareLink } from '../../../action/defineShopwareAction';
+import { defineShopwareLink } from '../../../middleware/defineShopware';
 
 export default defineShopwareLink(ProductReviewsLink, async ({ entityIds, pagination }) => ({
   links: entityIds.slice(0, 1).map((entityId) => ({
