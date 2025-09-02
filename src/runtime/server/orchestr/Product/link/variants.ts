@@ -1,6 +1,6 @@
 import { ProductVariantsLink } from '@laioutr-core/canonical-types/ecommerce';
 import type { components } from '../../../types/storeApiTypes';
-import { defineShopwareLink } from '../../../action/defineShopwareAction';
+import { defineShopwareLink } from '../../../middleware/defineShopware';
 
 export default defineShopwareLink(ProductVariantsLink, async ({ entityIds, context }) => {
   const shopwareProducts = [] as components['schemas']['Product'][];

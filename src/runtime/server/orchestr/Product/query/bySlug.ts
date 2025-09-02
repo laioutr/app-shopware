@@ -1,5 +1,5 @@
 import { ProductBySlugQuery } from '@laioutr-core/canonical-types/ecommerce';
-import { defineShopwareQuery } from '../../../action/defineShopwareAction';
+import { defineShopwareQuery } from '../../../middleware/defineShopware';
 import { isSlugMatchingSeoPath } from '../../../shopware-helper/mappers/slugMapper';
 
 export default defineShopwareQuery(ProductBySlugQuery, async ({ context, input }) => {
