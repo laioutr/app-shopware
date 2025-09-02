@@ -1,5 +1,6 @@
 import { MenuItemBase } from '@laioutr-core/canonical-types/entity/menuItem';
-import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
+
+import { defineShopwareComponentResolver } from '../../../middleware/defineShopware';
 
 export default defineShopwareComponentResolver({
   label: 'Category Base',

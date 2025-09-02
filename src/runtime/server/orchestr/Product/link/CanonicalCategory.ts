@@ -1,5 +1,5 @@
 import { ProductCanonicalMenuItemLink } from '@laioutr-core/canonical-types/ecommerce';
-import { defineShopwareLink } from '../../../action/defineShopwareAction';
+import { defineShopwareLink } from '../../../middleware/defineShopware';
 import { isLinkSingle } from '../../../orchestr-helper/isLinkSingle';
 
 export default defineShopwareLink(ProductCanonicalMenuItemLink, async ({ context, entityIds }) => {
