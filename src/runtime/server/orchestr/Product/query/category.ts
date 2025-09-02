@@ -1,5 +1,6 @@
 import { ProductsByCategoryIdQuery } from '@laioutr-core/canonical-types/ecommerce';
-import { defineShopwareQuery } from '../../../action/defineShopwareAction';
+
+import { defineShopwareQuery } from '../../../middleware/defineShopware';
 import { mapShopwareSortingToOrchestr } from '../../../shopware-helper/sortingMapper';
 
 export default defineShopwareQuery(ProductsByCategoryIdQuery, async ({ context, input, pagination, sorting }) => {

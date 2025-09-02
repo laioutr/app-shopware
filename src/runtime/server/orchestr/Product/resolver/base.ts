@@ -8,8 +8,8 @@ import {
   ProductPrices,
   ProductSeo,
 } from '@laioutr-core/canonical-types/entity/product';
-import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
 import { FALLBACK_IMAGE } from '../../../const/fallbacks';
+import { defineShopwareComponentResolver } from '../../../middleware/defineShopware';
 import { productToSlug } from '../../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../../shopware-helper/mediaMapper';
 import { swTranslated } from '../../../shopware-helper/swTranslated';

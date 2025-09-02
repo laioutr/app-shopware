@@ -1,6 +1,6 @@
 import { ProductVariantBase } from '@laioutr-core/canonical-types/entity/product-variant';
 import type { components } from '../../../types/storeApiTypes';
-import { defineShopwareComponentResolver } from '../../../action/defineShopwareAction';
+import { defineShopwareComponentResolver } from '../../../middleware/defineShopware';
 
 export default defineShopwareComponentResolver({
   entityType: 'ProductVariant',
