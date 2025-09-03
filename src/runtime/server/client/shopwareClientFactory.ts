@@ -21,8 +21,8 @@ export const shopwareClientFactory = (event: OrchestrArgsBase['event']): Storefr
   // Update global runetime variable from persistent cookie if found
   if (contextTokenCookie) globalWithContextToken.contextToken = contextTokenCookie;
 
-  // Set persistent cookie if a context token exists
-  if (globalWithContextToken.contextToken) {
+  // Set persistent cookie if a context token exists and response headers are not yet streamed
+  if (globalWithContextToken.contextToken && !event.node.res.headersSent) {
     setCookie(event, CONTEXT_TOKEN_COOKIE, globalWithContextToken.contextToken, {
       maxAge: 60 * 60 * 24 * 365, // days
       path: '/',

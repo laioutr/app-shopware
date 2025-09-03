@@ -3,7 +3,6 @@ import srcModule from '../src/module';
 
 export default defineNuxtConfig({
   modules: [
-    // @ts-expect-error ModuleOptions type doesn't match
     srcModule,
     '@pinia/nuxt', // Added to show in devtools
     '@laioutr-core/frontend-core',

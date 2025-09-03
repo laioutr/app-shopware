@@ -8,7 +8,7 @@ export const defineShopware = defineOrchestr
   .meta({
     app: '@laioutr-core/shopware',
   })
-  .useOnce(async (args, next) => {
+  .use(async (args, next) => {
     const storefrontClient = shopwareClientFactory(args.event);
     const adminClient = shopwareAdminClientFactory();
     const systemEntities = await getSystemEntities(storefrontClient);
