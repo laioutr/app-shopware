@@ -24,7 +24,7 @@ export const shopwareClientFactory = (event: OrchestrArgsBase['event']): Storefr
   // Set persistent cookie if a context token exists
   if (globalWithContextToken.contextToken) {
     setCookie(event, CONTEXT_TOKEN_COOKIE, globalWithContextToken.contextToken, {
-      maxAge: 365, // days
+      maxAge: 60 * 60 * 24 * 365, // days
       path: '/',
       sameSite: 'lax',
       secure: config.endpoint.startsWith('https://'),
