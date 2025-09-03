@@ -1,6 +1,6 @@
 import { ProductBySlugQuery } from '@laioutr-core/canonical-types/ecommerce';
-import { defineShopwareQuery } from '../../../middleware/defineShopware';
-import { isSlugMatchingSeoPath } from '../../../shopware-helper/mappers/slugMapper';
+import { defineShopwareQuery } from '../../middleware/defineShopware';
+import { isSlugMatchingSeoPath } from '../../shopware-helper/mappers/slugMapper';
 
 export default defineShopwareQuery(ProductBySlugQuery, async ({ context, input }) => {
   const swResponse = await context.storefrontClient.invoke('readSeoUrl post /seo-url', {
@@ -12,6 +12,7 @@ export default defineShopwareQuery(ProductBySlugQuery, async ({ context, input }
           value: input.slug,
         },
       ],
+      includes: { product: ['id'] },
     },
   });
 

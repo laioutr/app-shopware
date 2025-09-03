@@ -1,4 +1,5 @@
 import { Money } from '@screeny05/ts-money';
+import { MediaImage } from '@laioutr-core/canonical-types';
 import {
   ProductBase,
   ProductDescription,
@@ -8,11 +9,11 @@ import {
   ProductPrices,
   ProductSeo,
 } from '@laioutr-core/canonical-types/entity/product';
-import { FALLBACK_IMAGE } from '../../../const/fallbacks';
-import { defineShopwareComponentResolver } from '../../../middleware/defineShopware';
-import { productToSlug } from '../../../shopware-helper/mappers/slugMapper';
-import { mapMedia } from '../../../shopware-helper/mediaMapper';
-import { swTranslated } from '../../../shopware-helper/swTranslated';
+import { FALLBACK_IMAGE } from '../../const/fallbacks';
+import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
+import { productToSlug } from '../../shopware-helper/mappers/slugMapper';
+import { mapMedia } from '../../shopware-helper/mediaMapper';
+import { swTranslated } from '../../shopware-helper/swTranslated';
 
 /** Add an empty association object to the shopware-request if the component is requested */
 const addAssociation = (name: string, add: boolean) => (add ? { [name]: {} } : {});
@@ -22,16 +23,16 @@ export default defineShopwareComponentResolver({
   entityType: 'Product',
   provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductSeo, ProductDescription],
   resolve: async ({ entityIds, requestedComponents, context, $entity }) => {
-    const swResponse = await context.storefrontClient.invoke('readProduct post /product', {
+    const response = await context.storefrontClient.invoke('readProduct post /product', {
       body: {
         ids: entityIds,
         associations: {
-          ...addAssociation('media', requestedComponents.includes(ProductMedia)),
+          ...addAssociation('media', requestedComponents.includes('media')),
         },
       },
     });
 
-    const shopwareProducts = swResponse.data.elements ?? [];
+    const shopwareProducts = response.data.elements ?? [];
 
     const entities = shopwareProducts.map((rawProduct) => {
       const mappedCover = rawProduct.cover?.media ? mapMedia(rawProduct.cover.media) : FALLBACK_IMAGE;
@@ -65,7 +66,7 @@ export default defineShopwareComponentResolver({
           return {
             cover: mappedCover,
             media: allMedia,
-            images: allMedia.filter((media) => media.type === 'image'),
+            images: allMedia.filter((media) => media.type === 'image') as MediaImage[],
           };
         },
 
@@ -98,6 +99,6 @@ export default defineShopwareComponentResolver({
   },
   cache: {
     strategy: 'ttl',
-    ttl: '1 day',
+    ttl: 60 * 60 * 24, // 1 day
   },
 });

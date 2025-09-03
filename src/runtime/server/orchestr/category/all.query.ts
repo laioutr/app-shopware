@@ -8,6 +8,9 @@ export default defineShopwareQuery(CategoryAllQuery, async ({ context, paginatio
     body: {
       page: pagination.page,
       limit: pagination.limit,
+      includes: {
+        category: ['id'],
+      },
     },
   });
 
