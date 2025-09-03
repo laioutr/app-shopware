@@ -1,5 +1,5 @@
 import { SubscribeAction } from '@laioutr-core/canonical-types/newsletter';
-import { defineShopwareAction } from '../../../middleware/defineShopware';
+import { defineShopwareAction } from '../../middleware/defineShopware';
 
 export default defineShopwareAction(SubscribeAction, async ({ context, input }) => {
   // TODO: should probably use admin-api, as the storefront-api is rate-limited
@@ -19,5 +19,5 @@ export default defineShopwareAction(SubscribeAction, async ({ context, input }) 
     },
   });
 
-  return 'success' as const;
+  return { status: 'success' as const };
 });
