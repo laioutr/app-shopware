@@ -6,7 +6,12 @@ export default defineShopwareLink(ProductVariantsLink, async ({ entityIds, conte
     body: {
       ids: entityIds,
       associations: {
-        mainCategories: {},
+        // load children (variants) for each parent:
+        children: {
+          associations: {
+            options: { associations: { group: {} } }, // resolve Color/Size labels
+          },
+        },
       },
       includes: { product: ['id', 'children'] },
     },
