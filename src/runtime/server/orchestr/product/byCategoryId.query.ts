@@ -18,7 +18,7 @@ export default defineShopwareQuery(ProductsByCategoryIdQuery, async ({ context, 
     body: {
       page: pagination.page,
       limit: pagination.limit,
-      filter: swFilters,
+      filter: [...(swFilters ?? []), { type: 'equals', field: 'parentId', value: null }],
       order: sorting,
       includes: {
         product: ['id'],
