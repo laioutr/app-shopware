@@ -29,6 +29,31 @@ export default defineShopwareComponentResolver({
         associations: {
           ...addAssociation('media', requestedComponents.includes('media')),
         },
+        includes: {
+          product: [
+            'id',
+            'parentId',
+            'name',
+            'productNumber',
+            'ean',
+            'available',
+            'availableStock',
+            'stock',
+            'minPurchase',
+            'purchaseSteps',
+            'maxPurchase',
+            'calculatedPrice',
+            'calculatedPrices',
+            'cover',
+            'media',
+            'options',
+            'optionIds',
+          ],
+          product_media: ['id', 'mediaId', 'media'],
+          media: ['id', 'url', 'thumbnails'],
+          property_group_option: ['id', 'name', 'group'],
+          property_group: ['id', 'name'],
+        },
       },
     });
 
