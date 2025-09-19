@@ -1,29 +1,14 @@
 import { ProductBySlugQuery } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareQuery } from '../../middleware/defineShopware';
-import { isSlugMatchingSeoPath } from '../../shopware-helper/mappers/slugMapper';
+import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 
 export default defineShopwareQuery(ProductBySlugQuery, async ({ context, input }) => {
-  const swResponse = await context.storefrontClient.invoke('readSeoUrl post /seo-url', {
-    body: {
-      filter: [
-        {
-          field: 'seoPathInfo',
-          type: 'contains',
-          value: input.slug,
-        },
-      ],
-      includes: { product: ['id'] },
-    },
-  });
-
-  const bestMatch = swResponse.data.elements.find((element) => isSlugMatchingSeoPath(input.slug, element.seoPathInfo));
-  const productId = bestMatch?.foreignKey;
-
-  if (!productId) {
-    throw new Error(`No product found for slug: ${input.slug}`);
+  const seoResolver = useSeoResolver(context.storefrontClient);
+  const seoEntry = await seoResolver.resolve('product', input.slug);
+  if (!seoEntry) {
+    throw new Error(`No seo url found for product slug: ${input.slug}`);
   }
-
   return {
-    id: productId,
+    id: seoEntry.id,
   };
 });

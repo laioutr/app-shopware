@@ -18,6 +18,10 @@ const THUMBNAIL_MATCH_TOLERANCE = 2;
  * Best match is determined by being either an image as big or bigger than target-size, preferring the smallest match.
  */
 const matchThumbnail = (thumbnails: ParsedShopwareThumbnail[], options: { width?: number; height?: number }) => {
+  if (!thumbnails.length) {
+    return undefined;
+  }
+
   const { width, height } = options;
 
   // If there's no specific size, return the biggest thumbnail
@@ -57,22 +61,25 @@ export const getImage: ProviderGetImage = (src, options = {}) => {
   // TODO memoize last calculated sizes
   const [orgSrc, rawThumbnailSrc] = src.split('#');
   const thumbnailSrc = decodeURIComponent(rawThumbnailSrc ?? '');
-  const thumbnails = thumbnailSrc
-    .split(', ')
-    .map((thumbnail) => {
-      const [url, size] = thumbnail.split(' ');
-      const [width, height] = size
-        ?.split('x')
-        .map(Number.parseInt)
-        .filter((num) => !Number.isNaN(num)) ?? [0, 0];
+  const thumbnails =
+    thumbnailSrc ?
+      thumbnailSrc
+        .split(', ')
+        .map((thumbnail) => {
+          const [url, size] = thumbnail.split(' ');
+          const [width, height] = size
+            ?.split('x')
+            .map(Number.parseInt)
+            .filter((num) => !Number.isNaN(num)) ?? [0, 0];
 
-      return {
-        url,
-        width: width ?? height ?? 0,
-        height: height ?? width ?? 0,
-      };
-    })
-    .sort((a, b) => a.width - b.width);
+          return {
+            url,
+            width: width ?? height ?? 0,
+            height: height ?? width ?? 0,
+          };
+        })
+        .sort((a, b) => a.width - b.width)
+    : [];
 
   const match = matchThumbnail(thumbnails, options.modifiers ?? {});
 
