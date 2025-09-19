@@ -20,7 +20,8 @@ export default defineShopwareLink(ProductVariantsLink, async ({ entityIds, conte
   return {
     links: (response.data.elements ?? []).map((product) => ({
       sourceId: product.id,
-      targetIds: product.children?.map((child) => child.id) ?? [product.id],
+      // A products children are its variants. If it has no children, it is a single variant product.
+      targetIds: product.children && product.children.length > 0 ? product.children.map((child) => child.id) : [product.id],
     })),
   };
 });

@@ -29,12 +29,12 @@ export const mapMediaSourceVideo = (media: SwMedia): MediaSourceVideo =>
   }) satisfies MediaSourceVideo;
 
 export const mapMedia = (media: SwMedia): Media => {
-  const type = media.mimeType?.startsWith('image/') ? 'image' : 'video';
+  const type = media.mimeType?.startsWith('video/') ? 'video' : 'image';
   const source = type === 'image' ? mapMediaSourceImage(media) : mapMediaSourceVideo(media);
 
   return {
     type,
     alt: media.alt,
-    sources: [source],
+    sources: [source] as any,
   } satisfies Media;
 };

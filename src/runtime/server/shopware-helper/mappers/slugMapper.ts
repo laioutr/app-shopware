@@ -1,8 +1,8 @@
 import slug from 'slug';
-import { ShopwareProduct, ShopwareSeoUrl, WithSeoUrl } from '../../types/shopware';
+import { ShopwareCategory, ShopwareProduct, ShopwareSeoUrl, WithSeoUrl } from '../../types/shopware';
 import { swTranslated } from '../swTranslated';
 
-const extractSlugFromPath = (path: string): string => path.split('/').at(-1)!.toLowerCase();
+const extractSlugFromPath = (path: string): string => path.split('/').slice(1).join('/').toLowerCase();
 
 const seoUrlToSlug = (seoUrl: ShopwareSeoUrl): string => extractSlugFromPath(seoUrl.seoPathInfo);
 
@@ -10,8 +10,11 @@ const seoUrlToSlug = (seoUrl: ShopwareSeoUrl): string => extractSlugFromPath(seo
 export const isSlugMatchingSeoPath = (slug: string, seoPath: string) => extractSlugFromPath(seoPath) === slug.toLowerCase();
 
 /** Map a generic entity with seoUrls to a slug */
-export const entityToSlug = (rawEntity: WithSeoUrl): string | undefined =>
+export const getEntitySeoSlug = (rawEntity: WithSeoUrl): string | undefined =>
   rawEntity.seoUrls && rawEntity.seoUrls.length > 0 ? seoUrlToSlug(rawEntity.seoUrls[0]) : undefined;
 
+export const createFallbackSlug = (name: string, id: string) => `${slug(name)}-${id}`;
+
 /** Get slug of a product. Falls back to sluggified name if no seoUrl is available */
-export const productToSlug = (rawProduct: ShopwareProduct): string => entityToSlug(rawProduct) ?? slug(swTranslated(rawProduct, 'name'));
+export const entitySlug = (rawEntity: ShopwareProduct | ShopwareCategory): string =>
+  getEntitySeoSlug(rawEntity) ?? createFallbackSlug(swTranslated(rawEntity, 'name'), rawEntity.id);
