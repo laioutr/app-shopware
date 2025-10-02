@@ -4,11 +4,13 @@ import {
   ProductVariantAvailability,
   ProductVariantBase,
   ProductVariantInfo,
+  ProductVariantOptions,
   ProductVariantPrices,
   ProductVariantQuantityPrices,
   ProductVariantQuantityRule,
   ProductVariantShipping,
 } from '@laioutr-core/canonical-types/entity/product-variant';
+import { MediaIncludes } from '../../const/includes';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 
@@ -23,6 +25,7 @@ export default defineShopwareComponentResolver({
     ProductVariantQuantityPrices,
     ProductVariantQuantityRule,
     ProductVariantShipping,
+    ProductVariantOptions,
   ],
   resolve: async ({ entityIds, context, clientEnv, $entity }) => {
     const { currency } = clientEnv;
@@ -56,7 +59,7 @@ export default defineShopwareComponentResolver({
             'optionIds',
           ],
           product_media: ['id', 'mediaId', 'media'],
-          media: ['id', 'url', 'thumbnails'],
+          media: MediaIncludes,
           property_group_option: ['id', 'name', 'group'],
           property_group: ['id', 'name'],
         },
@@ -164,6 +167,14 @@ export default defineShopwareComponentResolver({
             // If you track virtual/downloadable yourself, plug it here.
             // Otherwise assume physical → requires shipping.
             required: true,
+          }),
+
+          options: () => ({
+            selected:
+              entity.options?.map((option) => ({
+                name: option.name,
+                value: option.option,
+              })) ?? [],
           }),
         })
       ),

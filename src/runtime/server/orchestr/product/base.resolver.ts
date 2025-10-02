@@ -10,8 +10,9 @@ import {
   ProductSeo,
 } from '@laioutr-core/canonical-types/entity/product';
 import { FALLBACK_IMAGE } from '../../const/fallbacks';
+import { MediaIncludes } from '../../const/includes';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
-import { productToSlug } from '../../shopware-helper/mappers/slugMapper';
+import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';
 
@@ -48,9 +49,13 @@ export default defineShopwareComponentResolver({
             'media',
             'options',
             'optionIds',
+            'seoUrls',
+            'translated',
+            'manufacturer',
+            'description',
           ],
           product_media: ['id', 'mediaId', 'media'],
-          media: ['id', 'url', 'thumbnails'],
+          media: MediaIncludes,
           property_group_option: ['id', 'name', 'group'],
           property_group: ['id', 'name'],
         },
@@ -67,13 +72,13 @@ export default defineShopwareComponentResolver({
 
         base: {
           name: swTranslated(rawProduct, 'name'),
-          slug: productToSlug(rawProduct),
+          slug: entitySlug(rawProduct),
         },
 
         info: {
           cover: mappedCover,
           shortDescription: swTranslated(rawProduct, 'description'),
-          brand: rawProduct.manufacturer?.translated?.name ?? rawProduct.manufacturer?.name,
+          brand: swTranslated(rawProduct.manufacturer, 'name'),
         },
 
         description: swTranslated(rawProduct, 'description'),
@@ -84,7 +89,7 @@ export default defineShopwareComponentResolver({
         },
 
         media: () => {
-          const mappedMedia = rawProduct.media?.map((image) => mapMedia(image.media)) ?? [];
+          const mappedMedia = rawProduct.media?.filter((image) => !!image.media).map((image) => mapMedia(image.media)) ?? [];
           // Shopwares product.media does not include the cover, so we add it manually
           const allMedia = [mappedCover, ...mappedMedia];
 
