@@ -19,25 +19,24 @@ export default defineShopwareQuery(
     }
 
     const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters) : {};
-
     const response = await context.storefrontClient.invoke('readProductListing post /product-listing/{categoryId}', {
       pathParams: { categoryId: seoEntry.id },
       body: {
-        page: pagination.page,
-        limit: pagination.limit,
+        // page: pagination.page,
+        // limit: pagination.limit,
         filter: [
-          ...(swFilters ?? []),
-          // Fetch parent-products, not child-products (e.g. variants)
-          { type: 'equals', field: 'parentId', value: null },
+          // ...(swFilters ?? []),
+          // // Fetch parent-products, not child-products (e.g. variants)
+          // { type: 'equals', field: 'parentId', value: null },
         ],
-        order: sorting,
+        // order: sorting,
         includes: {
           product: ['id'],
         },
-        'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
-        'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
-        manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
-        'shipping-free': swBuiltInFilters?.['shipping-free'] as boolean | undefined,
+        // 'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
+        // 'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
+        // manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
+        // 'shipping-free': swBuiltInFilters?.['shipping-free'] as boolean | undefined,
       },
     });
 

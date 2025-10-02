@@ -2,7 +2,7 @@ import slug from 'slug';
 import { ShopwareCategory, ShopwareProduct, ShopwareSeoUrl, WithSeoUrl } from '../../types/shopware';
 import { swTranslated } from '../swTranslated';
 
-const extractSlugFromPath = (path: string): string => path.split('/').slice(1).join('/').toLowerCase();
+const extractSlugFromPath = (path: string): string => path; // .split('/').slice(1).join('/').toLowerCase();
 
 const seoUrlToSlug = (seoUrl: ShopwareSeoUrl): string => extractSlugFromPath(seoUrl.seoPathInfo);
 
