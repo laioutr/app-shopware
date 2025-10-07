@@ -1,4 +1,4 @@
-import { useUserlandCache } from '../../../../../orchestr/src/runtime/server/imports/useCache';
+import { useUserlandCache } from '#imports';
 import { StorefrontClient } from '../types/shopware';
 
 const useProductParentIdCache = () => useUserlandCache<string>('shopware/product-parent-id');
