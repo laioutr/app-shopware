@@ -172,8 +172,8 @@ export default defineShopwareComponentResolver({
           options: () => ({
             selected:
               entity.options?.map((option) => ({
-                name: option.name,
-                value: option.option,
+                name: option.group?.name ?? option.name,
+                value: option.name ?? option.option,
               })) ?? [],
           }),
         })

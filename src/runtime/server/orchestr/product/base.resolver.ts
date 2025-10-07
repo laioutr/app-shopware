@@ -11,6 +11,7 @@ import {
 } from '@laioutr-core/canonical-types/entity/product';
 import { FALLBACK_IMAGE } from '../../const/fallbacks';
 import { MediaIncludes } from '../../const/includes';
+import { parentIdToDefaultVariantIdToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
@@ -23,12 +24,19 @@ export default defineShopwareComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
   provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductSeo, ProductDescription],
-  resolve: async ({ entityIds, requestedComponents, context, $entity }) => {
+  resolve: async ({ entityIds, requestedComponents, context, $entity, passthrough }) => {
+    const parentIdToDefaultVariantId = passthrough.get(parentIdToDefaultVariantIdToken);
+    const variantIds = entityIds.map((id) => {
+      const defaultVariantId = parentIdToDefaultVariantId?.[id];
+      return defaultVariantId ?? id;
+    });
+
     const response = await context.storefrontClient.invoke('readProduct post /product', {
       body: {
-        ids: entityIds,
+        ids: variantIds,
         associations: {
           ...addAssociation('media', requestedComponents.includes('media')),
+          children: {},
         },
         includes: {
           product: [
@@ -53,6 +61,7 @@ export default defineShopwareComponentResolver({
             'translated',
             'manufacturer',
             'description',
+            'children',
           ],
           product_media: ['id', 'mediaId', 'media'],
           media: MediaIncludes,
@@ -65,10 +74,16 @@ export default defineShopwareComponentResolver({
     const shopwareProducts = response.data.elements ?? [];
 
     const entities = shopwareProducts.map((rawProduct) => {
+      // If the product has variants, we select the first variant as default data source. In that case the parent might not contain much information.
+      // This case only happens if the resolver is called with a product-id that does not exist in parentIdToDefaultVariantId.
+      // If you want to influence which variant is selected, passthrough a `parentIdToDefaultVariantIdToken`.
+      rawProduct = rawProduct.children?.[0] ?? rawProduct;
+
       const mappedCover = rawProduct.cover?.media ? mapMedia(rawProduct.cover.media) : FALLBACK_IMAGE;
 
       return $entity({
-        id: rawProduct.id,
+        // The parent-id is the actual product-id, even if the product has variants.
+        id: rawProduct.parentId ?? rawProduct.id,
 
         base: {
           name: swTranslated(rawProduct, 'name'),

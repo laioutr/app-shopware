@@ -7,6 +7,8 @@ import { getSystemEntities } from '../shopware-helper/system/getSystemEntities';
 export const defineShopware = defineOrchestr
   .meta({
     app: '@laioutr-core/shopware',
+    logoUrl: '/app-shopware/shopware-logo.svg',
+    label: 'Shopware',
   })
   .use(async (args, next) => {
     const storefrontClient = shopwareClientFactory(args.event);
