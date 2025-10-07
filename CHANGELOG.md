@@ -1,5 +1,18 @@
 # @laioutr-app/shopware
 
+## 0.6.0
+
+### Minor Changes
+
+- Shopware implementation. Minor ui fixes, QoL improvements for orchestr
+
+### Patch Changes
+
+- Updated dependencies
+  - @laioutr-core/canonical-types@0.12.0
+  - @laioutr-core/frontend-core@0.18.5
+  - @laioutr-core/kit@0.7.6
+
 ## 0.5.21
 
 ### Patch Changes
