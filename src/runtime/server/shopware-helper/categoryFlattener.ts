@@ -1,7 +1,9 @@
 import { ShopwareCategory } from '../types/shopware';
 
-/** Returns a flat list of shopware categories
+/**
+ * Returns a flat list of shopware categories
  *
+ * **Warning**: This function mutates the input categories by overwriting their parentId property.
  */
 export const flattenCategories = (categories: ShopwareCategory[], parent?: ShopwareCategory) => {
   const flattenedCategories: ShopwareCategory[] = [];

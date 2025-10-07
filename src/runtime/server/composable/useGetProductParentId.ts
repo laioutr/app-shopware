@@ -15,19 +15,23 @@ export const useGetProductParentId = (storefrontClient: StorefrontClient) => {
       return cachedParentId;
     }
 
-    const response = await storefrontClient.invoke('readProduct post /product', {
-      body: {
-        ids: [id],
-        includes: { product: ['id', 'parentId'] },
-      },
-    });
+    try {
+      const response = await storefrontClient.invoke('readProduct post /product', {
+        body: {
+          ids: [id],
+          includes: { product: ['id', 'parentId'] },
+        },
+      });
 
-    const parentId = response.data.elements?.[0]?.parentId;
-    if (parentId) {
-      cache.setItem(id, parentId, { ttl: PRODUCT_PARENT_ID_CACHE_TTL });
-      return parentId;
+      const parentId = response.data.elements?.[0]?.parentId;
+      if (parentId) {
+        cache.setItem(id, parentId, { ttl: PRODUCT_PARENT_ID_CACHE_TTL });
+        return parentId;
+      }
+      return undefined;
+    } catch {
+      return undefined;
     }
-    return undefined;
   };
 };
 
