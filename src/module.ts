@@ -41,6 +41,13 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     // Runtime configuration for this module
     nuxt.options.runtimeConfig[name] = defu(nuxt.options.runtimeConfig[name] as any, options);
 
+    // Make app-assets publicly available
+    nuxt.options.nitro.publicAssets ??= [];
+    nuxt.options.nitro.publicAssets.push({
+      dir: resolveRuntimeModule('./app/public'),
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
     await registerLaioutrApp({
       name,
       version,

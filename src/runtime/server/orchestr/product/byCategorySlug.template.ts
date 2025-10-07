@@ -16,23 +16,16 @@ export default defineShopwareQueryTemplateProvider({
             [
               {
                 type: 'multi',
-                operator: 'and',
+                operator: 'or',
                 queries: [
-                  { type: 'equals', field: 'linkType', value: 'category' },
-                  {
-                    type: 'multi',
-                    operator: 'or',
-                    queries: [
-                      { type: 'contains', field: 'name', value: input.term },
-                      { type: 'contains', field: 'metaTitle', value: input.term },
-                    ],
-                  },
+                  { type: 'contains', field: 'name', value: input.term },
+                  { type: 'contains', field: 'metaTitle', value: input.term },
                 ],
               },
             ]
           : [],
         includes: { seoUrls: ['routeName', 'seoPathInfo'] },
-        limit: 25,
+        limit: 50,
       },
     });
 
