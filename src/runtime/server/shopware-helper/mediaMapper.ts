@@ -8,7 +8,7 @@ type SwMedia = Schemas['Media'];
 // /original-source.jpg#/thumbnail-1.jpg 100x100, /thumbnail-2.jpg 200x200
 export const mediaToSrc = (media: SwMedia) => {
   // TODO: remove me after möbel rogg demo
-  const anyCustomFields = media.customFields as any;
+  const anyCustomFields = (media.customFields ?? {}) as any;
   const cdnMediaUrl = 'adobe_media_url' in anyCustomFields ? (anyCustomFields.adobe_media_url as string | undefined) : media.url;
   if (cdnMediaUrl) {
     return cdnMediaUrl;
