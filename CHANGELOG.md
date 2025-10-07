@@ -1,5 +1,11 @@
 # @laioutr-app/shopware
 
+## 0.7.1
+
+### Patch Changes
+
+- Fix cache-import
+
 ## 0.7.0
 
 ### Minor Changes
