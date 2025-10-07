@@ -1,5 +1,11 @@
 # @laioutr-app/shopware
 
+## 0.7.0
+
+### Minor Changes
+
+- Bump minor version
+
 ## 0.6.0
 
 ### Minor Changes
