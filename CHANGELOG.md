@@ -1,5 +1,11 @@
 # @laioutr-app/shopware
 
+## 0.7.2
+
+### Patch Changes
+
+- d937b6e: Fix MenuItem resolver to return valid URLs
+
 ## 0.7.1
 
 ### Patch Changes
