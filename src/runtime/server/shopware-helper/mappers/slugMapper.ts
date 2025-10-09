@@ -9,9 +9,13 @@ const seoUrlToSlug = (seoUrl: ShopwareSeoUrl): string => extractSlugFromPath(seo
 /** Determine whether a given slug matches a seoPath */
 export const isSlugMatchingSeoPath = (slug: string, seoPath: string) => extractSlugFromPath(seoPath) === slug.toLowerCase();
 
+/** Return the canonical seoUrl or the first seoUrl if no canonical is available */
+export const findCanonicalSeoUrl = (seoUrls: ShopwareSeoUrl[]): ShopwareSeoUrl =>
+  seoUrls.find((seoUrl) => seoUrl.isCanonical) ?? seoUrls[0];
+
 /** Map a generic entity with seoUrls to a slug */
 export const getEntitySeoSlug = (rawEntity: WithSeoUrl): string | undefined =>
-  rawEntity.seoUrls && rawEntity.seoUrls.length > 0 ? seoUrlToSlug(rawEntity.seoUrls[0]) : undefined;
+  rawEntity.seoUrls && rawEntity.seoUrls.length > 0 ? seoUrlToSlug(findCanonicalSeoUrl(rawEntity.seoUrls)) : undefined;
 
 export const createFallbackSlug = (name: string, id: string) => `${slug(name)}-${id}`;
 
