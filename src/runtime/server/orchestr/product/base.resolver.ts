@@ -96,7 +96,7 @@ export default defineShopwareComponentResolver({
           brand: swTranslated(rawProduct.manufacturer, 'name'),
         },
 
-        description: swTranslated(rawProduct, 'description'),
+        description: { html: swTranslated(rawProduct, 'description') ?? '' },
 
         seo: {
           title: swTranslated(rawProduct, 'metaTitle'),
