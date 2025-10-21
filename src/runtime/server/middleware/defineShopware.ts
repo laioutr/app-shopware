@@ -1,4 +1,4 @@
-import { defineOrchestr } from '#imports';
+import { defineOrchestr, useUserlandCache } from '#imports';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
 import { shopwareClientFactory } from '../client/shopwareClientFactory';
 import { getCurrentSystemEntities } from '../shopware-helper/system/getCurrentSystemEntities';
@@ -13,7 +13,14 @@ export const defineShopware = defineOrchestr
   .use(async (args, next) => {
     const storefrontClient = shopwareClientFactory(args.event);
     const adminClient = shopwareAdminClientFactory();
-    const systemEntities = await getSystemEntities(storefrontClient);
+
+    const cache = useUserlandCache('shopware_system');
+    const systemEntities =
+      (await cache.has('system_entities')) ?
+        ((await cache.getItem('system_entities')) as Awaited<ReturnType<typeof getSystemEntities>>)
+      : await getSystemEntities(storefrontClient);
+    await cache.setItem('system_entities', JSON.stringify(systemEntities));
+
     const currentSystemEntities = getCurrentSystemEntities(systemEntities, args.clientEnv);
 
     // Set the currency and language headers for the storefront client.
