@@ -10,66 +10,27 @@ import {
   ProductSeo,
 } from '@laioutr-core/canonical-types/entity/product';
 import { FALLBACK_IMAGE } from '../../const/fallbacks';
-import { MediaIncludes } from '../../const/includes';
-import { parentIdToDefaultVariantIdToken } from '../../const/passthroughTokens';
+import { productsFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
+import { resolveRequestedFields } from '../../orchestr-helper/requestedFields';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';
-
-/** Add an empty association object to the shopware-request if the component is requested */
-const addAssociation = (name: string, add: boolean) => (add ? { [name]: {} } : {});
 
 export default defineShopwareComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
   provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductSeo, ProductDescription],
   resolve: async ({ entityIds, requestedComponents, context, $entity, passthrough }) => {
-    const parentIdToDefaultVariantId = passthrough.get(parentIdToDefaultVariantIdToken);
-    const variantIds = entityIds.map((id) => {
-      const defaultVariantId = parentIdToDefaultVariantId?.[id];
-      return defaultVariantId ?? id;
-    });
-
-    const response = await context.storefrontClient.invoke('readProduct post /product', {
-      body: {
-        ids: variantIds,
-        associations: {
-          ...addAssociation('media', requestedComponents.includes('media')),
-          children: {},
-        },
-        includes: {
-          product: [
-            'id',
-            'parentId',
-            'name',
-            'productNumber',
-            'ean',
-            'available',
-            'availableStock',
-            'stock',
-            'minPurchase',
-            'purchaseSteps',
-            'maxPurchase',
-            'calculatedPrice',
-            'calculatedPrices',
-            'cover',
-            'media',
-            'options',
-            'optionIds',
-            'seoUrls',
-            'translated',
-            'manufacturer',
-            'description',
-            'children',
-          ],
-          product_media: ['id', 'mediaId', 'media'],
-          media: MediaIncludes,
-          property_group_option: ['id', 'name', 'group'],
-          property_group: ['id', 'name'],
-        },
-      },
-    });
+    const response =
+      passthrough.has(productsFragmentToken) ?
+        { data: { elements: passthrough.get(productsFragmentToken) ?? [] } }
+      : await context.storefrontClient.invoke('readProduct post /product', {
+          body: {
+            ids: entityIds,
+            ...resolveRequestedFields({ requestedComponents, requestedLinks: {} }),
+          },
+        });
 
     const shopwareProducts = response.data.elements ?? [];
 

@@ -1,7 +1,7 @@
 import { createPassthroughToken } from '#imports';
-import { ShopwareCategory } from '../types/shopware';
+import { ShopwareCategory, ShopwareProduct } from '../types/shopware';
 
-export const currentProductIdsToken = createPassthroughToken<string[]>('@laioutr-app/shopware/productsFragment');
+export const currentProductIdsToken = createPassthroughToken<string[]>('@laioutr-app/shopware/currentProductIdsFragment');
 
 export const categoriesToken = createPassthroughToken<ShopwareCategory[]>('@laioutr-app/shopware/categories');
 
@@ -15,3 +15,9 @@ export const categoriesToken = createPassthroughToken<ShopwareCategory[]>('@laio
 export const parentIdToDefaultVariantIdToken = createPassthroughToken<Record<string, string>>(
   '@laioutr-app/shopware/parentIdToDefaultVariantId'
 );
+
+export const productsFragmentToken = createPassthroughToken<ShopwareProduct[]>('@laioutr-app/shopware/productsFragment');
+export const productVariantsFragmentToken = createPassthroughToken<Record<string, ShopwareProduct[]>>(
+  '@laioutr-app/shopware/productVariantsFragment'
+);
+export const variantsFragmentToken = createPassthroughToken<ShopwareProduct[]>('@laioutr-app/shopware/variantsFragment');
