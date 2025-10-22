@@ -21,6 +21,7 @@ const defaultRequest = {
   clientEnv: {
     locale: 'de-DE',
     currency: 'EUR',
+    isPreview: false,
     custom: {},
   },
 } satisfies QueryWireRequest;
