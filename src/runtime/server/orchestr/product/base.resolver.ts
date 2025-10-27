@@ -104,7 +104,11 @@ export default defineShopwareComponentResolver({
     return { entities };
   },
   cache: {
-    strategy: 'ttl',
-    ttl: 60 * 60 * 24, // 1 day
+    ttl: '1 day',
+    components: {
+      prices: {
+        ttl: '15 minutes',
+      },
+    },
   },
 });
