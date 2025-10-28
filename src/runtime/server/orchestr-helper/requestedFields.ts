@@ -1,4 +1,5 @@
 import { QueryWireRequestQueryLink } from '#orchestr/types';
+import { ProductVariantsLink } from '@laioutr-core/canonical-types/ecommerce';
 import { MediaIncludes } from '../const/includes';
 import { ShopwareAssociationsQuery, ShopwareIncludesQuery } from '../types/shopware';
 
@@ -11,7 +12,7 @@ export const resolveRequestedFields = ({
   requestedComponents: string[];
   requestedLinks: Record<string, QueryWireRequestQueryLink>;
 }) => {
-  const requestedVariants = requestedLinks['ecommerce/product/variants' as keyof typeof requestedLinks];
+  const requestedVariants = requestedLinks[ProductVariantsLink];
 
   const associations = {
     ...(requestedComponents.includes('media') ? { cover: { associations: { media: {} } }, media: { associations: { media: {} } } } : {}), // gallery images (via product_media -> media)

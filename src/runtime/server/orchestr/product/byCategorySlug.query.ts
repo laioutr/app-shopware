@@ -27,7 +27,7 @@ export default defineShopwareQuery(
       body: {
         p: pagination.page,
         limit: pagination.limit,
-        filter: [...(swFilters ?? []), { type: 'equals', field: 'parentId', value: null }],
+        filter: [...(swFilters ?? [])],
         order: sorting,
         ...resolveRequestedFields({ requestedComponents, requestedLinks }),
         'total-count-mode': 'exact',
