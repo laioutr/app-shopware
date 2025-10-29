@@ -10,9 +10,9 @@ import {
   ProductSeo,
 } from '@laioutr-core/canonical-types/entity/product';
 import { FALLBACK_IMAGE } from '../../const/fallbacks';
-import { parentIdToDefaultVariantIdToken, productsFragmentToken } from '../../const/passthroughTokens';
+import { parentIdToDefaultVariantIdToken, productVariantsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
-import { resolveRequestedFields } from '../../orchestr-helper/requestedFields';
+import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';
@@ -21,24 +21,20 @@ export default defineShopwareComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
   provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductSeo, ProductDescription],
-  resolve: async ({ entityIds, requestedComponents, context, $entity, passthrough }) => {
+  resolve: async ({ entityIds, context, $entity, passthrough }) => {
     const parentIdToDefaultVariantId = passthrough.get(parentIdToDefaultVariantIdToken);
-    const variantIds = entityIds.map((id) => {
-      const defaultVariantId = parentIdToDefaultVariantId?.[id];
-      return defaultVariantId ?? id;
-    });
+    const variantIds = entityIds.map((id) => parentIdToDefaultVariantId?.[id] ?? id);
 
-    const response =
-      passthrough.has(productsFragmentToken) ?
-        { data: { elements: passthrough.get(productsFragmentToken) ?? [] } }
-      : await context.storefrontClient.invoke('readProduct post /product', {
-          body: {
-            ids: variantIds,
-            ...resolveRequestedFields({ requestedComponents, requestedLinks: {} }),
-          },
-        });
+    const loadedVariants = passthrough.get(productVariantsToken) ?? [];
+    const missingVariantIds = variantIds.filter((id) => !loadedVariants.some((variant) => variant.id === id));
+    if (missingVariantIds.length > 0) {
+      const response = await fetchAllProducts(context.storefrontClient, { productIds: missingVariantIds, loadVariants: false });
+      loadedVariants.push(...response);
+    }
 
-    const shopwareProducts = response.data.elements ?? [];
+    const shopwareProducts = variantIds
+      .map((id) => loadedVariants.find((variant) => variant.id === id))
+      .filter((product): product is NonNullable<typeof product> => !!product);
 
     const entities = shopwareProducts.map((rawProduct) => {
       // If the product has variants, we select the first variant as default data source. In that case the parent might not contain much information.

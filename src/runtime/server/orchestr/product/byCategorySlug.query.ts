@@ -1,12 +1,13 @@
 import { ProductsByCategorySlugQuery } from '@laioutr-core/canonical-types/ecommerce';
 import { cacheProductParentIds } from '../../composable/useGetProductParentId';
-import { parentIdToDefaultVariantIdToken } from '../../const/passthroughTokens';
+import { parentIdToDefaultVariantIdToken, productVariantsToken } from '../../const/passthroughTokens';
 import { defineShopwareQuery } from '../../middleware/defineShopware';
 import {
   mapSelectedFiltersToShopwareFilters,
   mapShopwareAggregationToAvailableFilters,
   ShopwareAggregations,
 } from '../../shopware-helper/facetMapper';
+import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants';
 import { mapShopwareSortingToOrchestr } from '../../shopware-helper/sortingMapper';
 import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 
@@ -51,6 +52,12 @@ export default defineShopwareQuery(
     passthrough.set(parentIdToDefaultVariantIdToken, parentIdToDefaultVariantId);
 
     cacheProductParentIds(response.data.elements.map((product) => [product.id, product.parentId ?? product.id]));
+
+    const allVariants = await fetchAllProducts(context.storefrontClient, {
+      productIds: Object.keys(parentIdToDefaultVariantId),
+      loadVariants: true,
+    });
+    passthrough.set(productVariantsToken, allVariants);
 
     return {
       // Return the parent-id, in case the received product is a variant
