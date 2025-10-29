@@ -60,6 +60,8 @@ export const getSystemEntities = async (client: StorefrontClient) => {
   };
 };
 
+const SYSTEM_ENTITIES_TTL = 60 * 60 * 24; // 1 day
+
 export const getCachedSystemEntities = async (client: StorefrontClient) => {
   const accessToken = useRuntimeConfig()['@laioutr-app/shopware'].accessToken;
   const cache = useUserlandCache<SwSystemEntities>(`shopware:${accessToken}:system-entities`);
@@ -68,6 +70,6 @@ export const getCachedSystemEntities = async (client: StorefrontClient) => {
     return cachedSystemEntities;
   }
   const systemEntities = await getSystemEntities(client);
-  await cache.setItem('default', systemEntities);
+  await cache.setItem('default', systemEntities, { ttl: SYSTEM_ENTITIES_TTL });
   return systemEntities;
 };

@@ -10,9 +10,8 @@ import {
   ProductVariantQuantityRule,
   ProductVariantShipping,
 } from '@laioutr-core/canonical-types/entity/product-variant';
-import { variantsFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
-import { resolveRequestedFields } from '../../orchestr-helper/requestedFields';
+import { resolveProductVariantFields } from '../../orchestr-helper/requestedFields';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 
 export default defineShopwareComponentResolver({
@@ -28,18 +27,15 @@ export default defineShopwareComponentResolver({
     ProductVariantShipping,
     ProductVariantOptions,
   ],
-  resolve: async ({ entityIds, context, clientEnv, $entity, requestedComponents, passthrough }) => {
+  resolve: async ({ entityIds, context, clientEnv, $entity, requestedComponents }) => {
     const { currency } = clientEnv;
 
-    const response =
-      passthrough.has(variantsFragmentToken) ?
-        { data: { elements: passthrough.get(variantsFragmentToken) } }
-      : await context.storefrontClient.invoke('readProduct post /product', {
-          body: {
-            ids: entityIds,
-            ...resolveRequestedFields({ requestedComponents, requestedLinks: {} }),
-          },
-        });
+    const response = await context.storefrontClient.invoke('readProduct post /product', {
+      body: {
+        ids: entityIds,
+        ...resolveProductVariantFields({ requestedComponents }),
+      },
+    });
 
     return {
       entities: (response.data.elements ?? []).map((entity) =>

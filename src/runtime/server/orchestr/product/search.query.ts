@@ -1,8 +1,8 @@
 import { components } from '@shopware/api-client/api-types';
 import { ProductSearchQuery } from '@laioutr-core/canonical-types/ecommerce';
-import { productsFragmentToken, productVariantsFragmentToken } from '../../const/passthroughTokens';
+import { cacheProductParentIds } from '../../composable/useGetProductParentId';
+import { parentIdToDefaultVariantIdToken } from '../../const/passthroughTokens';
 import { defineShopwareQuery } from '../../middleware/defineShopware';
-import { resolveRequestedFields } from '../../orchestr-helper/requestedFields';
 import {
   mapSelectedFiltersToShopwareFilters,
   mapShopwareAggregationToAvailableFilters,
@@ -21,11 +21,12 @@ export default defineShopwareQuery(
       // Shopware API client exposes incorrect/incomplete types for this endpoint's body :<
       body: {
         search: query,
-        /* FIXME: SDK is ignoring pagination for this endpoint */
-        page: pagination.page,
+        p: pagination.page,
         limit: pagination.limit,
-        filter: [...(swFilters ?? []), { type: 'equals', field: 'parentId', value: null }],
-        ...resolveRequestedFields({ requestedComponents, requestedLinks }),
+        filter: [...(swFilters ?? [])],
+        includes: {
+          product: ['id', 'parentId'],
+        },
         'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
         'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
         manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
@@ -33,24 +34,21 @@ export default defineShopwareQuery(
       } as unknown as { search: string } & components['schemas']['ProductListingFlags'],
     });
 
-    passthrough.set(productsFragmentToken, response.data.elements);
-    passthrough.set(
-      productVariantsFragmentToken,
-      response.data.elements.reduce(
-        (acc, curr) => ({
-          ...acc,
-          [curr.parentId ?? curr.id]: curr.children,
-        }),
-        {}
-      )
-    );
-
     // Shopware API client exposes incorrect types for aggregations :<
     const availableFilters = mapShopwareAggregationToAvailableFilters(response.data.aggregations as unknown as ShopwareAggregations);
     const availableSortings = mapShopwareSortingToOrchestr(response.data.availableSortings);
 
+    // Tell the product-resolver which variants to use.
+    const parentIdToDefaultVariantId = Object.fromEntries(
+      response.data.elements.map((product) => [product.parentId ?? product.id, product.id])
+    );
+    passthrough.set(parentIdToDefaultVariantIdToken, parentIdToDefaultVariantId);
+
+    cacheProductParentIds(response.data.elements.map((product) => [product.id, product.parentId ?? product.id]));
+
     return {
-      ids: response.data.elements.map((product) => product.id),
+      // Return the parent-id, in case the received product is a variant
+      ids: response.data.elements.map((product) => product.parentId ?? product.id),
       total: response.data.total,
       availableFilters,
       availableSortings,

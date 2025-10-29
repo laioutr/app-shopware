@@ -3,7 +3,7 @@ import { ProductVariantsLink } from '@laioutr-core/canonical-types/ecommerce';
 import { MediaIncludes } from '../const/includes';
 import { ShopwareAssociationsQuery, ShopwareIncludesQuery } from '../types/shopware';
 
-const eliminateDuplicates = (arr: unknown[]) => Array.from(new Set(arr));
+const unique = <T>(arr: T[]) => Array.from(new Set(arr));
 
 export const resolveRequestedFields = ({
   requestedComponents,
@@ -57,7 +57,7 @@ export const resolveRequestedFields = ({
   } as ShopwareAssociationsQuery;
 
   const includes = {
-    product: eliminateDuplicates([
+    product: unique([
       'id',
       'parentId',
       ...(requestedComponents.includes('base') ? ['name', 'seoUrls'] : []),
@@ -79,4 +79,44 @@ export const resolveRequestedFields = ({
   } as ShopwareIncludesQuery;
 
   return { associations, includes };
+};
+
+export const resolveProductVariantFields = ({ requestedComponents }: { requestedComponents: string[] }) => {
+  const associations: ShopwareAssociationsQuery = {
+    cover: { associations: { media: {} } }, // main image
+    media: { associations: { media: {} } }, // gallery images (via product_media -> media)
+    options: { associations: { group: {} } }, // variant options like Color/Size + their group names
+  };
+
+  const includes: ShopwareIncludesQuery = {
+    product: [
+      'id',
+      'parentId',
+      'name',
+      'productNumber',
+      'ean',
+      'available',
+      'availableStock',
+      'stock',
+      'minPurchase',
+      'purchaseSteps',
+      'maxPurchase',
+      'calculatedPrice',
+      'calculatedPrices',
+      'cover',
+      'media',
+      'options',
+      'optionIds',
+      'translated',
+    ],
+    product_media: ['id', 'mediaId', 'media'],
+    media: MediaIncludes,
+    property_group_option: ['id', 'name', 'group'],
+    property_group: ['id', 'name'],
+  };
+
+  return {
+    associations,
+    includes,
+  };
 };
