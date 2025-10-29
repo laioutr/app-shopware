@@ -1,5 +1,11 @@
 # @laioutr-app/shopware
 
+## 0.8.0
+
+### Minor Changes
+
+- 2b334e3: Implement passthrough data
+
 ## 0.7.12
 
 ### Patch Changes
