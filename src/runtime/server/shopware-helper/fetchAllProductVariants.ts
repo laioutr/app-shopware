@@ -7,6 +7,10 @@ export const fetchAllProducts = async (
 ) => {
   const fields = resolveProductFields({ loadVariants });
 
+  if (productIds.length === 0) {
+    return [];
+  }
+
   const response = await storefrontClient.invoke('readProduct post /product', {
     body: {
       ids: productIds,
