@@ -1,7 +1,7 @@
 import { ProductsByCategoryIdQuery } from '@laioutr-core/canonical-types/ecommerce';
-import { productsFragmentToken, productVariantsFragmentToken } from '../../const/passthroughTokens';
+import { cacheProductParentIds } from '../../composable/useGetProductParentId';
+import { parentIdToDefaultVariantIdToken } from '../../const/passthroughTokens';
 import { defineShopwareQuery } from '../../middleware/defineShopware';
-import { resolveRequestedFields } from '../../orchestr-helper/requestedFields';
 import {
   mapSelectedFiltersToShopwareFilters,
   mapShopwareAggregationToAvailableFilters,
@@ -11,7 +11,7 @@ import { mapShopwareSortingToOrchestr } from '../../shopware-helper/sortingMappe
 
 export default defineShopwareQuery(
   ProductsByCategoryIdQuery,
-  async ({ context, input, pagination, filter: selectedFilters, sorting, passthrough, requestedComponents, requestedLinks }) => {
+  async ({ context, input, pagination, filter: selectedFilters, sorting, passthrough }) => {
     const { categoryId } = input;
 
     const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters) : {};
@@ -21,9 +21,11 @@ export default defineShopwareQuery(
       body: {
         page: pagination.page,
         limit: pagination.limit,
-        filter: [...(swFilters ?? []), { type: 'equals', field: 'parentId', value: null }],
+        filter: [...(swFilters ?? [])],
         order: sorting,
-        ...resolveRequestedFields({ requestedComponents, requestedLinks }),
+        includes: {
+          product: ['id', 'parentId'],
+        },
         'total-count-mode': 'exact',
         'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
         'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
@@ -32,25 +34,21 @@ export default defineShopwareQuery(
       },
     });
 
-    passthrough.set(productsFragmentToken, response.data.elements);
-    passthrough.set(
-      productVariantsFragmentToken,
-      response.data.elements.reduce(
-        (acc, curr) => ({
-          ...acc,
-          [curr.parentId ?? curr.id]: curr.children?.length ? curr.children : [curr],
-        }),
-        {}
-      )
-    );
-
     // Shopware API client exposes incorrect types for aggregations :<
     const availableFilters = mapShopwareAggregationToAvailableFilters(response.data.aggregations as unknown as ShopwareAggregations);
-
     const availableSortings = mapShopwareSortingToOrchestr(response.data.availableSortings);
 
+    // Tell the product-resolver which variants to use.
+    const parentIdToDefaultVariantId = Object.fromEntries(
+      response.data.elements.map((product) => [product.parentId ?? product.id, product.id])
+    );
+    passthrough.set(parentIdToDefaultVariantIdToken, parentIdToDefaultVariantId);
+
+    cacheProductParentIds(response.data.elements.map((product) => [product.id, product.parentId ?? product.id]));
+
     return {
-      ids: response.data.elements.map((product) => product.id),
+      // Return the parent-id, in case the received product is a variant
+      ids: response.data.elements.map((product) => product.parentId ?? product.id),
       total: response.data.total,
       availableSortings,
       availableFilters,

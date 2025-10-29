@@ -11,13 +11,15 @@ export default defineShopwareQuery(ProductBySlugQuery, async ({ context, input, 
     throw new Error(`No product found for slug: ${input.slug}`);
   }
 
+  // We need to figure out the parent-id of the product, because the product-resolver expects the parent-id. SeoResolver might return a variant-id.
   const getProductParentId = useGetProductParentId(context.storefrontClient);
   const parentId = await getProductParentId(seoEntry.id);
+  const productId = parentId ?? seoEntry.id; // If no parent-id is found, use the seo-entry-id as the product-id.
 
   // Tell the product-resolver which variant to use.
-  passthrough.set(parentIdToDefaultVariantIdToken, { [parentId ?? seoEntry.id]: seoEntry.id });
+  passthrough.set(parentIdToDefaultVariantIdToken, { [productId]: seoEntry.id });
 
   return {
-    id: parentId ?? seoEntry.id,
+    id: productId,
   };
 });

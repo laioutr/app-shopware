@@ -10,7 +10,7 @@ import {
   ProductSeo,
 } from '@laioutr-core/canonical-types/entity/product';
 import { FALLBACK_IMAGE } from '../../const/fallbacks';
-import { productsFragmentToken } from '../../const/passthroughTokens';
+import { parentIdToDefaultVariantIdToken, productsFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { resolveRequestedFields } from '../../orchestr-helper/requestedFields';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
@@ -22,12 +22,18 @@ export default defineShopwareComponentResolver({
   entityType: 'Product',
   provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductSeo, ProductDescription],
   resolve: async ({ entityIds, requestedComponents, context, $entity, passthrough }) => {
+    const parentIdToDefaultVariantId = passthrough.get(parentIdToDefaultVariantIdToken);
+    const variantIds = entityIds.map((id) => {
+      const defaultVariantId = parentIdToDefaultVariantId?.[id];
+      return defaultVariantId ?? id;
+    });
+
     const response =
       passthrough.has(productsFragmentToken) ?
         { data: { elements: passthrough.get(productsFragmentToken) ?? [] } }
       : await context.storefrontClient.invoke('readProduct post /product', {
           body: {
-            ids: entityIds,
+            ids: variantIds,
             ...resolveRequestedFields({ requestedComponents, requestedLinks: {} }),
           },
         });

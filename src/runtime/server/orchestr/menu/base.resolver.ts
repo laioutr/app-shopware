@@ -69,4 +69,7 @@ export default defineShopwareComponentResolver({
       ),
     };
   },
+  cache: {
+    ttl: '10 minutes',
+  },
 });
