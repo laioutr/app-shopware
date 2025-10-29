@@ -5,7 +5,11 @@ import { ShopwareAssociationsQuery, ShopwareIncludesQuery } from '../types/shopw
 
 const unique = <T>(arr: T[]) => Array.from(new Set(arr));
 
-export const resolveRequestedFields = ({
+/** Add an empty association object to the shopware-request if the component is requested */
+const addAssociation = (name: string, add: boolean, association: ShopwareAssociationsQuery = {}) => (add ? { [name]: association } : {});
+
+/** @deprecated Use resolveProductFields instead */
+const _resolveRequestedFields = ({
   requestedComponents,
   requestedLinks,
 }: {
@@ -13,6 +17,7 @@ export const resolveRequestedFields = ({
   requestedLinks: Record<string, QueryWireRequestQueryLink>;
 }) => {
   const requestedVariants = requestedLinks[ProductVariantsLink];
+  const variantFields = requestedVariants ? resolveProductVariantFields() : undefined;
 
   const associations = {
     ...(requestedComponents.includes('media') ? { cover: { associations: { media: {} } }, media: { associations: { media: {} } } } : {}), // gallery images (via product_media -> media)
@@ -21,36 +26,7 @@ export const resolveRequestedFields = ({
     ...(requestedVariants ?
       {
         children: {
-          associations: {
-            // base → resolve option/group labels + cover media
-            ...(requestedVariants?.components?.includes('base') ?
-              {
-                options: { associations: { group: {} } },
-                cover: { associations: { media: {} } },
-              }
-            : {}),
-
-            // info → manufacturer entity
-            ...(requestedVariants?.components?.includes('info') ? { manufacturer: {} } : {}),
-
-            ...(requestedVariants?.components?.includes('media') ?
-              { cover: { associations: { media: {} } }, media: { associations: { media: {} } } }
-            : {}), // gallery images (via product_media -> media)
-
-            ...(requestedVariants?.components?.includes('options') ? { options: { associations: { group: {} } } } : {}), // variant options like Color/Size + their group names
-
-            // shipping → deliveryTime entity
-            ...(requestedVariants?.components?.includes('shipping') ? { deliveryTime: {} } : {}),
-
-            // quantityPrices / quantityRule → product.prices[] (+rule if requested)
-            ...(requestedVariants?.components?.includes('quantityPrices') || requestedVariants?.components?.includes('quantityRule') ?
-              {
-                prices: {
-                  associations: requestedVariants?.components?.includes('quantityRule') ? { rule: {} } : {},
-                },
-              }
-            : {}),
-          },
+          associations: variantFields?.associations ?? {},
         },
       }
     : {}),
@@ -71,6 +47,7 @@ export const resolveRequestedFields = ({
         ['minPurchase', 'purchaseSteps', 'maxPurchase', 'calculatedPrice', 'calculatedPrices']
       : []),
       ...(requestedLinks['ecommerce/product/variants'] ? ['children'] : []),
+      ...(variantFields?.includes?.product ?? []),
     ]),
     product_media: requestedComponents.includes('media') ? ['id', 'mediaId', 'media'] : [],
     media: requestedComponents.includes('media') ? MediaIncludes : [],
@@ -81,11 +58,73 @@ export const resolveRequestedFields = ({
   return { associations, includes };
 };
 
-export const resolveProductVariantFields = ({ requestedComponents }: { requestedComponents: string[] }) => {
+const mergeIncludes = (includes1: ShopwareIncludesQuery, includes2: ShopwareIncludesQuery) => {
+  const merged: ShopwareIncludesQuery = {};
+  for (const [key, value] of Object.entries(includes1)) {
+    merged[key] = [...value];
+  }
+  for (const [key, value] of Object.entries(includes2)) {
+    merged[key] = [...(merged[key] ?? []), ...value];
+  }
+  for (const [key, value] of Object.entries(merged)) {
+    merged[key] = unique([...value]);
+  }
+  return merged;
+};
+
+export const resolveProductFields = ({ loadVariants }: { loadVariants: boolean }) => {
+  const variantFields = loadVariants ? resolveProductVariantFields() : undefined;
+
+  const associations: ShopwareAssociationsQuery = {
+    cover: { associations: { media: {} } },
+    media: { associations: { media: {} } },
+    ...addAssociation('children', loadVariants, variantFields?.associations ? { associations: variantFields?.associations } : {}),
+  };
+
+  const includes: ShopwareIncludesQuery = mergeIncludes(
+    {
+      product: [
+        'id',
+        'parentId',
+        'name',
+        'seoUrls',
+        'productNumber',
+        'ean',
+        'translated',
+        'manufacturer',
+        'description',
+        'cover',
+        'metaTitle',
+        'metaDescription',
+        'cover',
+        'media',
+        'minPurchase',
+        'purchaseSteps',
+        'maxPurchase',
+        'calculatedPrice',
+        'calculatedPrices',
+        'children',
+      ],
+      product_media: ['id', 'mediaId', 'media'],
+      media: MediaIncludes,
+    },
+    variantFields?.includes ?? {}
+  );
+
+  return {
+    associations,
+    includes,
+  };
+};
+
+export const resolveProductVariantFields = () => {
   const associations: ShopwareAssociationsQuery = {
     cover: { associations: { media: {} } }, // main image
     media: { associations: { media: {} } }, // gallery images (via product_media -> media)
     options: { associations: { group: {} } }, // variant options like Color/Size + their group names
+    manufacturer: {},
+    deliveryTime: {},
+    prices: { associations: { rule: {} } },
   };
 
   const includes: ShopwareIncludesQuery = {
@@ -108,6 +147,9 @@ export const resolveProductVariantFields = ({ requestedComponents }: { requested
       'options',
       'optionIds',
       'translated',
+      'manufacturer',
+      'deliveryTime',
+      'prices',
     ],
     product_media: ['id', 'mediaId', 'media'],
     media: MediaIncludes,

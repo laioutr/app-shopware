@@ -17,7 +17,5 @@ export const parentIdToDefaultVariantIdToken = createPassthroughToken<Record<str
 );
 
 export const productsFragmentToken = createPassthroughToken<ShopwareProduct[]>('@laioutr-app/shopware/productsFragment');
-export const productVariantsFragmentToken = createPassthroughToken<Record<string, ShopwareProduct[]>>(
-  '@laioutr-app/shopware/productVariantsFragment'
-);
-export const variantsFragmentToken = createPassthroughToken<ShopwareProduct[]>('@laioutr-app/shopware/variantsFragment');
+
+export const productVariantsToken = createPassthroughToken<ShopwareProduct[]>('@laioutr-app/shopware/productVariants');
