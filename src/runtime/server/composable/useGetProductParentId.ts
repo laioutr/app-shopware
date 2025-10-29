@@ -3,7 +3,7 @@ import { StorefrontClient } from '../types/shopware';
 
 const useProductParentIdCache = () => useUserlandCache<string>('shopware/product-parent-id');
 
-const PRODUCT_PARENT_ID_CACHE_TTL = 60 * 60 * 24; // 1 day
+const PRODUCT_PARENT_ID_CACHE_TTL = 60 * 60 * 24 * 7; // 7 days
 
 export const useGetProductParentId = (storefrontClient: StorefrontClient) => {
   const cache = useProductParentIdCache();
@@ -42,7 +42,7 @@ export const cacheProductParentIds = (productIdsToParentIds: [productId: string,
     productIdsToParentIds.map(([productId, parentId]) => ({
       key: productId,
       value: parentId,
-      ttl: PRODUCT_PARENT_ID_CACHE_TTL,
-    }))
+    })),
+    { ttl: PRODUCT_PARENT_ID_CACHE_TTL }
   );
 };

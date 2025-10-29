@@ -10,8 +10,8 @@ import {
   ProductVariantQuantityRule,
   ProductVariantShipping,
 } from '@laioutr-core/canonical-types/entity/product-variant';
-import { MediaIncludes } from '../../const/includes';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
+import { resolveProductVariantFields } from '../../orchestr-helper/requestedFields';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 
 export default defineShopwareComponentResolver({
@@ -27,42 +27,13 @@ export default defineShopwareComponentResolver({
     ProductVariantShipping,
     ProductVariantOptions,
   ],
-  resolve: async ({ entityIds, context, clientEnv, $entity }) => {
+  resolve: async ({ entityIds, context, clientEnv, $entity, requestedComponents }) => {
     const { currency } = clientEnv;
 
     const response = await context.storefrontClient.invoke('readProduct post /product', {
       body: {
         ids: entityIds,
-        associations: {
-          cover: { associations: { media: {} } }, // main image
-          media: { associations: { media: {} } }, // gallery images (via product_media -> media)
-          options: { associations: { group: {} } }, // variant options like Color/Size + their group names
-        },
-        includes: {
-          product: [
-            'id',
-            'parentId',
-            'name',
-            'productNumber',
-            'ean',
-            'available',
-            'availableStock',
-            'stock',
-            'minPurchase',
-            'purchaseSteps',
-            'maxPurchase',
-            'calculatedPrice',
-            'calculatedPrices',
-            'cover',
-            'media',
-            'options',
-            'optionIds',
-          ],
-          product_media: ['id', 'mediaId', 'media'],
-          media: MediaIncludes,
-          property_group_option: ['id', 'name', 'group'],
-          property_group: ['id', 'name'],
-        },
+        ...resolveProductVariantFields({ requestedComponents }),
       },
     });
 

@@ -1,3 +1,4 @@
+import { useRuntimeConfig, useUserlandCache } from '#imports';
 import { StorefrontClient } from '../../types/shopware';
 import { swTranslated } from '../swTranslated';
 
@@ -57,4 +58,18 @@ export const getSystemEntities = async (client: StorefrontClient) => {
     countries,
     locales,
   };
+};
+
+const SYSTEM_ENTITIES_TTL = 60 * 60 * 24; // 1 day
+
+export const getCachedSystemEntities = async (client: StorefrontClient) => {
+  const accessToken = useRuntimeConfig()['@laioutr-app/shopware'].accessToken;
+  const cache = useUserlandCache<SwSystemEntities>(`shopware:${accessToken}:system-entities`);
+  const cachedSystemEntities = await cache.getItem('default');
+  if (cachedSystemEntities) {
+    return cachedSystemEntities;
+  }
+  const systemEntities = await getSystemEntities(client);
+  await cache.setItem('default', systemEntities, { ttl: SYSTEM_ENTITIES_TTL });
+  return systemEntities;
 };

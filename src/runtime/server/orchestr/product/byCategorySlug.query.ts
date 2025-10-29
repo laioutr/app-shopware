@@ -21,6 +21,7 @@ export default defineShopwareQuery(
     }
 
     const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters) : {};
+
     const response = await context.storefrontClient.invoke('readProductListing post /product-listing/{categoryId}', {
       pathParams: { categoryId: seoEntry.id },
       body: {
@@ -41,7 +42,6 @@ export default defineShopwareQuery(
 
     // Shopware API client exposes incorrect types for aggregations :<
     const availableFilters = mapShopwareAggregationToAvailableFilters(response.data.aggregations as unknown as ShopwareAggregations);
-
     const availableSortings = mapShopwareSortingToOrchestr(response.data.availableSortings);
 
     // Tell the product-resolver which variants to use.

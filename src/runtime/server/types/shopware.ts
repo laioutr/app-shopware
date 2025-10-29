@@ -9,6 +9,9 @@ export type ShopwareManufacturer = components['schemas']['ProductManufacturer'];
 export type ShopwareSeoUrl = components['schemas']['SeoUrl'];
 export type StorefrontClient = ReturnType<typeof createAPIClient<operations>>;
 
+export type ShopwareIncludesQuery = components['schemas']['Include'];
+export type ShopwareAssociationsQuery = components['schemas']['Association'];
+
 export type WithSeoUrl = {
   seoUrls?: ShopwareSeoUrl[];
 };

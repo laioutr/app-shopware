@@ -1,5 +1,5 @@
 import { ProductsByCategoryIdQuery } from '@laioutr-core/canonical-types/ecommerce';
-
+import { cacheProductParentIds } from '../../composable/useGetProductParentId';
 import { parentIdToDefaultVariantIdToken } from '../../const/passthroughTokens';
 import { defineShopwareQuery } from '../../middleware/defineShopware';
 import {
@@ -24,8 +24,9 @@ export default defineShopwareQuery(
         filter: [...(swFilters ?? [])],
         order: sorting,
         includes: {
-          product: ['id'],
+          product: ['id', 'parentId'],
         },
+        'total-count-mode': 'exact',
         'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
         'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
         manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
@@ -35,7 +36,6 @@ export default defineShopwareQuery(
 
     // Shopware API client exposes incorrect types for aggregations :<
     const availableFilters = mapShopwareAggregationToAvailableFilters(response.data.aggregations as unknown as ShopwareAggregations);
-
     const availableSortings = mapShopwareSortingToOrchestr(response.data.availableSortings);
 
     // Tell the product-resolver which variants to use.
@@ -44,8 +44,11 @@ export default defineShopwareQuery(
     );
     passthrough.set(parentIdToDefaultVariantIdToken, parentIdToDefaultVariantId);
 
+    cacheProductParentIds(response.data.elements.map((product) => [product.id, product.parentId ?? product.id]));
+
     return {
-      ids: response.data.elements.map((product) => product.id),
+      // Return the parent-id, in case the received product is a variant
+      ids: response.data.elements.map((product) => product.parentId ?? product.id),
       total: response.data.total,
       availableSortings,
       availableFilters,
