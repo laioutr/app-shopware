@@ -48,7 +48,7 @@
     "slug": "^8.2.3"
   },
   "devDependencies": {
-    "@laioutr/eslint-config": "workspace:*",
+    "@laioutr/eslint-config": "catalog:repo-tools",
     "@nuxt/module-builder": "catalog:nuxt-core",
     "@nuxt/schema": "catalog:nuxt-core",
     "@nuxt/test-utils": "catalog:nuxt-core",
