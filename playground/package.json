@@ -1,13 +1,16 @@
 {
-  "name": "my-laioutr-app-playground",
+  "name": "@laioutr-app/shopware-playground",
   "private": true,
   "type": "module",
+  "main": "fake-main.js",
   "scripts": {
-    "build": "nuxi build",
-    "dev": "nuxi dev",
-    "generate": "nuxi generate"
+    "dev": "infisical run -- nuxi dev",
+    "setup": "infisical run -- nuxi prepare"
   },
   "dependencies": {
-    "nuxt": "3.16.2"
+    "@laioutr-app/shopware": "workspace:*",
+    "@laioutr-core/orchestr": "workspace:*",
+    "@laioutr-core/orchestr-devtools": "workspace:*",
+    "nuxt": "catalog:nuxt-core"
   }
 }

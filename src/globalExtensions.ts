@@ -10,10 +10,10 @@ declare module 'vue' {
 
 declare module '@nuxt/schema' {
   interface PublicRuntimeConfig {
-    ['my-laioutr-app']: RuntimeConfigModulePublic;
+    ['@laioutr-app/shopware']: RuntimeConfigModulePublic;
   }
   interface RuntimeConfig {
-    ['my-laioutr-app']: RuntimeConfigModulePrivate;
+    ['@laioutr-app/shopware']: RuntimeConfigModulePrivate;
   }
 }
 

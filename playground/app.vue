@@ -1,3 +1,5 @@
 <template>
-  <LfcApp />
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
 </template>
