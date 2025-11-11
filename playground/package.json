@@ -1,0 +1,13 @@
+{
+  "name": "my-laioutr-app-playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxi build",
+    "dev": "nuxi dev",
+    "generate": "nuxi generate"
+  },
+  "dependencies": {
+    "nuxt": "3.16.2"
+  }
+}
