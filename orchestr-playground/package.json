@@ -1,5 +1,5 @@
 {
-  "name": "my-laioutr-app-orchestr-playground",
+  "name": "@laioutr-app/shopware-playground",
   "private": true,
   "type": "module",
   "scripts": {

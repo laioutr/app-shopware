@@ -1,68 +1,92 @@
 {
-  "name": "@laioutr-app/shopware",
-  "version": "0.8.5",
-  "description": "Shopware integration for laioutr",
-  "license": "UNLICENSED",
-  "sideEffects": false,
+  "name": "@laioutr/app-shopware",
+  "version": "1.0.0",
+  "description": "Shopware integration for Laioutr",
+  "repository": "laioutr/app-shopware",
+  "license": "MIT",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/types.d.mts",
       "import": "./dist/module.mjs"
-    },
-    "./runtime": {
-      "types": "./dist/runtime/index.d.ts",
-      "import": "./dist/runtime/index.js"
     }
   },
   "main": "./dist/module.mjs",
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/types.d.mts"
+      ]
+    }
+  },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf dist && nuxt-module-build build",
-    "lint": "eslint --cache --cache-location ../../.eslintcache",
-    "release": "pnpm build && pnpm publish",
-    "setup": "nuxt-module-build prepare",
-    "stub": "nuxt-module-build build --stub",
-    "stub:setup": "pnpm run setup",
-    "test": "vitest run && nuxi typecheck",
+    "dev": "npm run dev:prepare && nuxi dev playground",
+    "dev:build": "nuxi build playground",
+    "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxi prepare playground",
+    "lint": "eslint .",
+    "orchestr-dev": "infisical run -c \"npm run orchestr-dev:prepare && nuxi dev --stack-trace orchestr-playground\"",
+    "orchestr-dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxi prepare orchestr-playground",
+    "prepack": "nuxt-module-build build",
+    "release": "npm run lint && npm run test && npm run prepack && changelogen --release && npm publish && git push --follow-tags",
+    "test": "vitest run",
+    "test:types": "vue-tsc --noEmit && cd playground && vue-tsc --noEmit",
     "test:watch": "vitest watch"
   },
-  "lint-staged": {
-    "*.{js,mjs,jsx,ts,tsx,vue}": [
-      "pnpm lint --fix",
-      "prettier --cache --write"
-    ],
-    "*.{css,scss,md,html,json}": "prettier --cache --write"
-  },
   "dependencies": {
-    "@laioutr-core/canonical-types": "workspace:*",
-    "@laioutr-core/frontend-core": "workspace:*",
-    "@laioutr-core/kit": "workspace:*",
-    "@nuxt/kit": "catalog:nuxt-core",
-    "@nuxt/schema": "catalog:nuxt-core",
+    "@laioutr-core/canonical-types": "^0.14.0",
+    "@laioutr-core/frontend-core": "^0.20.5",
+    "@laioutr-core/kit": "^0.7.8",
+    "@nuxt/kit": "3.16.2",
+    "@pinia/colada": "0.17.1",
+    "@pinia/colada-nuxt": "0.2.1",
     "@screeny05/ts-money": "1.1.0",
     "@shopware/api-client": "1.2.1",
-    "defu": "6.1.4",
-    "slug": "^8.2.3"
+    "@vueuse/core": "13.1.0",
+    "pinia": "3.0.2",
+    "slug": "^8.2.3",
+    "zod": "3.25.61"
   },
   "devDependencies": {
-    "@laioutr/eslint-config": "catalog:repo-tools",
-    "@nuxt/module-builder": "catalog:nuxt-core",
-    "@nuxt/schema": "catalog:nuxt-core",
-    "@nuxt/test-utils": "catalog:nuxt-core",
+    "@laioutr-app/ui": "1.18.6",
+    "@laioutr-core/orchestr-devtools": "1.5.3",
+    "@laioutr/eslint-config": "1.5.0",
+    "@laioutr/logger": "0.5.1",
+    "@laioutr/prettier-config": "1.1.0",
+    "@nuxt/devtools": "2.5.0",
+    "@nuxt/devtools-ui-kit": "2.5.0",
+    "@nuxt/module-builder": "1.0.1",
+    "@nuxt/schema": "3.16.2",
+    "@nuxt/test-utils": "3.19.1",
     "@types/node": "latest",
-    "@types/slug": "^5.0.7",
-    "@vue/test-utils": "^2.4.6",
-    "nitropack": "catalog:nuxt-core",
-    "nodemon": "^3.1.7",
-    "nuxt": "catalog:nuxt-core",
-    "typescript": "catalog:nuxt-core",
-    "vitest": "catalog:nuxt-core",
-    "vue-tsc": "catalog:nuxt-core"
+    "changelogen": "0.6.2",
+    "eslint": "9.35.0",
+    "nuxt": "3.16.2",
+    "typescript": "5.8.3",
+    "vitest": "3.1.1",
+    "vue-tsc": "2.2.10"
   },
-  "publishConfig": {
-    "registry": "https://npm.laioutr.cloud/"
+  "pnpm": {
+    "overrides": {
+      "@nuxt/devtools": "2.5.0",
+      "@nuxt/kit": "3.16.2",
+      "@nuxt/module-builder": "1.0.1",
+      "@nuxt/schema": "3.16.2",
+      "@nuxt/test-utils": "3.19.1",
+      "@nuxtjs/i18n": "8.4.0",
+      "@types/node": "20.14.9",
+      "nitropack": "2.9.6",
+      "nuxt": "3.16.2",
+      "typescript": "5.8.3",
+      "unbuild": "3.5.0",
+      "unenv": "1.10.0",
+      "vite": "5.3.1",
+      "vite-plugin-inspect": "0.8.3",
+      "vitest": "3.1.1",
+      "vue": "3.5.22",
+      "vue-tsc": "2.2.10"
+    }
   }
 }

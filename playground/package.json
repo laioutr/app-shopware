@@ -2,15 +2,33 @@
   "name": "@laioutr-app/shopware-playground",
   "private": true,
   "type": "module",
-  "main": "fake-main.js",
   "scripts": {
-    "dev": "infisical run -- nuxi dev",
-    "setup": "infisical run -- nuxi prepare"
+    "build": "nuxi build",
+    "dev": "nuxi dev",
+    "generate": "nuxi generate"
   },
   "dependencies": {
-    "@laioutr-app/shopware": "workspace:*",
-    "@laioutr-core/orchestr": "workspace:*",
-    "@laioutr-core/orchestr-devtools": "workspace:*",
-    "nuxt": "catalog:nuxt-core"
+    "nuxt": "3.16.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "@nuxt/devtools": "2.5.0",
+      "@nuxt/kit": "3.16.2",
+      "@nuxt/module-builder": "1.0.1",
+      "@nuxt/schema": "3.16.2",
+      "@nuxt/test-utils": "3.19.1",
+      "@nuxtjs/i18n": "8.4.0",
+      "@types/node": "20.14.9",
+      "nitropack": "2.9.6",
+      "nuxt": "3.16.2",
+      "typescript": "5.8.3",
+      "unbuild": "3.5.0",
+      "unenv": "1.10.0",
+      "vite": "5.3.1",
+      "vite-plugin-inspect": "0.8.3",
+      "vitest": "3.1.1",
+      "vue": "3.5.22",
+      "vue-tsc": "2.2.10"
+    }
   }
 }

@@ -15,7 +15,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   telemetry: false,
   compatibilityDate: '2024-11-11',
-  '@laioutr-app/shopware': {
+  '@laioutr/app-shopware': {
     endpoint: import.meta.env.SHOPWARE_DEMO_ENDPOINT,
     accessToken: import.meta.env.SHOPWARE_DEMO_ACCESS_TOKEN,
     adminEndpoint: import.meta.env.SHOPWARE_DEMO_ADMIN_ENDPOINT,
