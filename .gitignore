@@ -1,62 +1,85 @@
-# Laioutr files
-laioutrrc.json
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+.idea/.gitignore
 
 # Dependencies
-node_modules
+**/node_modules
+.pnp
+.pnp.js
+.yarn/install-state.gz
 
-# NPM
+# We use npmrc-replace-env to generate this file from .npmrc.config
 .npmrc
 
-# Logs
-*.log*
+# Testing
+/apps/cockpit/coverage
 
-# Temp directories
-.temp
-.tmp
-.cache
+# Next.js
+.next
+/apps/cockpit/out
 
-# Yarn
-**/.yarn/cache
-**/.yarn/*state*
-
-# Generated dirs
-dist
-
-# Nuxt
-.nuxt
+# Nuxt dev/build outputs
 .output
 .data
-.vercel_build_output
-.build-*
-.netlify
+.nuxt
+.nitro
+.cache
+dist
 
-# Env
-.env
+# Production
+/build
 
-# Testing
-reports
-coverage
-*.lcov
-.nyc_output
-
-# VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
-
-# Intellij idea
-*.iml
+# Misc
+.DS_Store
+*.pem
+.fleet
 .idea
 
-# OSX
-.DS_Store
-.AppleDouble
-.LSOverride
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel
+.wrangler
+
+# Turborepo
+.turbo
+
+# Typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Caches
+.eslintcache
+.prettiercache
+
+# Sentry Config File
+.sentryclirc
+
+# Logs
+logs
+*.log
+
+*storybook.log
+storybook-static
+
+# node debugging
+*.heapsnapshot
+
+# compiled discovery.html for orchestr devtools
+packages/orchestr-devtools/src/runtime/public/discovery
+
+# Automated docs generation ignored for now
+packages/canonical-types/docs
+
+# Store compiled ui-tokens in git
+!packages/ui-tokens/dist
+
+# Ignore shopify api-keys
+.graphqlrc.api-key.txt

@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 import srcModule from '../src/module';
 
 export default defineNuxtConfig({
@@ -9,12 +8,9 @@ export default defineNuxtConfig({
     '@laioutr-core/orchestr',
     '@laioutr-core/orchestr-devtools',
   ],
-  alias: {
-    '@laioutr-app/shopware': fileURLToPath(new URL('../src', import.meta.url)),
-  },
   devtools: { enabled: true },
   telemetry: false,
-  compatibilityDate: '2024-11-11',
+  compatibilityDate: '2025-11-11',
   '@laioutr/app-shopware': {
     endpoint: import.meta.env.SHOPWARE_DEMO_ENDPOINT,
     accessToken: import.meta.env.SHOPWARE_DEMO_ACCESS_TOKEN,
@@ -24,8 +20,7 @@ export default defineNuxtConfig({
   },
   vite: {
     optimizeDeps: {
-      // This MUST be in the playground's config
-      exclude: ['@nuxtjs/i18n'],
+      include: ['ajv', 'json-source-map', 'natural-compare-lite'],
     },
   },
 });
