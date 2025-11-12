@@ -5,7 +5,7 @@ import { defineShopwareAction } from '../../middleware/defineShopware';
 
 export default defineShopwareAction(AuthLoginAction, async ({ context, input, event }) => {
   try {
-    const config = useRuntimeConfig()['@laioutr-app/shopware'];
+    const config = useRuntimeConfig()['@laioutr/app-shopware'];
 
     context.storefrontClient.hook('onContextChanged', (newContextToken) => {
       setCookie(event, CONTEXT_TOKEN_COOKIE, newContextToken, {

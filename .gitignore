@@ -83,3 +83,5 @@ packages/canonical-types/docs
 
 # Ignore shopify api-keys
 .graphqlrc.api-key.txt
+
+laioutrrc.json

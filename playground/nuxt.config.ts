@@ -10,7 +10,7 @@ export default defineNuxtConfig({
     '@laioutr-core/orchestr-devtools',
   ],
   alias: {
-    '@laioutr-app/shopware': fileURLToPath(new URL('../src', import.meta.url)),
+    '@laioutr/app-shopware': fileURLToPath(new URL('../src', import.meta.url)),
   },
   devtools: { enabled: true },
   telemetry: false,

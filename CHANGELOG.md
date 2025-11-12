@@ -1,4 +1,4 @@
-# @laioutr-app/shopware
+# @laioutr/app-shopware
 
 ## 0.8.5
 

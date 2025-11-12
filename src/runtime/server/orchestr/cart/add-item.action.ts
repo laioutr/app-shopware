@@ -4,7 +4,7 @@ import { CONTEXT_TOKEN_COOKIE } from '../../const/cookieKeys';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 
 export default defineShopwareAction(CartAddItemsAction, async ({ event, context, input }) => {
-  const config = useRuntimeConfig()['@laioutr-app/shopware'];
+  const config = useRuntimeConfig()['@laioutr/app-shopware'];
 
   const { storefrontClient } = context;
 

@@ -9,8 +9,8 @@ import { CONTEXT_TOKEN_COOKIE } from '../const/cookieKeys';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: ignore not portable type TS2742
 export const shopwareClientFactory = (event: OrchestrArgsBase['event']): StorefrontClient => {
-  const config = useRuntimeConfig()['@laioutr-app/shopware'];
-
+  const config = useRuntimeConfig()['@laioutr/app-shopware'];
+  
   const contextTokenCookie = getCookie(event, CONTEXT_TOKEN_COOKIE);
 
   const client = createAPIClient<operations>({
