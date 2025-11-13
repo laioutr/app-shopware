@@ -8,6 +8,8 @@ export type ShopwareFilters = components['schemas']['Filters'];
 export type ShopwareManufacturer = components['schemas']['ProductManufacturer'];
 export type ShopwareSeoUrl = components['schemas']['SeoUrl'];
 export type StorefrontClient = ReturnType<typeof createAPIClient<operations>>;
+export type ShopwareCart = components['schemas']['Cart'];
+export type ShopwareCartLineItem = Required<components['schemas']['CartItems']>['items'][number];
 
 export type ShopwareIncludesQuery = components['schemas']['Include'];
 export type ShopwareAssociationsQuery = components['schemas']['Association'];
