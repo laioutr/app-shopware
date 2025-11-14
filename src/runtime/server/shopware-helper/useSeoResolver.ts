@@ -84,7 +84,7 @@ export const useSeoResolver = (storefrontClient: StorefrontClient) => {
       id: bestMatch.foreignKey,
       matchedPath: bestMatch.seoPathInfo,
     };
-    cache.setItem(cacheKey, entry, { ttl: SEO_ENTRY_TTL });
+    await cache.setItem(cacheKey, entry, { ttl: SEO_ENTRY_TTL });
     return entry;
   };
 
