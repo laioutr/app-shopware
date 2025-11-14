@@ -16,13 +16,7 @@ export default defineShopwareComponentResolver({
   label: 'Shopware Menu Connector',
   provides: [MenuItemBase],
   resolve: async ({ entityIds, context, passthrough, $entity }) => {
-    const categories = passthrough.get(categoriesToken);
-
-    if (!categories) {
-      throw new Error(
-        'Categories not found in passthrough. The component resolver does not request categories from shopware at the moment.'
-      );
-    }
+    const categories = passthrough.require(categoriesToken);
 
     return {
       entities: categories.map((category) =>
