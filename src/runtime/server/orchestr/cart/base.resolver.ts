@@ -1,3 +1,4 @@
+import { Money } from '@screeny05/ts-money';
 import { CartBase, CartCost } from '@laioutr-core/canonical-types/entity/cart';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 
@@ -12,7 +13,7 @@ export default defineShopwareComponentResolver({
     const cart = await storefrontClient.invoke('readCart get /checkout/cart');
 
     // helper to build Money objects
-    const money = (amount: number, currency: string) => ({ amount, currency });
+    const money = (amount: number, currency: string) => Money.fromDecimal({ amount, currency });
 
     // safe defaults
     const lineItems = cart.data?.lineItems ?? [];
