@@ -21,3 +21,7 @@ export const productsFragmentToken = createPassthroughToken<ShopwareProduct[]>('
 export const productVariantsToken = createPassthroughToken<ShopwareProduct[]>('@laioutr/app-shopware/productVariants');
 
 export const cartFragmentToken = createPassthroughToken<ShopwareCart>('@laioutr-app/shopify/cartFragment');
+
+export const suggestionResultsFragmentToken = createPassthroughToken<Array<{ id: string; type: string; title: string; url: string }>>(
+  '@laioutr/app-shopware/completionResults'
+);
