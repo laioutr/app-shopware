@@ -4,25 +4,12 @@ import { defineShopwareComponentResolver } from '../../middleware/defineShopware
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';
 
-const mapMenuItemReferenceType = (type: string): string => {
-  if (type === 'page') {
-    return 'page';
-  }
-  return type;
-};
-
 export default defineShopwareComponentResolver({
   entityType: 'MenuItem',
   label: 'Shopware Menu Connector',
   provides: [MenuItemBase],
-  resolve: async ({ entityIds, context, passthrough, $entity }) => {
-    const categories = passthrough.get(categoriesToken);
-
-    if (!categories) {
-      throw new Error(
-        'Categories not found in passthrough. The component resolver does not request categories from shopware at the moment.'
-      );
-    }
+  resolve: async ({ passthrough, $entity }) => {
+    const categories = passthrough.require(categoriesToken);
 
     return {
       entities: categories.map((category) =>
@@ -30,10 +17,11 @@ export default defineShopwareComponentResolver({
           id: category.id,
           base: () => {
             const baseItem = {
+              type: 'link',
               name: swTranslated(category, 'name'),
               childIds: category.children?.map((child) => child.id),
               parentId: category.parentId,
-            };
+            } as const;
 
             if (category.type === 'folder') {
               return {
@@ -44,18 +32,22 @@ export default defineShopwareComponentResolver({
             if (category.type === 'link') {
               return {
                 ...baseItem,
-                type: 'url',
-                href: category.internalLink ?? category.externalLink ?? '/',
+                link: {
+                  type: 'url',
+                  href: category.internalLink ?? category.externalLink ?? '/',
+                },
               };
             }
             if (category.type === 'page') {
               return {
                 ...baseItem,
-                type: 'reference',
-                reference: {
-                  type: category.linkType ?? 'category',
-                  slug: entitySlug(category),
-                  id: category.id,
+                link: {
+                  type: 'reference',
+                  reference: {
+                    type: category.linkType ?? 'category',
+                    slug: entitySlug(category),
+                    id: category.id,
+                  },
                 },
               };
             }

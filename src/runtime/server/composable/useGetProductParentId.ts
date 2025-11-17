@@ -1,4 +1,4 @@
-import { useUserlandCache } from '#imports';
+import { useEvent, useUserlandCache } from '#imports';
 import { StorefrontClient } from '../types/shopware';
 
 const useProductParentIdCache = () => useUserlandCache<string>('shopware/product-parent-id');
@@ -37,12 +37,15 @@ export const useGetProductParentId = (storefrontClient: StorefrontClient) => {
 
 /** Store parent-ids in the cache. */
 export const cacheProductParentIds = (productIdsToParentIds: [productId: string, parentId: string][]) => {
+  const event = useEvent();
   const cache = useProductParentIdCache();
-  cache.setItems(
-    productIdsToParentIds.map(([productId, parentId]) => ({
-      key: productId,
-      value: parentId,
-    })),
-    { ttl: PRODUCT_PARENT_ID_CACHE_TTL }
+  event.waitUntil(
+    cache.setItems(
+      productIdsToParentIds.map(([productId, parentId]) => ({
+        key: productId,
+        value: parentId,
+      })),
+      { ttl: PRODUCT_PARENT_ID_CACHE_TTL }
+    )
   );
 };
