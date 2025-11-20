@@ -44,7 +44,7 @@ export default defineShopwareComponentResolver({
                 link: {
                   type: 'reference',
                   reference: {
-                    type: category.linkType ?? 'category',
+                    type: category.linkType ?? 'Category',
                     slug: entitySlug(category),
                     id: category.id,
                   },
