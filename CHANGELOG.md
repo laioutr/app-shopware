@@ -1,5 +1,13 @@
 # @laioutr-app/shopware
 
+## 0.8.8
+
+### Patch Changes
+
+- 85395c1: Links with references are now case-insensitive to their type
+- Updated dependencies [85395c1]
+  - @laioutr-core/frontend-core@0.22.1
+
 ## 0.8.7
 
 ### Patch Changes
