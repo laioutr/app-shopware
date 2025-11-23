@@ -1,20 +1,15 @@
-import { CategoryBySlugQuery, CategoryNotFoundError } from '@laioutr-core/canonical-types/ecommerce';
+import { CategoryBySlugQuery } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareQuery } from '../../middleware/defineShopware';
+import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 
 export default defineShopwareQuery(CategoryBySlugQuery, async ({ context, input }) => {
-  const { storefrontClient } = context;
-
   const { slug } = input;
 
-  const response = await storefrontClient.invoke('readSeoUrl post /seo-url', {
-    body: {
-      filter: [{ type: 'equals', field: 'seoPathInfo', value: slug }],
-    },
-  });
+  const seoResolver = useSeoResolver(context.storefrontClient);
+  const seoEntry = await seoResolver.resolve('category', slug);
+  if (!seoEntry) {
+    throw new Error(`No seo url found for category slug: ${slug}`);
+  }
 
-  const category = response.data.elements[0];
-
-  if (!category) throw new CategoryNotFoundError(slug);
-
-  return { id: category.id };
+  return { id: seoEntry.id };
 });
