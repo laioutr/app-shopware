@@ -1,4 +1,5 @@
 import { createPassthroughToken } from '#imports';
+import { PageTypeToken } from '@laioutr-core/canonical-types/page';
 import { ShopwareCart, ShopwareCategory, ShopwareProduct } from '../types/shopware';
 
 export const currentProductIdsToken = createPassthroughToken<string[]>('@laioutr/app-shopware/currentProductIdsFragment');
@@ -22,6 +23,14 @@ export const productVariantsToken = createPassthroughToken<ShopwareProduct[]>('@
 
 export const cartFragmentToken = createPassthroughToken<ShopwareCart>('@laioutr-app/shopify/cartFragment');
 
-export const suggestionResultsFragmentToken = createPassthroughToken<Array<{ id: string; type: string; title: string; url: string }>>(
-  '@laioutr/app-shopware/completionResults'
-);
+export const suggestionResultsFragmentToken = createPassthroughToken<{
+  id: string;
+  suggestions: Array<{
+    id: string;
+    type: string;
+    title: string;
+    link:
+      | { type: 'reference'; reference: { type: string; id: string; slug: string } }
+      | { type: 'pageType'; pageType: PageTypeToken; params: Record<string, string> };
+  }>;
+}>('@laioutr/app-shopware/completionResults');

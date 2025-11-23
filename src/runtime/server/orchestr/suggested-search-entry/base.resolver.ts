@@ -9,17 +9,14 @@ export default defineShopwareComponentResolver({
   resolve: ({ passthrough, $entity }) => {
     const results = passthrough.require(suggestionResultsFragmentToken);
 
-    const entities = results.map(({ id, type, title, url }) =>
+    const entities = results.suggestions.map(({ id, type, title, link }) =>
       $entity({
         id,
 
         base: () => ({
           type,
           title,
-          link: {
-            type: 'url',
-            href: url,
-          },
+          link,
         }),
       })
     );

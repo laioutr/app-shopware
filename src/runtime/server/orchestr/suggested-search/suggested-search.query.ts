@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import { ProductSearchPage } from '@laioutr-core/canonical-types/ecommerce';
 import { SuggestedSearchSearchQuery } from '@laioutr-core/canonical-types/suggested-search';
 import { suggestionResultsFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareQuery } from '../../middleware/defineShopware';
@@ -20,7 +22,7 @@ export default defineShopwareQuery(SuggestedSearchSearchQuery, async ({ context,
       id: `query_suggestion_${index}`,
       type: 'query-suggestion',
       title: val,
-      url: '#', // TODO: Use proper URL (e.g. `/search/{val}`)
+      link: { type: 'pageType', pageType: ProductSearchPage, params: { q: val } } as const,
     }));
 
   const brandResults = Object.values(res.extensions?.multiSuggestResult?.suggestResults?.product_manufacturer?.elements ?? []).map(
@@ -28,7 +30,10 @@ export default defineShopwareQuery(SuggestedSearchSearchQuery, async ({ context,
       id: manufacturer.id,
       type: 'brand',
       title: manufacturer.name,
-      url: '#', // TODO: Use proper URL (e.g. `/brands/{manufacturer.id}`)
+      link: {
+        type: 'reference',
+        reference: { type: 'brand', id: manufacturer.id, slug: manufacturer.id },
+      } as const,
     })
   );
 
@@ -36,17 +41,28 @@ export default defineShopwareQuery(SuggestedSearchSearchQuery, async ({ context,
     id: category.id,
     type: 'category',
     title: category.name,
-    url: '#', // TODO: Use proper URL (e.g. `/categories/{category.id}`)
+    link: {
+      type: 'reference',
+      reference: { type: 'category', id: category.id, slug: category.seoUrls?.[0]?.pathInfo?.split('/').at(-1) ?? '' },
+    } as const,
   }));
 
   const productResults = (data.elements ?? []).map((product) => ({
     id: product.id,
     type: 'product',
     title: product.name,
-    url: '#', // TODO: Use proper URL (e.g. `/products/{product.id}`)
+    link: {
+      type: 'reference',
+      reference: { type: 'product', id: product.id, slug: product.seoUrls?.[0]?.pathInfo?.split('/').at(-1) ?? '' },
+    } as const,
   }));
 
-  passthrough.set(suggestionResultsFragmentToken, [...querySuggestionsResults, ...brandResults, ...categoryResults, ...productResults]);
+  const id = randomUUID();
 
-  return { id: '#' };
+  passthrough.set(suggestionResultsFragmentToken, {
+    id,
+    suggestions: [...querySuggestionsResults, ...brandResults, ...categoryResults, ...productResults],
+  });
+
+  return { id };
 });
