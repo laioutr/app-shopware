@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { ProductSearchPage } from '@laioutr-core/canonical-types/ecommerce';
 import { SuggestedSearchSearchQuery } from '@laioutr-core/canonical-types/suggested-search';
 import { suggestionResultsFragmentToken } from '../../const/passthroughTokens';
@@ -57,7 +56,7 @@ export default defineShopwareQuery(SuggestedSearchSearchQuery, async ({ context,
     } as const,
   }));
 
-  const id = randomUUID();
+  const id = `search-suggest:${query}`;
 
   passthrough.set(suggestionResultsFragmentToken, {
     id,
