@@ -2,6 +2,7 @@ import { Money } from '@screeny05/ts-money';
 import { MediaImage } from '@laioutr-core/canonical-types';
 import {
   ProductBase,
+  ProductDefaultVariant,
   ProductDescription,
   ProductFlags,
   ProductInfo,
@@ -20,7 +21,7 @@ import { swTranslated } from '../../shopware-helper/swTranslated';
 export default defineShopwareComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
-  provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductSeo, ProductDescription],
+  provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductSeo, ProductDescription, ProductDefaultVariant],
   resolve: async ({ entityIds, context, $entity, passthrough }) => {
     // If the product has variants, we select the first variant as default data source. In that case the parent might not contain much information.
     // This case only happens if the resolver is called with a product-id that does not exist in parentIdToDefaultVariantId.
@@ -56,7 +57,10 @@ export default defineShopwareComponentResolver({
         base: {
           name: swTranslated(rawProduct, 'name'),
           slug: entitySlug(rawProduct),
-          defaultVariantId: rawVariant.id,
+        },
+
+        defaultVariant: {
+          id: rawVariant.id,
         },
 
         info: {
