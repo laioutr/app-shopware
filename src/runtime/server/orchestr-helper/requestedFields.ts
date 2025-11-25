@@ -153,8 +153,8 @@ export const resolveProductVariantFields = () => {
     ],
     product_media: ['id', 'mediaId', 'media'],
     media: MediaIncludes,
-    property_group_option: ['id', 'name', 'group'],
-    property_group: ['id', 'name'],
+    property_group_option: ['id', 'name', 'group', 'translated'],
+    property_group: ['id', 'name', 'translated'],
   };
 
   return {
