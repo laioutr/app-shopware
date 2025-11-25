@@ -1,5 +1,11 @@
 # @laioutr-app/shopware
 
+## 0.8.10
+
+### Patch Changes
+
+- ca1c561: Use translated property for ProductVariantOptions
+
 ## 0.8.9
 
 ### Patch Changes
