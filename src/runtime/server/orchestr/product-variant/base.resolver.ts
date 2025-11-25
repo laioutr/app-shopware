@@ -14,6 +14,7 @@ import { productVariantsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { resolveProductVariantFields } from '../../orchestr-helper/requestedFields';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
+import { swTranslated } from '../../shopware-helper/swTranslated';
 
 export default defineShopwareComponentResolver({
   entityType: 'ProductVariant',
@@ -154,8 +155,8 @@ export default defineShopwareComponentResolver({
             options: () => ({
               selected:
                 entity.options?.map((option) => ({
-                  name: option.group?.name ?? option.name,
-                  value: option.name ?? option.option,
+                  name: swTranslated(option.group, 'name') ?? swTranslated(option, 'name') ?? 'Unknown Property',
+                  value: swTranslated(option, 'name') ?? swTranslated(option, 'option') ?? 'Unknown Value',
                 })) ?? [],
             }),
           })
