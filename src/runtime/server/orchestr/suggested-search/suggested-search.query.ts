@@ -2,6 +2,7 @@ import { ProductSearchPage } from '@laioutr-core/canonical-types/ecommerce';
 import { SuggestedSearchSearchQuery } from '@laioutr-core/canonical-types/suggested-search';
 import { suggestionResultsFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareQuery } from '../../middleware/defineShopware';
+import { createFallbackSlug } from '../../shopware-helper/mappers/slugMapper';
 import { ShopwareExtensions } from '../../types/shopware';
 
 export default defineShopwareQuery(SuggestedSearchSearchQuery, async ({ context, input, passthrough }) => {
@@ -31,7 +32,7 @@ export default defineShopwareQuery(SuggestedSearchSearchQuery, async ({ context,
       title: manufacturer.name,
       link: {
         type: 'reference',
-        reference: { type: 'brand', id: manufacturer.id, slug: manufacturer.id },
+        reference: { type: 'brand', id: manufacturer.id, slug: createFallbackSlug(manufacturer.name, manufacturer.id) },
       } as const,
     })
   );
