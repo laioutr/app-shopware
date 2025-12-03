@@ -1,8 +1,8 @@
 import { LinkSingle } from '#orchestr/types';
-import { ProductCanonicalMenuItemLink } from '@laioutr-core/canonical-types/ecommerce';
+import { ProductBreadcrumbLink } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareLink } from '../../middleware/defineShopware';
 
-export default defineShopwareLink(ProductCanonicalMenuItemLink, async ({ context, entityIds }) => {
+export default defineShopwareLink(ProductBreadcrumbLink, async ({ context, entityIds }) => {
   const response = await context.storefrontClient.invoke('readProduct post /product', {
     body: {
       ids: entityIds,
