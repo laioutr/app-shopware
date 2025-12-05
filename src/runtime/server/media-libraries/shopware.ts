@@ -1,5 +1,5 @@
 import { defineMediaLibraryProvider } from '#imports';
-import { ProviderStudioMediaItem } from '@laioutr-core/canonical-types/studio';
+import { ProviderStudioMediaItem } from '@laioutr-core/core-types/media-library';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
 import { mapMedia } from '../shopware-helper/mediaMapper';
 

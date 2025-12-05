@@ -1,5 +1,5 @@
 import { ProductsByCategorySlugQuery } from '@laioutr-core/canonical-types/ecommerce';
-import { RemoteQueryTemplateWithInput } from '@laioutr-core/canonical-types/orchestr';
+import { RemoteQueryTemplateWithInput } from '@laioutr-core/core-types/orchestr';
 import { defineShopwareQueryTemplateProvider } from '../../middleware/defineShopware';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';

@@ -3,7 +3,7 @@
   "extends": ["//"],
   "tasks": {
     "dev": {
-      "with": ["@laioutr-core/canonical-types#dev"]
+      "with": ["@laioutr-core/canonical-types#dev", "@laioutr-core/core-types#dev"]
     }
   }
 }
