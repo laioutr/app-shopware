@@ -1,5 +1,4 @@
 import { Money } from '@screeny05/ts-money';
-import { MediaImage } from '@laioutr-core/canonical-types';
 import {
   ProductVariantAvailability,
   ProductVariantBase,
@@ -10,6 +9,7 @@ import {
   ProductVariantQuantityRule,
   ProductVariantShipping,
 } from '@laioutr-core/canonical-types/entity/product-variant';
+import { MediaImage } from '@laioutr-core/core-types/common';
 import { productVariantsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { resolveProductVariantFields } from '../../orchestr-helper/requestedFields';

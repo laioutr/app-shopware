@@ -1,5 +1,4 @@
 import { Money } from '@screeny05/ts-money';
-import { MediaImage } from '@laioutr-core/canonical-types';
 import {
   ProductBase,
   ProductDefaultVariant,
@@ -10,6 +9,7 @@ import {
   ProductPrices,
   ProductSeo,
 } from '@laioutr-core/canonical-types/entity/product';
+import { MediaImage } from '@laioutr-core/core-types/common';
 import { FALLBACK_IMAGE } from '../../const/fallbacks';
 import { parentIdToDefaultVariantIdToken, productVariantsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';

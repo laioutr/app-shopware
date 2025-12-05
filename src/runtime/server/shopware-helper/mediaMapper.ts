@@ -1,4 +1,4 @@
-import { Media, MediaSourceImage, MediaSourceVideo } from '@laioutr-core/canonical-types';
+import { Media, MediaSourceImage, MediaSourceVideo } from '@laioutr-core/core-types/common';
 import { FALLBACK_IMAGE, FALLBACK_IMAGE_URL } from '../const/fallbacks';
 import { Schemas } from '../types/storeApiTypes';
 

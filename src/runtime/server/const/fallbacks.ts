@@ -1,4 +1,4 @@
-import { MediaImage } from '@laioutr-core/canonical-types';
+import { MediaImage } from '@laioutr-core/core-types/common';
 
 export const FALLBACK_IMAGE_URL = '/app-shopware/image-placeholder.svg';
 
