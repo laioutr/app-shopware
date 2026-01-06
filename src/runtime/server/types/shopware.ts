@@ -17,3 +17,15 @@ export type ShopwareAssociationsQuery = components['schemas']['Association'];
 export type WithSeoUrl = {
   seoUrls?: ShopwareSeoUrl[];
 };
+
+export type ShopwareExtensions = {
+  extensions?: {
+    completionResult?: Record<string, string>;
+    multiSuggestResult?: {
+      suggestResults?: {
+        product_manufacturer?: { elements: Record<string, ShopwareManufacturer> };
+        category?: { elements: Record<string, ShopwareCategory> };
+      };
+    };
+  };
+};
