@@ -19,3 +19,15 @@ export const parentIdToDefaultVariantIdToken = createPassthroughToken<Record<str
 export const productsFragmentToken = createPassthroughToken<ShopwareProduct[]>('@laioutr-app/shopware/productsFragment');
 
 export const productVariantsToken = createPassthroughToken<ShopwareProduct[]>('@laioutr-app/shopware/productVariants');
+
+export const suggestionResultsFragmentToken = createPassthroughToken<{
+  id: string;
+  suggestions: Array<{
+    id: string;
+    type: string;
+    title: string;
+    link:
+      | { type: 'reference'; reference: { type: string; id: string; slug: string } }
+      | { type: 'pageType'; pageType: string; params: Record<string, string> };
+  }>;
+}>('@laioutr/app-shopware/completionResults');
