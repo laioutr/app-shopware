@@ -13,6 +13,7 @@ cacheSet('shopware', 'SystemIds', 1, [`storefront:${storefrontId}`], {
 });*/
 
 export type SwSystemEntities = Awaited<ReturnType<typeof getSystemEntities>>;
+export type SwSystemLocale = SwSystemEntities['locales'][number];
 
 /**
  * Shopware wants us to send ids for certain system entities.
