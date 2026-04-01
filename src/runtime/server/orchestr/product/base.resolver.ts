@@ -92,8 +92,9 @@ export default defineShopwareComponentResolver({
         media: () => {
           const mappedMedia =
             (rawProduct.media ?? rawVariant.media)?.filter((image) => !!image.media).map((image) => mapMedia(image.media)) ?? [];
+          const isFirstMediaCover = mappedCover.sources.at(0)?.src === mappedMedia.at(0)?.sources.at(0)?.src;
           // Shopwares product.media does not include the cover, so we add it manually
-          const allMedia = [mappedCover, ...mappedMedia];
+          const allMedia = isFirstMediaCover ? mappedMedia : [mappedCover, ...mappedMedia];
 
           return {
             cover: mappedCover,
