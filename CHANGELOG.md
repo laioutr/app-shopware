@@ -1,5 +1,17 @@
 # @laioutr-app/shopware
 
+## 0.9.2
+
+### Patch Changes
+
+- d907a16: Product breadcrumb link now returns inline BreadcrumbItem entities with name and link data instead of a bare category ID, matching the Shopify implementation pattern. Accepts passthrough data via productsFragmentToken.
+- Updated dependencies [9a519a4]
+- Updated dependencies [63fc621]
+- Updated dependencies [c9eeae7]
+  - @laioutr-core/frontend-core@0.28.9
+  - @laioutr-core/kit@0.28.9
+  - @laioutr-core/canonical-types@0.22.14
+
 ## 0.9.1
 
 ### Patch Changes
