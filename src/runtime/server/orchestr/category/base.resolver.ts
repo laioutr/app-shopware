@@ -15,7 +15,7 @@ export default defineShopwareComponentResolver({
     const categories =
       passthrough.has(categoriesToken) ?
         passthrough.get(categoriesToken)!
-      : (await storefrontClient.invoke('readCategoryList post /category')).data.elements;
+      : (await storefrontClient.invoke('readCategoryList post /category', { body: { ids: entityIds } })).data.elements;
 
     if (!categories) {
       throw new Error(
