@@ -2,7 +2,7 @@ import { ProductSearchPage } from '@laioutr-core/canonical-types/ecommerce';
 import { SuggestedSearchSearchQuery } from '@laioutr-core/canonical-types/suggested-search';
 import { suggestionResultsFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareQuery } from '../../middleware/defineShopware';
-import { createFallbackSlug } from '../../shopware-helper/mappers/slugMapper';
+import { createFallbackSlug, entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { ShopwareExtensions } from '../../types/shopware';
 
 export default defineShopwareQuery(SuggestedSearchSearchQuery, async ({ context, input, passthrough }) => {
@@ -43,7 +43,7 @@ export default defineShopwareQuery(SuggestedSearchSearchQuery, async ({ context,
     title: category.name,
     link: {
       type: 'reference',
-      reference: { type: 'category', id: category.id, slug: category.seoUrls?.[0]?.pathInfo?.split('/').at(-1) ?? '' },
+      reference: { type: 'category', id: category.id, slug: entitySlug(category) },
     } as const,
   }));
 
@@ -53,7 +53,7 @@ export default defineShopwareQuery(SuggestedSearchSearchQuery, async ({ context,
     title: product.name,
     link: {
       type: 'reference',
-      reference: { type: 'product', id: product.id, slug: product.seoUrls?.[0]?.pathInfo?.split('/').at(-1) ?? '' },
+      reference: { type: 'product', id: product.id, slug: entitySlug(product) },
     } as const,
   }));
 
