@@ -1,5 +1,19 @@
 # @laioutr-app/shopware
 
+## 0.9.0
+
+### Minor Changes
+
+- 82873ac: Add mock cart-item link handler and include ratingAverage/productReviews in product requested fields.
+
+### Patch Changes
+
+- 66f66cd: SEO URL resolver cache key now includes the Shopware language ID, preventing cross-language cache collisions.
+- a2afddf: Improve API docs for RenderLanguage, improve shopware language-code matching
+  - @laioutr-core/canonical-types@0.22.12
+  - @laioutr-core/frontend-core@0.28.7
+  - @laioutr-core/kit@0.28.7
+
 ## 0.8.26
 
 ### Patch Changes
