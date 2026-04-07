@@ -7,6 +7,7 @@ import {
   ProductInfo,
   ProductMedia,
   ProductPrices,
+  ProductRating,
   ProductSeo,
 } from '@laioutr-core/canonical-types/entity/product';
 import { MediaImage } from '@laioutr-core/core-types/common';
@@ -21,7 +22,17 @@ import { swTranslated } from '../../shopware-helper/swTranslated';
 export default defineShopwareComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
-  provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductSeo, ProductDescription, ProductDefaultVariant],
+  provides: [
+    ProductBase,
+    ProductInfo,
+    ProductPrices,
+    ProductMedia,
+    ProductFlags,
+    ProductSeo,
+    ProductDescription,
+    ProductDefaultVariant,
+    ProductRating,
+  ],
   resolve: async ({ entityIds, context, $entity, passthrough }) => {
     // If the product has variants, we select the first variant as default data source. In that case the parent might not contain much information.
     // This case only happens if the resolver is called with a product-id that does not exist in parentIdToDefaultVariantId.
@@ -81,8 +92,9 @@ export default defineShopwareComponentResolver({
         media: () => {
           const mappedMedia =
             (rawProduct.media ?? rawVariant.media)?.filter((image) => !!image.media).map((image) => mapMedia(image.media)) ?? [];
+          const isFirstMediaCover = mappedCover.sources.at(0)?.src === mappedMedia.at(0)?.sources.at(0)?.src;
           // Shopwares product.media does not include the cover, so we add it manually
-          const allMedia = [mappedCover, ...mappedMedia];
+          const allMedia = isFirstMediaCover ? mappedMedia : [mappedCover, ...mappedMedia];
 
           return {
             cover: mappedCover,
@@ -117,6 +129,11 @@ export default defineShopwareComponentResolver({
         },
 
         flags: [] as any[],
+
+        rating: {
+          average: rawProduct.ratingAverage ?? rawVariant.ratingAverage ?? 0,
+          count: rawProduct.productReviews?.length ?? 0,
+        },
       });
     });
 

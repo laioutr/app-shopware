@@ -34,7 +34,7 @@ export default defineShopwareQuery(ProductSearchQuery, async ({ context, input, 
 
   // Shopware API client exposes incorrect types for aggregations :<
   const availableFilters = mapShopwareAggregationToAvailableFilters(response.data.aggregations as unknown as ShopwareAggregations);
-  const availableSortings = mapShopwareSortingToOrchestr(response.data.availableSortings);
+  const availableSortings = mapShopwareSortingToOrchestr(response.data.availableSortings ?? []);
 
   // Tell the product-resolver which variants to use.
   const parentIdToDefaultVariantId = Object.fromEntries(

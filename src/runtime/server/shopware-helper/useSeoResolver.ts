@@ -26,7 +26,8 @@ export const useSeoResolver = (storefrontClient: StorefrontClient) => {
    * Does not return seo-entries if expected type does not match the seo-entry's type.
    */
   const resolve = async (type: SeoUrlType, slug: string): Promise<SeoEntry | undefined> => {
-    const cacheKey = `${type}-${slug}`;
+    const languageId = storefrontClient.defaultHeaders['sw-language-id'] ?? 'default';
+    const cacheKey = `${languageId}:${type}-${slug}`;
     const cachedSlug = await cache.getItem(cacheKey);
     if (cachedSlug) {
       return cachedSlug;

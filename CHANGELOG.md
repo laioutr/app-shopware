@@ -1,5 +1,57 @@
 # @laioutr-app/shopware
 
+## 0.9.4
+
+### Patch Changes
+
+- @laioutr-core/frontend-core@0.28.11
+- @laioutr-core/kit@0.28.11
+- @laioutr-core/canonical-types@0.22.16
+
+## 0.9.3
+
+### Patch Changes
+
+- Updated dependencies [ba4abcf]
+  - @laioutr-core/frontend-core@0.28.10
+  - @laioutr-core/kit@0.28.10
+  - @laioutr-core/canonical-types@0.22.15
+
+## 0.9.2
+
+### Patch Changes
+
+- d907a16: Product breadcrumb link now returns inline BreadcrumbItem entities with name and link data instead of a bare category ID, matching the Shopify implementation pattern. Accepts passthrough data via productsFragmentToken.
+- Updated dependencies [9a519a4]
+- Updated dependencies [63fc621]
+- Updated dependencies [c9eeae7]
+  - @laioutr-core/frontend-core@0.28.9
+  - @laioutr-core/kit@0.28.9
+  - @laioutr-core/canonical-types@0.22.14
+
+## 0.9.1
+
+### Patch Changes
+
+- Updated dependencies [ebb8a6b]
+  - @laioutr-core/frontend-core@0.28.8
+  - @laioutr-core/kit@0.28.8
+  - @laioutr-core/canonical-types@0.22.13
+
+## 0.9.0
+
+### Minor Changes
+
+- 82873ac: Add mock cart-item link handler and include ratingAverage/productReviews in product requested fields.
+
+### Patch Changes
+
+- 66f66cd: SEO URL resolver cache key now includes the Shopware language ID, preventing cross-language cache collisions.
+- a2afddf: Improve API docs for RenderLanguage, improve shopware language-code matching
+  - @laioutr-core/canonical-types@0.22.12
+  - @laioutr-core/frontend-core@0.28.7
+  - @laioutr-core/kit@0.28.7
+
 ## 0.8.26
 
 ### Patch Changes
