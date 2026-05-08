@@ -21,7 +21,7 @@ export default defineShopwareQuery(
       throw new Error(`No seo url found for category slug: ${categorySlug}`);
     }
 
-    const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters) : {};
+    const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters, context.swCurrency) : {};
 
     const response = await context.storefrontClient.invoke('readProductListing post /product-listing/{categoryId}', {
       pathParams: { categoryId: seoEntry.id },
