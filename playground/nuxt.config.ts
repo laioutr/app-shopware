@@ -7,7 +7,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt', // Added to show in devtools
     '@laioutr-core/frontend-core',
     '@laioutr-core/orchestr',
-    '@laioutr-core/orchestr-devtools',
+    '@laioutr-core/devtools',
   ],
   alias: {
     '@laioutr-app/shopware': fileURLToPath(new URL('../src', import.meta.url)),

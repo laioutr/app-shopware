@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "@laioutr-app/shopware": "workspace:*",
+    "@laioutr-core/devtools": "workspace:*",
     "@laioutr-core/orchestr": "workspace:*",
-    "@laioutr-core/orchestr-devtools": "workspace:*",
     "nuxt": "catalog:nuxt-core"
   }
 }
