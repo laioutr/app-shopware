@@ -92,7 +92,7 @@ export default defineShopware.mediaLibrary({
         id: folder.id,
         name: folder.name,
         parentId: folder.parentId ?? undefined,
-        childCount: folder.childCount,
+        childCount: folder.childCount ?? undefined,
       })) ?? [];
     return { folders };
   },
