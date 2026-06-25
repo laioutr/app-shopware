@@ -74,7 +74,7 @@ export default defineShopware.mediaLibrary({
     return {
       items,
       total,
-      nextCursor: total !== undefined && seen < total ? String(page + 1) : undefined,
+      nextCursor: items.length > 0 && total !== undefined && seen < total ? String(page + 1) : undefined,
     };
   },
 
