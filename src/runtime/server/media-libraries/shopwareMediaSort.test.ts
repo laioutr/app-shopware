@@ -15,7 +15,17 @@ vi.mock('../shopware-helper/mediaMapper', () => ({
   mapMedia: vi.fn(),
 }));
 
-import { shopwareSortCriteria } from './shopware';
+import { shopwareFolderFilter, shopwareSortCriteria } from './shopware';
+
+describe('shopwareFolderFilter', () => {
+  it('scopes root browsing to unfiled assets (mediaFolderId = null)', () => {
+    expect(shopwareFolderFilter(undefined)).toEqual({ type: 'equals', field: 'mediaFolderId', value: null });
+  });
+
+  it('scopes a folder browse to that folder', () => {
+    expect(shopwareFolderFilter('f-1')).toEqual({ type: 'equals', field: 'mediaFolderId', value: 'f-1' });
+  });
+});
 
 describe('shopwareSortCriteria', () => {
   it('defaults to uploadedAt descending', () => {

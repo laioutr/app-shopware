@@ -32,6 +32,34 @@ export const shopwareSortCriteria = (sorting?: string) => {
   return [{ field, order: dir === 'asc' ? 'ASC' : 'DESC' }];
 };
 
+/** Scopes a browse to one folder level: a folder's id, or `null` for unfiled root assets (design §4.4). */
+export const shopwareFolderFilter = (folderId: string | undefined) => ({
+  type: 'equals' as const,
+  field: 'mediaFolderId',
+  value: folderId ?? null,
+});
+
+const fetchChildFolders = async (
+  api: ReturnType<typeof shopwareAdminClientFactory>,
+  parentId: string | undefined
+): Promise<MediaFolder[]> => {
+  const response = await api.invoke('searchMediaFolder post /search/media-folder', {
+    body: {
+      limit: 500,
+      filter: [{ type: 'equals', field: 'parentId', value: parentId ?? null }],
+      sort: [{ field: 'name', order: 'ASC' }],
+    },
+  });
+  return (
+    (response.data as any).data?.map((folder: any) => ({
+      id: folder.id,
+      name: folder.name,
+      parentId: folder.parentId ?? undefined,
+      childCount: folder.childCount ?? undefined,
+    })) ?? []
+  );
+};
+
 export default defineShopware.mediaLibrary({
   capabilities: { search: true, tags: true, folders: true, sorts: SORTS },
 
@@ -40,9 +68,7 @@ export default defineShopware.mediaLibrary({
     const page = query.cursor ? Number(query.cursor) : 1;
 
     const filters: unknown[] = [];
-    if (query.folderId) {
-      filters.push({ type: 'equals', field: 'mediaFolderId', value: query.folderId });
-    }
+    filters.push(shopwareFolderFilter(query.folderId));
     if (query.type?.length) {
       // Best-effort: mediaType.name is typed as GenericRecord in the admin API types.
       // Shopware uses 'IMAGE'/'VIDEO' as type discriminants in its internal media type system.
@@ -63,37 +89,23 @@ export default defineShopware.mediaLibrary({
       },
     });
 
+    // Folders ride in the list response on the FIRST (cursorless) page only (design §4.4).
+    const folders = query.cursor ? undefined : await fetchChildFolders(api, query.folderId);
+
     const items: ProviderStudioMediaItem[] =
       response.data.data?.map((media: any) => ({
         media: mapMedia(media as any),
         previewUrl: media.thumbnails?.[0]?.url ?? media.url ?? '',
+        externalId: media.id,
       })) ?? [];
 
     const total = (response.data as any).total as number | undefined;
     const seen = (page - 1) * query.limit + items.length;
     return {
       items,
+      ...(folders ? { folders } : {}),
       total,
       nextCursor: items.length > 0 && total !== undefined && seen < total ? String(page + 1) : undefined,
     };
-  },
-
-  browseFolders: async ({ parentId }): Promise<{ folders: MediaFolder[] }> => {
-    const api = shopwareAdminClientFactory();
-    const response = await api.invoke('searchMediaFolder post /search/media-folder', {
-      body: {
-        limit: 500,
-        filter: [{ type: 'equals', field: 'parentId', value: parentId ?? null }],
-        sort: [{ field: 'name', order: 'ASC' }],
-      },
-    });
-    const folders: MediaFolder[] =
-      (response.data as any).data?.map((folder: any) => ({
-        id: folder.id,
-        name: folder.name,
-        parentId: folder.parentId ?? undefined,
-        childCount: folder.childCount ?? undefined,
-      })) ?? [];
-    return { folders };
   },
 });
