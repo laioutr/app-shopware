@@ -39,6 +39,29 @@ export const shopwareFolderFilter = (folderId: string | undefined) => ({
   value: folderId ?? null,
 });
 
+/** Shopware `mediaType.name` discriminants for our media types. */
+const SHOPWARE_MEDIA_TYPE: Record<string, string> = { image: 'IMAGE', video: 'VIDEO', audio: 'AUDIO' };
+
+/**
+ * Compiles a `MediaQuery` into Shopware Criteria filters. `scope: 'all'` searches
+ * the whole library — no folder filter — because `folderId: undefined` means the
+ * root level, which in Shopware holds only unfiled assets (design §4.4).
+ */
+export const buildShopwareMediaFilters = (query: MediaQuery): unknown[] => {
+  const filters: unknown[] = [];
+  if (query.scope !== 'all') {
+    filters.push(shopwareFolderFilter(query.folderId));
+  }
+  if (query.type?.length) {
+    // Best-effort: mediaType.name is typed as GenericRecord in the admin API types.
+    filters.push({ type: 'equalsAny', field: 'mediaType.name', value: query.type.map((t) => SHOPWARE_MEDIA_TYPE[t]) });
+  }
+  if (query.tags?.length) {
+    filters.push({ type: 'equalsAny', field: 'tags.name', value: query.tags });
+  }
+  return filters;
+};
+
 const fetchChildFolders = async (
   api: ReturnType<typeof shopwareAdminClientFactory>,
   parentId: string | undefined
@@ -63,20 +86,12 @@ const fetchChildFolders = async (
 export default defineShopware.mediaLibrary({
   capabilities: { search: true, tags: true, folders: true, sorts: SORTS },
 
-  list: async (query: MediaQuery): Promise<MediaListResult> => {
-    const api = shopwareAdminClientFactory();
+  list: async (query: MediaQuery, ctx): Promise<MediaListResult> => {
+    // The per-request context (design §4.6) already carries the admin client the initware built.
+    const api = ctx.adminClient;
     const page = query.cursor ? Number(query.cursor) : 1;
 
-    const filters: unknown[] = [];
-    filters.push(shopwareFolderFilter(query.folderId));
-    if (query.type?.length) {
-      // Best-effort: mediaType.name is typed as GenericRecord in the admin API types.
-      // Shopware uses 'IMAGE'/'VIDEO' as type discriminants in its internal media type system.
-      filters.push({ type: 'equalsAny', field: 'mediaType.name', value: query.type.map((t) => (t === 'image' ? 'IMAGE' : 'VIDEO')) });
-    }
-    if (query.tags?.length) {
-      filters.push({ type: 'equalsAny', field: 'tags.name', value: query.tags });
-    }
+    const filters = buildShopwareMediaFilters(query);
 
     const response = await api.invoke('searchMedia post /search/media', {
       body: {
@@ -89,8 +104,9 @@ export default defineShopware.mediaLibrary({
       },
     });
 
-    // Folders ride in the list response on the FIRST (cursorless) page only (design §4.4).
-    const folders = query.cursor ? undefined : await fetchChildFolders(api, query.folderId);
+    // Folders ride in the list response on the FIRST (cursorless) page only (design §4.4);
+    // a whole-library search (`scope: 'all'`) has no folder level, so no tiles either.
+    const folders = query.cursor || query.scope === 'all' ? undefined : await fetchChildFolders(api, query.folderId);
 
     const items: ProviderStudioMediaItem[] =
       response.data.data?.map((media: any) => ({

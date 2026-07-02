@@ -15,7 +15,7 @@ vi.mock('../shopware-helper/mediaMapper', () => ({
   mapMedia: vi.fn(),
 }));
 
-import { shopwareFolderFilter, shopwareSortCriteria } from './shopware';
+import { buildShopwareMediaFilters, shopwareFolderFilter, shopwareSortCriteria } from './shopware';
 
 describe('shopwareFolderFilter', () => {
   it('scopes root browsing to unfiled assets (mediaFolderId = null)', () => {
@@ -38,5 +38,27 @@ describe('shopwareSortCriteria', () => {
 
   it('maps fileSize descending', () => {
     expect(shopwareSortCriteria('fileSize:desc')).toEqual([{ field: 'fileSize', order: 'DESC' }]);
+  });
+});
+
+describe('buildShopwareMediaFilters (design §4.3/§4.4)', () => {
+  it('scopes to the queried folder by default', () => {
+    expect(buildShopwareMediaFilters({ limit: 10, folderId: 'f-1' })).toEqual([{ type: 'equals', field: 'mediaFolderId', value: 'f-1' }]);
+  });
+
+  it("drops the folder filter for a whole-library search (scope: 'all')", () => {
+    expect(buildShopwareMediaFilters({ limit: 10, folderId: 'f-1', scope: 'all', term: 'logo' })).toEqual([]);
+  });
+
+  it('maps media types to Shopware discriminants, including audio', () => {
+    expect(buildShopwareMediaFilters({ limit: 10, scope: 'all', type: ['image', 'video', 'audio'] })).toEqual([
+      { type: 'equalsAny', field: 'mediaType.name', value: ['IMAGE', 'VIDEO', 'AUDIO'] },
+    ]);
+  });
+
+  it('adds a tags filter when tags are queried', () => {
+    expect(buildShopwareMediaFilters({ limit: 10, scope: 'all', tags: ['hero'] })).toEqual([
+      { type: 'equalsAny', field: 'tags.name', value: ['hero'] },
+    ]);
   });
 });
