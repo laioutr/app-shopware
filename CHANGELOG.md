@@ -1,5 +1,52 @@
 # @laioutr-app/shopware
 
+## 0.10.0
+
+### Minor Changes
+
+- e072c7a: **Breaking:** Media libraries are now connected as an Orchestr integration facet. A connector declares static capabilities (search, tags, folders, sorts, upload transfer) and uses opaque-cursor pagination, explicit type/tag filtering, optional folder navigation, and proxied or staged upload with per-file results. Define one on the app's Orchestr builder instead of the standalone factory:
+
+  ```ts
+  // Before
+  export default defineMediaLibraryProvider({ name, label, iconSrc, list, upload });
+
+  // After
+  export default defineShopify.mediaLibrary({
+    capabilities: { search: true, folders: false, sorts, upload: { transfer: 'staged' } },
+    list,
+    createUploadTargets,
+    finalizeUploads,
+  });
+  ```
+
+  `defineMediaLibraryProvider()` still works as a **deprecated shim** — existing connectors keep registering without a rewrite, in a degraded mode (no folders, no staged upload, no declared sorts). `ProjectFrontendContext.mediaLibraries` now carries descriptors `{ id, label, iconSrc, capabilities }`.
+
+  The Shopify connector uploads via staged targets and blocks until each file is `READY` before returning it (one failed file no longer sinks the batch). The Shopware connector gains folder browsing over the real media-folder tree.
+
+  This frontend-core version is the threshold for the Cockpit `mediaLibraryV2` capability gate; the Cockpit media picker is updated separately to speak the new contract.
+
+  Folder browsing is folded into the single `list` method: `MediaListResult.folders` carries the
+  queried location's subfolders on the first (cursorless) page; the separate `browseFolders`
+  method and `media-folders` route are removed. Every media source now carries an optional
+  `origin` (`{ libraryId, externalId? }`), stamped by the `.mediaLibrary()` wrapper, which also
+  validates all adapter output at the trust boundary (canonical Zod parse, URL-scheme guard —
+  including nested poster/cover images — capability/response agreement) and logs a server-side
+  warning for every dropped item. Browse items may carry a transient `status`
+  (`processing`/`failed`) surfaced in the picker grid.
+
+  Media-library handlers now receive the per-request context built by the app's `extendRequest`
+  initwares as their second argument — `list(query, ctx)` — so adapters use the initware-provided
+  clients instead of constructing their own. `MediaQuery` gains `scope: 'folder' | 'all'` to
+  distinguish a whole-library search from browsing the root level (on Shopware, root holds only
+  unfiled assets), and both bundled adapters now honor `MediaQuery.type` server-side.
+
+### Patch Changes
+
+- Updated dependencies [e072c7a]
+  - @laioutr-core/frontend-core@0.35.0
+  - @laioutr-core/canonical-types@0.25.2
+  - @laioutr-core/kit@0.35.0
+
 ## 0.9.21
 
 ### Patch Changes
