@@ -14,6 +14,12 @@ export interface ModuleOptions {
   adminEndpoint: string;
   adminClientId: string;
   adminClientSecret: string;
+  /**
+   * Base URL of the Shopware storefront where the LaioutrConnector plugin is installed
+   * (e.g. `https://shop.example.com`). Required for `GetCheckoutUrlAction` / the cart
+   * `checkoutLink`; those are unavailable when it is unset.
+   */
+  storefrontUrl?: string;
 }
 
 /**
