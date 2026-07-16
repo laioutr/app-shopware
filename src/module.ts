@@ -1,6 +1,7 @@
 /* eslint-disable import-x/export, @typescript-eslint/no-empty-object-type */
-import { createResolver, defineNuxtModule, installModule } from '@nuxt/kit';
+import { addServerHandler, createResolver, defineNuxtModule, installModule } from '@nuxt/kit';
 import { defu } from 'defu';
+import { CHECKOUT_ENDPOINT_PATH } from './runtime/server/const/checkout';
 import { registerLaioutrApp } from '@laioutr-core/kit';
 import type { NuxtModule } from '@nuxt/schema';
 import { name, version } from '../package.json';
@@ -52,6 +53,14 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     nuxt.options.nitro.publicAssets.push({
       dir: resolveRuntimeModule('./app/public'),
       maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
+    // Same-origin checkout handoff route: mints a single-use session-handoff code
+    // server-side and 302s to the storefront's connect-session (see server/routes/checkout.ts).
+    addServerHandler({
+      route: CHECKOUT_ENDPOINT_PATH,
+      method: 'get',
+      handler: resolveRuntimeModule('./server/routes/checkout'),
     });
 
     await registerLaioutrApp({
