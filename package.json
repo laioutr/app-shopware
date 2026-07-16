@@ -45,6 +45,7 @@
     "@nuxt/schema": "catalog:nuxt-core",
     "@screeny05/ts-money": "1.1.0",
     "@shopware/api-client": "1.2.1",
+    "consola": "^3.4.2",
     "defu": "6.1.4",
     "slug": "^8.2.3"
   },
