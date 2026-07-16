@@ -1,11 +1,9 @@
-import { useRuntimeConfig } from '#imports';
 import { CartAddItemsAction } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 import { handleCartMutationErrors } from '../../shopware-helper/cartErrors';
 import { ensureContextTokenCookie } from '../../shopware-helper/ensureContextTokenCookie';
 
 export default defineShopwareAction(CartAddItemsAction, async ({ event, context, input }) => {
-  const config = useRuntimeConfig()['@laioutr-app/shopware'];
   const { storefrontClient } = context;
 
   const products = input.filter((i) => i.type === 'product');
@@ -28,6 +26,6 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
     },
   });
 
-  ensureContextTokenCookie(event, cart.data.token, config.endpoint.startsWith('https://'));
+  ensureContextTokenCookie(event, cart.data.token);
   handleCartMutationErrors(cart.data.errors);
 });

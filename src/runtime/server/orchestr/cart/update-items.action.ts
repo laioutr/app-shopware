@@ -1,4 +1,3 @@
-import { useRuntimeConfig } from '#imports';
 import { CartUpdateItemsAction } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 import { handleCartMutationErrors } from '../../shopware-helper/cartErrors';
@@ -6,10 +5,11 @@ import { ensureContextTokenCookie } from '../../shopware-helper/ensureContextTok
 import { Schemas } from '../../types/storeApiTypes';
 
 export default defineShopwareAction(CartUpdateItemsAction, async ({ event, context, input }) => {
-  const config = useRuntimeConfig()['@laioutr-app/shopware'];
   const { storefrontClient } = context;
 
   // Only quantity updates are supported for products; entries without a quantity are skipped.
+  // A quantity of 0 is passed through to Shopware, which validates it; removal is a separate
+  // action (CartRemoveItemsAction), so we don't reinterpret 0 as a delete here.
   const items = input.filter((item) => item.quantity !== undefined).map((item) => ({ id: item.itemId, quantity: item.quantity }));
 
   if (items.length === 0) return;
@@ -20,6 +20,6 @@ export default defineShopwareAction(CartUpdateItemsAction, async ({ event, conte
     body: { items: items as unknown as Schemas['LineItem'][] },
   });
 
-  ensureContextTokenCookie(event, cart.data.token, config.endpoint.startsWith('https://'));
+  ensureContextTokenCookie(event, cart.data.token);
   handleCartMutationErrors(cart.data.errors);
 });
