@@ -1,26 +1,23 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { buildCheckoutUrl } from './checkoutUrl';
+import { buildConnectSessionUrl } from './checkoutUrl';
 
-describe('buildCheckoutUrl', () => {
-  it('builds a connect-session URL with the context token and encoded callbacks', () => {
-    const url = buildCheckoutUrl({
-      storefrontUrl: 'https://shop.example.com',
-      contextToken: 'abc123',
-      origin: 'https://store.laioutr.com',
-    });
+describe('buildConnectSessionUrl', () => {
+  it('builds a connect-session URL carrying only the opaque code', () => {
+    const url = buildConnectSessionUrl({ storefrontUrl: 'https://shop.example.com', code: 'abc123' });
 
-    expect(url).toBe(
-      'https://shop.example.com/laioutr/connect-session' +
-        '?sw-context-token=abc123' +
-        '&redirect-route=frontend.checkout.confirm.page' +
-        '&login-success-callback=https%3A%2F%2Fstore.laioutr.com' +
-        '&logout-success-callback=https%3A%2F%2Fstore.laioutr.com'
-    );
+    expect(url).toBe('https://shop.example.com/laioutr/connect-session?code=abc123');
+  });
+
+  it('URL-encodes the code', () => {
+    const url = buildConnectSessionUrl({ storefrontUrl: 'https://shop.example.com', code: 'a b/c+d=' });
+
+    expect(url).toBe('https://shop.example.com/laioutr/connect-session?code=a+b%2Fc%2Bd%3D');
   });
 
   it('trims a trailing slash from the storefront URL', () => {
-    const url = buildCheckoutUrl({ storefrontUrl: 'https://shop.example.com/', contextToken: 'x', origin: 'https://a.b' });
-    expect(url.startsWith('https://shop.example.com/laioutr/connect-session?')).toBe(true);
+    const url = buildConnectSessionUrl({ storefrontUrl: 'https://shop.example.com/', code: 'x' });
+
+    expect(url).toBe('https://shop.example.com/laioutr/connect-session?code=x');
   });
 });
