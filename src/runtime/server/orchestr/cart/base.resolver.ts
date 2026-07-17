@@ -1,7 +1,7 @@
 import { useRuntimeConfig } from '#imports';
 import { CartBase, CartCost } from '@laioutr-core/canonical-types/entity/cart';
 import { Link } from '@laioutr-core/core-types/common';
-import { CHECKOUT_ENDPOINT_PATH } from '../../const/checkout';
+import { Checkout } from '../../../shared/pageTypes/checkout.pagetype';
 import { cartFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { mapCartCost } from '../../shopware-helper/cartMapper';
@@ -20,12 +20,13 @@ export default defineShopwareComponentResolver({
     const totalQuantity = (cart.lineItems ?? []).reduce((sum, li) => sum + (li.quantity ?? 0), 0);
 
     /*
-     * A stable, same-origin link. The single-use handoff code is minted server-side
-     * when the shopper navigates to it (see server/routes/checkout.ts) — it cannot be
-     * pre-computed here because codes are single-use with a ~60s TTL.
+     * Link to the merchant's Studio checkout page (whichever page they tag with the
+     * `Checkout` page type), which hosts the embedded-storefront section. The section's
+     * iframe performs the actual same-origin session handoff (see server/routes/checkout.ts).
+     * Gated on `storefrontUrl`: with no storefront configured there is nothing to embed.
      */
     const checkoutLink: Link | undefined =
-      config.storefrontUrl ? { type: 'url', href: CHECKOUT_ENDPOINT_PATH } : undefined;
+      config.storefrontUrl ? { type: 'pageType', pageType: Checkout } : undefined;
 
     return {
       entities: [

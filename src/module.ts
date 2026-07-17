@@ -1,5 +1,5 @@
 /* eslint-disable import-x/export, @typescript-eslint/no-empty-object-type */
-import { addServerHandler, createResolver, defineNuxtModule, installModule } from '@nuxt/kit';
+import { addPlugin, addServerHandler, createResolver, defineNuxtModule, installModule } from '@nuxt/kit';
 import { defu } from 'defu';
 import { CHECKOUT_ENDPOINT_PATH } from './runtime/server/const/checkout';
 import { registerLaioutrApp } from '@laioutr-core/kit';
@@ -26,7 +26,14 @@ export interface ModuleOptions {
 /**
  * The config the module adds to nuxt.runtimeConfig.public['@laioutr-app/shopware']
  */
-export interface RuntimeConfigModulePublic {}
+export interface RuntimeConfigModulePublic {
+  /**
+   * Origin (scheme + host) of the Shopware storefront, derived from {@link
+   * ModuleOptions.storefrontUrl}. Exposed publicly so the embedded checkout section can
+   * validate and pin `postMessage` traffic to the storefront frame. Empty when unset.
+   */
+  storefrontOrigin: string;
+}
 
 /**
  * The config the module adds to nuxt.runtimeConfig['@laioutr-app/shopware']
@@ -48,6 +55,12 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     // Runtime configuration for this module
     nuxt.options.runtimeConfig[name] = defu(nuxt.options.runtimeConfig[name] as any, options);
 
+    // Public runtime config: expose the storefront origin (not the full URL) so the
+    // embedded checkout section can validate/pin postMessage traffic to the storefront.
+    nuxt.options.runtimeConfig.public[name] = defu(nuxt.options.runtimeConfig.public[name] as any, {
+      storefrontOrigin: options.storefrontUrl ? new URL(options.storefrontUrl).origin : '',
+    });
+
     // Make app-assets publicly available
     nuxt.options.nitro.publicAssets ??= [];
     nuxt.options.nitro.publicAssets.push({
@@ -67,6 +80,7 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       name,
       version,
       orchestrDirs: [resolveRuntimeModule('server/orchestr')],
+      sections: [resolveRuntimeModule('app/sections/')],
       nuxtImageProviders: {
         shopware: {
           name: 'shopware',
@@ -76,9 +90,13 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       mediaLibraryProviders: [resolveRuntimeModule('./server/media-libraries/shopware')],
     });
 
+    // Register the app's page types (Checkout, Order Confirmation) so Studio offers them.
+    addPlugin(resolveRuntimeModule('./app/plugins/pagetypes'));
+
     // Install peer-dependency modules only on prepare-step. Needs to be added in the playground as well.
     if (nuxt.options._prepare) {
-      installModule('@laioutr-core/frontend-core');
+      await installModule('@laioutr-core/frontend-core');
+      await installModule('@laioutr-app/ui');
     }
 
     // Shared

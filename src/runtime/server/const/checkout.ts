@@ -1,10 +1,6 @@
-/**
- * Same-origin laioutr route that mints a handoff code and 302s to the storefront checkout.
- * Namespaced under the app's `/app-shopware/` prefix (the platform convention for app-owned
- * paths) so it never collides with editor content slugs and is not gated by the
- * secret-protected `/api/laioutr/*` namespace.
- */
-export const CHECKOUT_ENDPOINT_PATH = '/app-shopware/checkout';
+// Re-exported from the shared const so both the server route handler and the client-side
+// embedded checkout section resolve the same path from one definition.
+export { CHECKOUT_ENDPOINT_PATH } from '../../shared/const/checkout';
 
 /**
  * Internal Shopware route the handoff lands on after the storefront session adopts
