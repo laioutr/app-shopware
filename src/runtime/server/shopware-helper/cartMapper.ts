@@ -107,6 +107,13 @@ export const mapCartItem = (
       total: money(total),
     },
     availability: {
+      // `quantity` is Shopware's own purchasable quantity: `quantityInformation.maxPurchase`
+      // is the product's `calculatedMaxPurchase` — stock-clamped (`min(cap, availableStock)`)
+      // for closeout products, and the configured cap for backorder products. This is the
+      // number Shopware's storefront quantity selector uses. Physical stock is not surfaced
+      // here on purpose (Shopware doesn't put `availableStock` on the cart line's
+      // `quantityInformation`); expose true stock via a product association if a low-stock UI
+      // ever needs it. The purchase cap is also carried in `quantityRule.max` below.
       quantity: qtyInfo?.maxPurchase ?? availableStock ?? lineItem.quantity,
       status: (inStock ? 'inStock' : 'outOfStock') as 'inStock' | 'outOfStock',
     },
