@@ -21,22 +21,25 @@ export interface ResolveCheckoutDeps {
  * Decide where a checkout click should send the shopper. Fail-closed and free of I/O beyond the
  * injected `mint` call, so the whole outcome matrix is unit-testable without an h3 event:
  *
+ * - no context cookie (empty cart) → redirect to the laioutr frontend root, no mint;
  * - no `storefrontUrl` (misconfig) → 500, no mint;
- * - no context cookie (empty cart) → redirect to the storefront root, no mint;
  * - mint succeeds → redirect to `connect-session?code=…`;
  * - mint throws (e.g. callback not allowlisted) → 502.
  *
- * No branch mutates the cart.
+ * The Shopware storefront is only ever navigated to for an actual checkout handoff — never as a
+ * fallback. No branch mutates the cart.
  */
 export const resolveCheckout = async (deps: ResolveCheckoutDeps): Promise<CheckoutPlan> => {
   const { config, contextToken, origin, mint } = deps;
 
-  if (!config.storefrontUrl) {
-    return { kind: 'error', statusCode: 500, statusMessage: 'Checkout is not configured' };
+  if (!contextToken) {
+    // No cart context — nothing to hand off. Keep the shopper on the laioutr frontend (its root);
+    // the Shopware storefront is an implementation detail of checkout, not a place to land.
+    return { kind: 'redirect', url: '/' };
   }
 
-  if (!contextToken) {
-    return { kind: 'redirect', url: config.storefrontUrl.replace(/\/+$/, '') };
+  if (!config.storefrontUrl) {
+    return { kind: 'error', statusCode: 500, statusMessage: 'Checkout is not configured' };
   }
 
   try {

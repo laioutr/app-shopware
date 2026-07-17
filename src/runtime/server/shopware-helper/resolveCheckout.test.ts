@@ -35,17 +35,26 @@ describe('resolveCheckout', () => {
     expect(mint).not.toHaveBeenCalled();
   });
 
-  it('redirects to the storefront root (trailing slash trimmed) without minting when there is no context token', async () => {
+  it('redirects to the laioutr frontend root (never the storefront) without minting when there is no context token', async () => {
+    const mint = vi.fn();
+
+    const plan = await resolveCheckout({ config, contextToken: undefined, origin: 'https://store.laioutr.com', mint });
+
+    expect(plan).toEqual({ kind: 'redirect', url: '/' });
+    expect(mint).not.toHaveBeenCalled();
+  });
+
+  it('redirects to the frontend root even when storefrontUrl is unconfigured (no cart never needs the storefront)', async () => {
     const mint = vi.fn();
 
     const plan = await resolveCheckout({
-      config: { ...config, storefrontUrl: 'https://shop.example.com/' },
+      config: { endpoint: config.endpoint, accessToken: config.accessToken },
       contextToken: undefined,
       origin: 'https://store.laioutr.com',
       mint,
     });
 
-    expect(plan).toEqual({ kind: 'redirect', url: 'https://shop.example.com' });
+    expect(plan).toEqual({ kind: 'redirect', url: '/' });
     expect(mint).not.toHaveBeenCalled();
   });
 
