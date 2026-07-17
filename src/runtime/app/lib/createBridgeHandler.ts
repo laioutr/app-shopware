@@ -31,11 +31,26 @@ export type CreateBridgeHandlerOptions = {
  * 3. **Envelope** — `parseBridgeMessage` accepts the `{ source, version, type, payload }`.
  *
  * On the storefront's contentless `laioutr:ready` ping it replies `laioutr:init` to the
- * validated origin, which unblocks the plugin's buffered data messages. All logic lives
- * here (no `window`, no Vue) so it is unit-testable; `useShopwareEmbedBridge` only wires
- * it to the real `window` `message` event and the component lifecycle.
+ * validated origin, which unblocks the plugin's buffered data messages.
+ *
+ * `ready` is a **one-shot** broadcast, and the server-rendered iframe can fire it before
+ * this listener is attached (the browser loads the iframe before Vue hydrates). So the
+ * handshake must not depend on catching it: {@link sendInit} lets the caller *proactively*
+ * post `init` to the configured origin once the frame has loaded. Both paths are
+ * idempotent — the plugin just re-pins and re-flushes.
+ *
+ * All logic lives here (no `window`, no Vue) so it is unit-testable; `useShopwareEmbedBridge`
+ * only wires it to the real `window` `message` event and the component lifecycle.
  */
 export const createBridgeHandler = (options: CreateBridgeHandlerOptions) => {
+  /** Proactively post the handshake to the configured origin (frame-load path). */
+  const sendInit = (): void => {
+    const frameWindow = options.getFrameWindow();
+    if (frameWindow && options.storefrontOrigin) {
+      options.postInit(frameWindow, options.storefrontOrigin);
+    }
+  };
+
   const handleMessage = (event: BridgeMessageEvent): void => {
     const frameWindow = options.getFrameWindow();
     if (!frameWindow || event.source !== frameWindow) return;
@@ -65,5 +80,5 @@ export const createBridgeHandler = (options: CreateBridgeHandlerOptions) => {
     }
   };
 
-  return { handleMessage };
+  return { handleMessage, sendInit };
 };

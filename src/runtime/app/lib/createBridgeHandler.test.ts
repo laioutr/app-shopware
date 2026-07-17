@@ -17,14 +17,14 @@ const setup = (overrides: Partial<CreateBridgeHandlerOptions> = {}) => {
     onPwRecovery: vi.fn(),
     ...overrides,
   } satisfies CreateBridgeHandlerOptions;
-  const { handleMessage } = createBridgeHandler(options);
+  const { handleMessage, sendInit } = createBridgeHandler(options);
   const emit = (type: string, payload: unknown = {}, from: { source?: unknown; origin?: string } = {}) =>
     handleMessage({
       source: 'source' in from ? from.source : frameWindow,
       origin: from.origin ?? STOREFRONT,
       data: { source: BRIDGE_SOURCE, version: BRIDGE_VERSION, type, payload },
     });
-  return { options, frameWindow, emit };
+  return { options, frameWindow, emit, sendInit };
 };
 
 describe('createBridgeHandler', () => {
@@ -84,5 +84,25 @@ describe('createBridgeHandler', () => {
     emit('laioutr:resize', { height: 900 });
     expect(options.postInit).toHaveBeenCalledTimes(1);
     expect(options.onResize).toHaveBeenCalledWith(900);
+  });
+
+  describe('sendInit (proactive handshake)', () => {
+    it('posts init to the configured origin when the frame is present', () => {
+      const { options, frameWindow, sendInit } = setup();
+      sendInit();
+      expect(options.postInit).toHaveBeenCalledWith(frameWindow, STOREFRONT);
+    });
+
+    it('no-ops before the frame window exists', () => {
+      const { options, sendInit } = setup({ getFrameWindow: () => null });
+      sendInit();
+      expect(options.postInit).not.toHaveBeenCalled();
+    });
+
+    it('no-ops when the storefront origin is not configured', () => {
+      const { options, sendInit } = setup({ storefrontOrigin: '' });
+      sendInit();
+      expect(options.postInit).not.toHaveBeenCalled();
+    });
   });
 });

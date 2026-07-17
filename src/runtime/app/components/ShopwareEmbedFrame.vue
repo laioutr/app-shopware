@@ -20,13 +20,24 @@ const frameRef = ref<HTMLIFrameElement | null>(null);
 const height = ref<number>();
 const loaded = ref(false);
 
-useShopwareEmbedBridge(frameRef, {
+const { sendInit } = useShopwareEmbedBridge(frameRef, {
   storefrontOrigin: storefrontOrigin.value,
   onResize: (value) => (height.value = value),
   onPageLoaded: () => (loaded.value = true),
   onCheckoutFinish: (orderId) => emit('checkout-finish', orderId),
   // laioutr:pw-recovery is received but unused in v1.
 });
+
+/**
+ * The plugin's one-shot `laioutr:ready` can fire before our message listener attaches
+ * (the SSR iframe loads before hydration), so complete the handshake proactively once the
+ * frame has loaded. Also clears the overlay: `load` fires on the storefront document, so
+ * it is a reliable "content is showing" signal for each in-frame navigation.
+ */
+const onFrameLoad = () => {
+  loaded.value = true;
+  sendInit();
+};
 
 const frameStyle = computed(() => ({ height: height.value ? `${height.value}px` : '600px' }));
 </script>
@@ -38,7 +49,14 @@ const frameStyle = computed(() => ({ height: height.value ? `${height.value}px` 
     </div>
     <template v-else>
       <div v-if="!loaded" class="shopware-embed-frame__loading">Loading checkout…</div>
-      <iframe ref="frameRef" :src="CHECKOUT_ENDPOINT_PATH" title="Checkout" class="shopware-embed-frame__iframe" :style="frameStyle" />
+      <iframe
+        ref="frameRef"
+        :src="CHECKOUT_ENDPOINT_PATH"
+        title="Checkout"
+        class="shopware-embed-frame__iframe"
+        :style="frameStyle"
+        @load="onFrameLoad"
+      />
     </template>
   </div>
 </template>

@@ -15,10 +15,17 @@ export type UseShopwareEmbedBridgeOptions = {
  * Wires the parent side of the storefront `postMessage` bridge to the real `window`
  * `message` event for the lifetime of the calling component. All decision logic lives in
  * {@link createBridgeHandler} (unit-tested); this only adds/removes the listener and posts
- * the handshake reply through the frame's `contentWindow`.
+ * through the frame's `contentWindow`.
+ *
+ * Returns `sendInit` — call it on the iframe's `load` event to proactively complete the
+ * handshake, since the plugin's one-shot `ready` can fire before this listener attaches
+ * (the SSR iframe loads before Vue hydrates).
  */
-export const useShopwareEmbedBridge = (frameRef: Ref<HTMLIFrameElement | null>, options: UseShopwareEmbedBridgeOptions): void => {
-  const { handleMessage } = createBridgeHandler({
+export const useShopwareEmbedBridge = (
+  frameRef: Ref<HTMLIFrameElement | null>,
+  options: UseShopwareEmbedBridgeOptions
+): { sendInit: () => void } => {
+  const { handleMessage, sendInit } = createBridgeHandler({
     getFrameWindow: () => frameRef.value?.contentWindow ?? null,
     storefrontOrigin: options.storefrontOrigin,
     postInit: (frameWindow, targetOrigin) => frameWindow.postMessage(buildInitMessage(), targetOrigin),
@@ -32,4 +39,6 @@ export const useShopwareEmbedBridge = (frameRef: Ref<HTMLIFrameElement | null>, 
 
   onMounted(() => window.addEventListener('message', listener));
   onBeforeUnmount(() => window.removeEventListener('message', listener));
+
+  return { sendInit };
 };
