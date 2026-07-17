@@ -14,6 +14,17 @@ export interface MintSessionHandoffParams {
 }
 
 /**
+ * Extract the human-readable reason from a failed mint. Shopware store-api errors are
+ * `{ errors: [{ status, code, title, detail }] }`; `$fetch` (ofetch) exposes the parsed
+ * body as `err.data`. Falls back to the error message when no structured detail exists.
+ */
+const describeMintError = (err: unknown): string => {
+  const e = err as { data?: { errors?: Array<{ detail?: string; title?: string }>; message?: string }; message?: string };
+  const apiError = e?.data?.errors?.[0];
+  return apiError?.detail ?? apiError?.title ?? e?.data?.message ?? e?.message ?? 'unknown error';
+};
+
+/**
  * Mint a single-use session-handoff code against the `LaioutrConnector` plugin's
  * `POST /store-api/laioutr/session-handoff` endpoint.
  *
@@ -21,23 +32,30 @@ export interface MintSessionHandoffParams {
  * shopper's `sw-context-token` (http-only cookie), so the raw token never reaches
  * the browser. The returned code is opaque, single-use, and expires in ~60s.
  *
- * @throws if the mint responds non-2xx or without a `code`.
+ * @throws with the plugin's rejection reason when the mint responds non-2xx or without a `code`.
+ *   A `400 "Callback domain is not allowed"` means the callback origin is not in the plugin's
+ *   `callbackDomainWildcard` allowlist.
  */
 export const mintSessionHandoffCode = async (params: MintSessionHandoffParams): Promise<string> => {
   const base = params.endpoint.replace(/\/+$/, '');
 
-  const res = await $fetch<{ code?: string }>(`${base}/laioutr/session-handoff`, {
-    method: 'POST',
-    headers: {
-      'sw-access-key': params.accessToken,
-      'sw-context-token': params.contextToken,
-    },
-    body: {
-      'login-success-callback': params.loginSuccessCallback,
-      'logout-success-callback': params.logoutSuccessCallback,
-      'redirect-route': params.redirectRoute,
-    },
-  });
+  let res: { code?: string };
+  try {
+    res = await $fetch<{ code?: string }>(`${base}/laioutr/session-handoff`, {
+      method: 'POST',
+      headers: {
+        'sw-access-key': params.accessToken,
+        'sw-context-token': params.contextToken,
+      },
+      body: {
+        'login-success-callback': params.loginSuccessCallback,
+        'logout-success-callback': params.logoutSuccessCallback,
+        'redirect-route': params.redirectRoute,
+      },
+    });
+  } catch (err) {
+    throw new Error(`session-handoff mint rejected: ${describeMintError(err)}`);
+  }
 
   if (!res?.code) {
     throw new Error('session-handoff mint returned no code');

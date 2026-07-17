@@ -58,4 +58,13 @@ describe('mintSessionHandoffCode', () => {
 
     await expect(mintSessionHandoffCode(baseParams)).rejects.toThrow('Callback domain is not allowed');
   });
+
+  it('surfaces the plugin error detail from a store-api 400 body', async () => {
+    const fetchError = Object.assign(new Error('400 Bad Request'), {
+      data: { errors: [{ status: '400', detail: 'Callback domain is not allowed' }] },
+    });
+    vi.stubGlobal('$fetch', vi.fn().mockRejectedValue(fetchError));
+
+    await expect(mintSessionHandoffCode(baseParams)).rejects.toThrow('session-handoff mint rejected: Callback domain is not allowed');
+  });
 });
