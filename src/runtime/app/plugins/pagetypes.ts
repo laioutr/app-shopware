@@ -1,7 +1,6 @@
 import { defineNuxtPlugin } from '#app';
 import { pageTypeTokenRegistry } from '@laioutr-core/core-types/frontend';
 import { Checkout } from '../../shared/pageTypes/checkout.pagetype';
-import { CheckoutFinish } from '../../shared/pageTypes/checkoutFinish.pagetype';
 
 /**
  * Registers the app's page types so Studio offers them when an editor creates a page.
@@ -9,5 +8,5 @@ import { CheckoutFinish } from '../../shared/pageTypes/checkoutFinish.pagetype';
  * effect); the reflect cache reads `pageTypeTokenRegistry.all()`.
  */
 export default defineNuxtPlugin(() => {
-  [Checkout, CheckoutFinish].forEach((token) => pageTypeTokenRegistry.getMetadata(token));
+  [Checkout].forEach((token) => pageTypeTokenRegistry.getMetadata(token));
 });
