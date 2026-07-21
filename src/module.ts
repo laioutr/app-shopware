@@ -21,6 +21,17 @@ export interface ModuleOptions {
    * `checkoutLink`; those are unavailable when it is unset.
    */
   storefrontUrl?: string;
+  /**
+   * Absolute URL the storefront returns to after a login inside checkout. Defaults to the
+   * request origin. Set to the project's IdP login route for external-IdP (SSO) projects.
+   */
+  checkoutLoginCallbackUrl?: string;
+  /**
+   * Absolute URL the storefront returns to after a logout inside checkout. Defaults to the
+   * request origin. Set to the project's IdP RP-logout route so a storefront logout ends the
+   * external session too.
+   */
+  checkoutLogoutCallbackUrl?: string;
 }
 
 /**

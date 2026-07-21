@@ -66,4 +66,39 @@ describe('resolveCheckout', () => {
 
     expect(plan).toEqual({ kind: 'error', statusCode: 502, statusMessage: 'Checkout handoff failed', cause });
   });
+
+  it('uses the configured login/logout callback URLs when set, instead of the request origin', async () => {
+    const mint = vi.fn().mockResolvedValue('the-code');
+
+    await resolveCheckout({
+      config: {
+        ...config,
+        checkoutLoginCallbackUrl: 'https://id.example.com/login',
+        checkoutLogoutCallbackUrl: 'https://id.example.com/logout',
+      },
+      contextToken: 'ctx-token',
+      origin: 'https://store.laioutr.com',
+      mint,
+    });
+
+    expect(mint).toHaveBeenCalledWith(
+      expect.objectContaining({
+        loginSuccessCallback: 'https://id.example.com/login',
+        logoutSuccessCallback: 'https://id.example.com/logout',
+      })
+    );
+  });
+
+  it('falls back to the request origin for both callbacks when the config URLs are unset', async () => {
+    const mint = vi.fn().mockResolvedValue('the-code');
+
+    await resolveCheckout({ config, contextToken: 'ctx-token', origin: 'https://store.laioutr.com', mint });
+
+    expect(mint).toHaveBeenCalledWith(
+      expect.objectContaining({
+        loginSuccessCallback: 'https://store.laioutr.com',
+        logoutSuccessCallback: 'https://store.laioutr.com',
+      })
+    );
+  });
 });

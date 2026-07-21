@@ -8,7 +8,13 @@ export type CheckoutPlan =
   | { kind: 'error'; statusCode: number; statusMessage: string; cause?: unknown };
 
 export interface ResolveCheckoutDeps {
-  config: { endpoint: string; accessToken: string; storefrontUrl?: string };
+  config: {
+    endpoint: string;
+    accessToken: string;
+    storefrontUrl?: string;
+    checkoutLoginCallbackUrl?: string;
+    checkoutLogoutCallbackUrl?: string;
+  };
   /** Shopware context token from the request cookie (absent for a shopper with no cart yet). */
   contextToken: string | null | undefined;
   /** Request origin used for the login/logout success callbacks. */
@@ -47,8 +53,8 @@ export const resolveCheckout = async (deps: ResolveCheckoutDeps): Promise<Checko
       endpoint: config.endpoint,
       accessToken: config.accessToken,
       contextToken,
-      loginSuccessCallback: origin,
-      logoutSuccessCallback: origin,
+      loginSuccessCallback: config.checkoutLoginCallbackUrl ?? origin,
+      logoutSuccessCallback: config.checkoutLogoutCallbackUrl ?? origin,
       redirectRoute: CHECKOUT_REDIRECT_ROUTE,
     });
 
