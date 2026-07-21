@@ -1,7 +1,7 @@
 import { CartRemoveItemsAction } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 import { handleCartMutationErrors } from '../../shopware-helper/cartErrors';
-import { ensureContextTokenCookie } from '../../shopware-helper/ensureContextTokenCookie';
+import { persistContextToken } from '../../shopware-helper/persistContextToken';
 
 export default defineShopwareAction(CartRemoveItemsAction, async ({ event, context, input }) => {
   const { storefrontClient } = context;
@@ -13,6 +13,6 @@ export default defineShopwareAction(CartRemoveItemsAction, async ({ event, conte
     body: { ids: input as [string, ...string[]] },
   });
 
-  ensureContextTokenCookie(event, cart.data.token);
+  await persistContextToken(event, cart.data.token);
   handleCartMutationErrors(cart.data.errors);
 });

@@ -1,7 +1,7 @@
 import { CartUpdateItemsAction } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 import { handleCartMutationErrors } from '../../shopware-helper/cartErrors';
-import { ensureContextTokenCookie } from '../../shopware-helper/ensureContextTokenCookie';
+import { persistContextToken } from '../../shopware-helper/persistContextToken';
 import { Schemas } from '../../types/storeApiTypes';
 
 export default defineShopwareAction(CartUpdateItemsAction, async ({ event, context, input }) => {
@@ -20,6 +20,6 @@ export default defineShopwareAction(CartUpdateItemsAction, async ({ event, conte
     body: { items: items as unknown as Schemas['LineItem'][] },
   });
 
-  ensureContextTokenCookie(event, cart.data.token);
+  await persistContextToken(event, cart.data.token);
   handleCartMutationErrors(cart.data.errors);
 });
