@@ -11,7 +11,7 @@ export const defineShopware = defineOrchestr
     label: 'Shopware',
   })
   .extendRequest(async (args) => {
-    const storefrontClient = shopwareClientFactory(args.event);
+    const storefrontClient = await shopwareClientFactory(args.event);
     const adminClient = shopwareAdminClientFactory();
 
     const systemEntities = await getCachedSystemEntities(storefrontClient);
