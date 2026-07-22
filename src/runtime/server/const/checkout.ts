@@ -1,6 +1,6 @@
 // Re-exported from the shared const so both the server route handler and the client-side
 // embedded checkout section resolve the same path from one definition.
-export { CHECKOUT_ENDPOINT_PATH } from '../../shared/const/checkout';
+export { ADOPT_SESSION_ENDPOINT_PATH, CHECKOUT_ENDPOINT_PATH } from '../../shared/const/checkout';
 
 /**
  * Internal Shopware route the handoff lands on after the storefront session adopts

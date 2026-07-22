@@ -1,7 +1,7 @@
 /* eslint-disable import-x/export, @typescript-eslint/no-empty-object-type */
 import { addPlugin, addServerHandler, createResolver, defineNuxtModule, installModule } from '@nuxt/kit';
 import { defu } from 'defu';
-import { CHECKOUT_ENDPOINT_PATH } from './runtime/server/const/checkout';
+import { ADOPT_SESSION_ENDPOINT_PATH, CHECKOUT_ENDPOINT_PATH } from './runtime/server/const/checkout';
 import { registerLaioutrApp } from '@laioutr-core/kit';
 import type { NuxtModule } from '@nuxt/schema';
 import { name, version } from '../package.json';
@@ -85,6 +85,14 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       route: CHECKOUT_ENDPOINT_PATH,
       method: 'get',
       handler: resolveRuntimeModule('./server/routes/checkout'),
+    });
+
+    // POST endpoint the embedded checkout section calls on laioutr:auth-changed to adopt or
+    // clear the storefront session server-side (see server/routes/adopt-session.post.ts).
+    addServerHandler({
+      route: ADOPT_SESSION_ENDPOINT_PATH,
+      method: 'post',
+      handler: resolveRuntimeModule('./server/routes/adopt-session.post'),
     });
 
     await registerLaioutrApp({

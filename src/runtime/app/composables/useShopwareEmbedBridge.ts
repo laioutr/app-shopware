@@ -1,5 +1,5 @@
 import { onBeforeUnmount, onMounted, type Ref } from 'vue';
-import { type BridgePageLoadedPayload, buildInitMessage } from '../const/bridge';
+import { type AuthChangedPayload, type BridgePageLoadedPayload, buildInitMessage } from '../const/bridge';
 import { createBridgeHandler } from '../lib/createBridgeHandler';
 
 export type UseShopwareEmbedBridgeOptions = {
@@ -9,6 +9,7 @@ export type UseShopwareEmbedBridgeOptions = {
   onPageLoaded?: (payload: BridgePageLoadedPayload) => void;
   onCheckoutFinish?: (orderId: string) => void;
   onPwRecovery?: () => void;
+  onAuthChanged?: (payload: AuthChangedPayload) => void;
 };
 
 /**
@@ -33,6 +34,7 @@ export const useShopwareEmbedBridge = (
     onPageLoaded: options.onPageLoaded,
     onCheckoutFinish: options.onCheckoutFinish,
     onPwRecovery: options.onPwRecovery,
+    onAuthChanged: options.onAuthChanged,
   });
 
   const listener = (event: MessageEvent) => handleMessage(event);

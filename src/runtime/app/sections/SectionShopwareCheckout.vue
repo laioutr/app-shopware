@@ -24,7 +24,9 @@ export const definition = defineSection({
 </script>
 
 <script setup lang="ts">
-import { defineSection, definitionToProps, linkResolver, navigateTo } from '#imports';
+import { defineSection, definitionToProps, linkResolver, navigateTo, refreshNuxtData } from '#imports';
+import type { AuthChangedPayload } from '../const/bridge';
+import { ADOPT_SESSION_ENDPOINT_PATH } from '../../shared/const/checkout';
 import ShopwareEmbedFrame from '../components/ShopwareEmbedFrame.vue';
 
 const props = defineProps(definitionToProps(definition));
@@ -40,8 +42,19 @@ const onCheckoutFinish = async (orderId: string) => {
   const path = linkResolver.resolve(props.finishLink);
   await navigateTo({ path, query: { order: orderId } });
 };
+
+/**
+ * On a storefront login/logout inside the frame the bridge posts `laioutr:auth-changed`.
+ * Adopt (or clear) the session server-side — the single-use code is redeemed there, the
+ * token never touching the browser — then refresh server-rendered data so laioutr reflects
+ * the new auth state.
+ */
+const onAuthChanged = async (payload: AuthChangedPayload) => {
+  await $fetch(ADOPT_SESSION_ENDPOINT_PATH, { method: 'POST', body: { code: payload.code } });
+  await refreshNuxtData();
+};
 </script>
 
 <template>
-  <ShopwareEmbedFrame @checkout-finish="onCheckoutFinish" />
+  <ShopwareEmbedFrame @checkout-finish="onCheckoutFinish" @auth-changed="onAuthChanged" />
 </template>

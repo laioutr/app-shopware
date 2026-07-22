@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useRuntimeConfig } from '#imports';
+import type { AuthChangedPayload } from '../const/bridge';
 import { CHECKOUT_ENDPOINT_PATH } from '../../shared/const/checkout';
 import { useShopwareEmbedBridge } from '../composables/useShopwareEmbedBridge';
 
@@ -12,7 +13,7 @@ import { useShopwareEmbedBridge } from '../composables/useShopwareEmbedBridge';
  * follows the storefront's `laioutr:resize` messages so there is no inner scrollbar. When
  * `storefrontOrigin` is not configured the embed cannot work, so a notice renders instead.
  */
-const emit = defineEmits<{ 'checkout-finish': [orderId: string] }>();
+const emit = defineEmits<{ 'checkout-finish': [orderId: string]; 'auth-changed': [payload: AuthChangedPayload] }>();
 
 const storefrontOrigin = computed(() => useRuntimeConfig().public['@laioutr-app/shopware']?.storefrontOrigin ?? '');
 
@@ -25,6 +26,7 @@ const { sendInit } = useShopwareEmbedBridge(frameRef, {
   onResize: (value) => (height.value = value),
   onPageLoaded: () => (loaded.value = true),
   onCheckoutFinish: (orderId) => emit('checkout-finish', orderId),
+  onAuthChanged: (payload) => emit('auth-changed', payload),
   // laioutr:pw-recovery is received but unused in v1.
 });
 
