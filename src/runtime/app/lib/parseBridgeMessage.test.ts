@@ -68,4 +68,30 @@ describe('parseBridgeMessage', () => {
     expect(parseBridgeMessage('laioutr:ready')).toBeNull();
     expect(parseBridgeMessage(7)).toBeNull();
   });
+
+  it('accepts auth-changed with a from and optional code', () => {
+    expect(parseBridgeMessage(envelope('laioutr:auth-changed', { from: 'frontend.account.login', code: 'abc' }))).toEqual({
+      type: 'laioutr:auth-changed',
+      payload: { from: 'frontend.account.login', code: 'abc' },
+    });
+  });
+
+  it('accepts auth-changed without a code (logout)', () => {
+    expect(parseBridgeMessage(envelope('laioutr:auth-changed', { from: 'frontend.account.logout' }))).toEqual({
+      type: 'laioutr:auth-changed',
+      payload: { from: 'frontend.account.logout' },
+    });
+  });
+
+  it('rejects auth-changed without a string from', () => {
+    expect(parseBridgeMessage(envelope('laioutr:auth-changed', { code: 'abc' }))).toBeNull();
+    expect(parseBridgeMessage(envelope('laioutr:auth-changed', { from: 42 }))).toBeNull();
+  });
+
+  it('drops a non-string code from auth-changed', () => {
+    expect(parseBridgeMessage(envelope('laioutr:auth-changed', { from: 'frontend.account.login', code: 7 }))).toEqual({
+      type: 'laioutr:auth-changed',
+      payload: { from: 'frontend.account.login' },
+    });
+  });
 });

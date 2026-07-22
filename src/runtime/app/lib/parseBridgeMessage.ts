@@ -38,6 +38,13 @@ export const parseBridgeMessage = (data: unknown): BridgeInboundMessage | null =
             },
           }
         : null;
+    case 'laioutr:auth-changed':
+      return typeof payload.from === 'string' ?
+          {
+            type: 'laioutr:auth-changed',
+            payload: typeof payload.code === 'string' ? { from: payload.from, code: payload.code } : { from: payload.from },
+          }
+        : null;
     default:
       return null;
   }

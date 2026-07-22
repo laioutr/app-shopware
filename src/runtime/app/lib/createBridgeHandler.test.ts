@@ -15,6 +15,7 @@ const setup = (overrides: Partial<CreateBridgeHandlerOptions> = {}) => {
     onPageLoaded: vi.fn(),
     onCheckoutFinish: vi.fn(),
     onPwRecovery: vi.fn(),
+    onAuthChanged: vi.fn(),
     ...overrides,
   } satisfies CreateBridgeHandlerOptions;
   const { handleMessage, sendInit } = createBridgeHandler(options);
@@ -49,6 +50,14 @@ describe('createBridgeHandler', () => {
     });
     expect(options.onCheckoutFinish).toHaveBeenCalledWith('ord_9');
     expect(options.onPwRecovery).toHaveBeenCalledTimes(1);
+  });
+
+  it('forwards auth-changed payloads', () => {
+    const { options, emit } = setup();
+    emit('laioutr:auth-changed', { from: 'frontend.account.login', code: 'abc' });
+    emit('laioutr:auth-changed', { from: 'frontend.account.logout' });
+    expect(options.onAuthChanged).toHaveBeenNthCalledWith(1, { from: 'frontend.account.login', code: 'abc' });
+    expect(options.onAuthChanged).toHaveBeenNthCalledWith(2, { from: 'frontend.account.logout' });
   });
 
   it('ignores messages from a window that is not our frame', () => {

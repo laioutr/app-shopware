@@ -22,11 +22,14 @@ export type BridgeInboundMessage =
       payload: { path: string; route: string | null; navigationId: string | null; salesChannelId: string | null };
     }
   | { type: 'laioutr:checkout-finish'; payload: { orderId: string } }
-  | { type: 'laioutr:pw-recovery'; payload: Record<string, never> };
+  | { type: 'laioutr:pw-recovery'; payload: Record<string, never> }
+  | { type: 'laioutr:auth-changed'; payload: { from: string; code?: string } };
 
 export type BridgeInboundType = BridgeInboundMessage['type'];
 
 export type BridgePageLoadedPayload = Extract<BridgeInboundMessage, { type: 'laioutr:page-loaded' }>['payload'];
+
+export type AuthChangedPayload = Extract<BridgeInboundMessage, { type: 'laioutr:auth-changed' }>['payload'];
 
 /** The full envelope as it arrives on `MessageEvent.data`. */
 export type BridgeEnvelope = {

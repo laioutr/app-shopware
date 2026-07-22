@@ -1,6 +1,6 @@
 import { isTrustedOrigin } from './isTrustedOrigin';
 import { parseBridgeMessage } from './parseBridgeMessage';
-import { type BridgePageLoadedPayload } from '../const/bridge';
+import { type AuthChangedPayload, type BridgePageLoadedPayload } from '../const/bridge';
 
 /** Minimal `MessageEvent` shape the handler reads — kept structural so it's testable without a DOM. */
 export type BridgeMessageEvent = {
@@ -20,6 +20,7 @@ export type CreateBridgeHandlerOptions = {
   onPageLoaded?: (payload: BridgePageLoadedPayload) => void;
   onCheckoutFinish?: (orderId: string) => void;
   onPwRecovery?: () => void;
+  onAuthChanged?: (payload: AuthChangedPayload) => void;
 };
 
 /**
@@ -74,6 +75,9 @@ export const createBridgeHandler = (options: CreateBridgeHandlerOptions) => {
         return;
       case 'laioutr:pw-recovery':
         options.onPwRecovery?.();
+        return;
+      case 'laioutr:auth-changed':
+        options.onAuthChanged?.(message.payload);
         return;
       default:
         message satisfies never;
