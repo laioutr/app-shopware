@@ -39,7 +39,14 @@ export const useShopwareEmbedBridge = (
 
   const listener = (event: MessageEvent) => handleMessage(event);
 
-  onMounted(() => window.addEventListener('message', listener));
+  onMounted(() => {
+    window.addEventListener('message', listener);
+    // The SSR iframe can finish loading before we hydrate, so its one-shot `ready` (and the
+    // native `load` event) fire before these listeners attach — both missed, with no recovery.
+    // Proactively post `init`: if the storefront is already loaded it flushes its buffered
+    // messages; if it isn't yet, its later `ready` is caught by the listener above. Idempotent.
+    sendInit();
+  });
   onBeforeUnmount(() => window.removeEventListener('message', listener));
 
   return { sendInit };
