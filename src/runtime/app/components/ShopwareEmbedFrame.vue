@@ -21,10 +21,22 @@ const frameRef = ref<HTMLIFrameElement | null>(null);
 const height = ref<number>();
 const loaded = ref(false);
 
+// The storefront posts `page-loaded` on every in-frame page load. The first one reveals the
+// frame; each later one is an in-frame navigation, so scroll the parent viewport back to the
+// top — mirroring a normal full-page navigation.
+let hasShownFramePage = false;
+const onFramePageLoaded = () => {
+  loaded.value = true;
+  if (hasShownFramePage) {
+    window.scrollTo({ top: 0, left: 0 });
+  }
+  hasShownFramePage = true;
+};
+
 const { sendInit } = useShopwareEmbedBridge(frameRef, {
   storefrontOrigin: storefrontOrigin.value,
   onResize: (value) => (height.value = value),
-  onPageLoaded: () => (loaded.value = true),
+  onPageLoaded: onFramePageLoaded,
   onCheckoutFinish: (orderId) => emit('checkout-finish', orderId),
   onAuthChanged: (payload) => emit('auth-changed', payload),
   // laioutr:pw-recovery is received but unused in v1.
@@ -50,7 +62,10 @@ const frameStyle = computed(() => ({ height: height.value ? `${height.value}px` 
       The Shopware storefront URL is not configured, so the checkout cannot be embedded.
     </div>
     <template v-else>
-      <div v-if="!loaded" class="shopware-embed-frame__loading">Loading checkout…</div>
+      <div v-if="!loaded" class="shopware-embed-frame__loading" role="status">
+        <LLoadingSpinner variant="row" />
+        <span class="shopware-embed-frame__loading-label">Loading checkout…</span>
+      </div>
       <iframe
         ref="frameRef"
         :src="CHECKOUT_ENDPOINT_PATH"
@@ -70,9 +85,21 @@ const frameStyle = computed(() => ({ height: height.value ? `${height.value}px` 
   border: 0;
 }
 
-.shopware-embed-frame__notice,
-.shopware-embed-frame__loading {
+.shopware-embed-frame__notice {
   padding: 1rem;
   text-align: center;
+}
+
+.shopware-embed-frame__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.shopware-embed-frame__loading-label {
+  font-size: 0.875rem;
+  opacity: 0.7;
 }
 </style>
