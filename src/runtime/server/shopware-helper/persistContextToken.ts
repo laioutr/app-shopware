@@ -1,24 +1,25 @@
-import { getRequestURL, setCookie, useNitroApp } from '#imports';
+import { contextTokenCookieOptions } from './contextTokenCookie';
+import { deleteCookie, getRequestURL, setCookie, useNitroApp } from '#imports';
 import type { H3Event } from 'h3';
 import { CONTEXT_TOKEN_COOKIE } from '../const/cookieKeys';
 
 /**
- * Persist / refresh the Shopware context-token cookie, then notify host-registered
+ * Persist / refresh the Shopware context-token cookie (httpOnly), then notify host-registered
  * `shopware:context-token:changed` handlers so a project can mirror the token into its own
- * session store. No-op when the response carries no token; otherwise refreshes the max-age so
- * the cookie keeps reflecting the current session.
- *
- * `Secure` tracks the **frontend** request scheme — the cookie is set on the laioutr
- * domain, so it must key off the browser↔frontend connection, not the Shopware
- * store-api endpoint's scheme.
+ * session store. No-op when the response carries no token.
  */
 export const persistContextToken = async (event: H3Event, token: string | null | undefined): Promise<void> => {
   if (!token) return;
-  setCookie(event, CONTEXT_TOKEN_COOKIE, token, {
-    maxAge: 60 * 60 * 24 * 365, // 1 year
-    path: '/',
-    sameSite: 'lax',
-    secure: getRequestURL(event).protocol === 'https:',
-  });
+  setCookie(event, CONTEXT_TOKEN_COOKIE, token, contextTokenCookieOptions(getRequestURL(event).protocol === 'https:'));
   await useNitroApp().hooks.callHook('shopware:context-token:changed', { event, token });
+};
+
+/**
+ * Clear the context-token cookie and notify host handlers with a null token, so a storefront
+ * logout ends laioutr's mirrored session too. The next store-api call re-bootstraps a guest
+ * context.
+ */
+export const clearContextToken = async (event: H3Event): Promise<void> => {
+  deleteCookie(event, CONTEXT_TOKEN_COOKIE, { path: '/' });
+  await useNitroApp().hooks.callHook('shopware:context-token:changed', { event, token: null });
 };

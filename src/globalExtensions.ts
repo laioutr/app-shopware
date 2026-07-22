@@ -27,10 +27,11 @@ declare module 'nitropack' {
      */
     'shopware:context-token:resolve': (args: { event: H3Event; result: { token?: string } }) => HookResult;
     /**
-     * Notification: fired after the context token is (re)persisted, so a host can mirror it into
-     * its own store (e.g. keyed by the external IdP subject).
+     * Notification: fired after the context token is (re)persisted (`token` is the new value) or
+     * cleared on a storefront logout (`token` is `null`), so a host can mirror the change into its
+     * own store (e.g. keyed by the external IdP subject) — persisting on a value, clearing on null.
      */
-    'shopware:context-token:changed': (args: { event: H3Event; token: string }) => HookResult;
+    'shopware:context-token:changed': (args: { event: H3Event; token: string | null }) => HookResult;
   }
 }
 
