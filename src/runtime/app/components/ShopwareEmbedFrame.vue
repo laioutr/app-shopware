@@ -79,6 +79,10 @@ const frameStyle = computed(() => ({ height: height.value ? `${height.value}px` 
 </template>
 
 <style scoped>
+.shopware-embed-frame {
+  position: relative;
+}
+
 .shopware-embed-frame__iframe {
   display: block;
   width: 100%;
@@ -90,12 +94,18 @@ const frameStyle = computed(() => ({ height: height.value ? `${height.value}px` 
   text-align: center;
 }
 
+/* Overlays the iframe instead of stacking above it, so removing it on load shifts nothing. */
 .shopware-embed-frame__loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
   padding: 1rem;
+  background: var(--background-default);
 }
 
 .shopware-embed-frame__loading-label {
