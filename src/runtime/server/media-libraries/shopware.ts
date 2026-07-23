@@ -105,14 +105,18 @@ export default defineShopware.mediaLibrary({
     });
 
     // Folders ride in the list response on the FIRST (cursorless) page only (design §4.4);
-    // a whole-library search (`scope: 'all'`) has no folder level, so no tiles either.
-    const folders = query.cursor || query.scope === 'all' ? undefined : await fetchChildFolders(api, query.folderId);
+    // a whole-library search (`scope: 'all'`) has no folder level, and any active search term
+    // yields a flat asset result — so no folder tiles in either search case.
+    const folders = query.cursor || query.scope === 'all' || query.term ? undefined : await fetchChildFolders(api, query.folderId);
 
     const items: ProviderStudioMediaItem[] =
       response.data.data?.map((media: any) => ({
         media: mapMedia(media as any),
         previewUrl: media.thumbnails?.[0]?.url ?? media.url ?? '',
         externalId: media.id,
+        // Shopware stores the base name and extension separately; recompose the
+        // display filename (e.g. `swag_paypal_paypal` + `svg` → `swag_paypal_paypal.svg`).
+        fileName: media.fileName ? `${media.fileName}${media.fileExtension ? `.${media.fileExtension}` : ''}` : undefined,
       })) ?? [];
 
     const total = (response.data as any).total as number | undefined;
