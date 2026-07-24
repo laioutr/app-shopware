@@ -3,7 +3,8 @@ import { ProductDetailPage } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwarePageIndex } from '../../middleware/defineShopware';
 import { toProductPageRow } from '../../shopware-helper/pageIndexRows';
 
-const ENUM_PAGE_SIZE = 250;
+// Shopware's store API caps `limit` at MAX_LIMIT (100); a larger value is rejected with a 400.
+const ENUM_PAGE_SIZE = 100;
 const SEARCH_DEFAULT_TAKE = 25;
 
 /** Include only the fields a page-index row needs, plus the associations that carry the slug and cover. */
