@@ -1,7 +1,10 @@
+import { buildProductLocate } from './detail-page.locate';
 import { paginate } from '#imports';
 import { ProductDetailPage } from '@laioutr-core/canonical-types/ecommerce';
+import { useGetProductParentId } from '../../composable/useGetProductParentId';
 import { defineShopwarePageIndex } from '../../middleware/defineShopware';
 import { toProductPageRow } from '../../shopware-helper/pageIndexRows';
+import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 
 // Shopware's store API caps `limit` at MAX_LIMIT (100); a larger value is rejected with a 400.
 const ENUM_PAGE_SIZE = 100;
@@ -28,7 +31,25 @@ const pageIndexCriteria = {
  */
 export default defineShopwarePageIndex({
   for: ProductDetailPage,
-  cache: { ttl: '1h', search: { ttl: '5m' } },
+  cache: { ttl: '1h', search: { ttl: '5m' }, locate: { ttl: '1 day' } },
+  /**
+   * Point lookup: resolve the subject the current URL shows (same slug→id path as `bySlug.query.ts`).
+   *
+   * `locales` carries the current locale's slug (taken from the URL). Full cross-locale slugs — which
+   * also complete the SEO hreflang alternates — are a follow-up: the store API scopes SEO reads by the
+   * `sw-language-id` header, so per-language slugs need live-store-verified per-language reads. See
+   * docs/plans/2026-07-24-page-locate-current-subject-design.md.
+   */
+  locate: async ({ context, params, clientEnv }) => {
+    const client = context.storefrontClient;
+    const seoEntry = await useSeoResolver(client).resolve('product', params.slug);
+    if (!seoEntry) return undefined;
+
+    const parentId = await useGetProductParentId(client)(seoEntry.id);
+    const productId = parentId ?? seoEntry.id;
+
+    return buildProductLocate(productId, { [clientEnv.locale]: params.slug });
+  },
   count: async ({ context }) => {
     const response = await context.storefrontClient.invoke('readProduct post /product', {
       body: { ...pageIndexCriteria, limit: 1, 'total-count-mode': 'exact' },
