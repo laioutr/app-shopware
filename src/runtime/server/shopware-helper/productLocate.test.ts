@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildProductLocate } from './detail-page.locate';
+import { buildProductLocate } from './productLocate';
 
 describe('buildProductLocate', () => {
   it('builds subject + locales from a product id and a slug map', () => {

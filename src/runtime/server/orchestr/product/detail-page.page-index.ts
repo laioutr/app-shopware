@@ -1,9 +1,9 @@
-import { buildProductLocate } from './detail-page.locate';
 import { paginate } from '#imports';
 import { ProductDetailPage } from '@laioutr-core/canonical-types/ecommerce';
 import { useGetProductParentId } from '../../composable/useGetProductParentId';
 import { defineShopwarePageIndex } from '../../middleware/defineShopware';
 import { toProductPageRow } from '../../shopware-helper/pageIndexRows';
+import { buildProductLocate } from '../../shopware-helper/productLocate';
 import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 
 // Shopware's store API caps `limit` at MAX_LIMIT (100); a larger value is rejected with a 400.
