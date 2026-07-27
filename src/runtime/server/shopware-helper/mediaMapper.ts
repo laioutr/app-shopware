@@ -7,13 +7,6 @@ type SwMedia = Schemas['Media'];
 // Source and thumbnails are encoded in a valid url like this:
 // /original-source.jpg#/thumbnail-1.jpg 100x100, /thumbnail-2.jpg 200x200
 export const mediaToSrc = (media: SwMedia) => {
-  // TODO: remove me after möbel rogg demo
-  const anyCustomFields = (media.customFields ?? {}) as any;
-  const cdnMediaUrl = 'adobe_media_url' in anyCustomFields ? (anyCustomFields.adobe_media_url as string | undefined) : media.url;
-  if (cdnMediaUrl) {
-    return cdnMediaUrl;
-  }
-
   if ((!media.thumbnails || media.thumbnails.length === 0) && !media.url) {
     return FALLBACK_IMAGE_URL;
   }
@@ -51,7 +44,12 @@ export const mapMedia = (media: SwMedia): Media => {
 
   return {
     type,
-    alt: media.alt,
+    // Shopware exposes both `alt` and `title`; prefer the explicit alt text and
+    // fall back to the title, treating blank/`null` as unset. This also keeps the
+    // value `string | undefined` (never `null`) — the canonical Media schema's `alt`
+    // rejects `null`, so an unset-alt asset would otherwise fail validation and be
+    // dropped by the media-library trust boundary (wrapProvider.sanitizeProviderItem).
+    alt: media.alt || media.title || undefined,
     sources: [source] as any,
   } satisfies Media;
 };

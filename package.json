@@ -39,16 +39,19 @@
   },
   "dependencies": {
     "@laioutr-core/canonical-types": "workspace:*",
+    "@laioutr-core/core-types": "workspace:*",
     "@laioutr-core/frontend-core": "workspace:*",
     "@laioutr-core/kit": "workspace:*",
     "@nuxt/kit": "catalog:nuxt-core",
     "@nuxt/schema": "catalog:nuxt-core",
     "@screeny05/ts-money": "1.1.0",
     "@shopware/api-client": "1.2.1",
+    "consola": "^3.4.2",
     "defu": "6.1.4",
     "slug": "^8.2.3"
   },
   "devDependencies": {
+    "@laioutr-app/ui": "workspace:*",
     "@laioutr/eslint-config": "catalog:repo-tools",
     "@nuxt/module-builder": "catalog:nuxt-core",
     "@nuxt/schema": "catalog:nuxt-core",
