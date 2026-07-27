@@ -1,5 +1,48 @@
 # @laioutr-app/shopware
 
+## 0.11.2
+
+### Patch Changes
+
+- Updated dependencies [60ea122]
+- Updated dependencies [cd2e51e]
+- Updated dependencies [5e4342b]
+  - @laioutr-core/frontend-core@0.37.1
+  - @laioutr-core/kit@0.37.1
+  - @laioutr-core/canonical-types@0.26.2
+
+## 0.11.1
+
+### Patch Changes
+
+- Updated dependencies [72137a7]
+  - @laioutr-core/frontend-core@0.37.0
+  - @laioutr-core/canonical-types@0.26.1
+  - @laioutr-core/kit@0.37.0
+
+## 0.11.0
+
+### Minor Changes
+
+- a0df5b7: Follow the reshaped `ecommerce/cart/add-items` contract: handlers now return the per-item batch outcome (`{ items }`), reporting unresolved `sku` rows as rejected (`not-supported`) instead of dropping them. The Shopify `customer/address-get-all` handler returns the new `{ id, address }` row shape (address ids were previously stripped by the schema).
+
+### Patch Changes
+
+- Updated dependencies [26c6a9d]
+- Updated dependencies [125d5de]
+- Updated dependencies [5cd1a99]
+- Updated dependencies [e57e670]
+- Updated dependencies [66af5c0]
+- Updated dependencies [3416d47]
+- Updated dependencies [ca2aa8a]
+- Updated dependencies [fe1007a]
+- Updated dependencies [948df8c]
+- Updated dependencies [317d1d0]
+- Updated dependencies [6e3f5a5]
+  - @laioutr-core/canonical-types@0.26.0
+  - @laioutr-core/frontend-core@0.36.0
+  - @laioutr-core/kit@0.36.0
+
 ## 0.10.1
 
 ### Patch Changes
