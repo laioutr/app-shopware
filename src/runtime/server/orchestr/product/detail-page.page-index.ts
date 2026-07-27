@@ -4,6 +4,7 @@ import { useGetProductParentId } from '../../composable/useGetProductParentId';
 import { defineShopwarePageIndex } from '../../middleware/defineShopware';
 import { toProductPageRow } from '../../shopware-helper/pageIndexRows';
 import { buildProductLocate } from '../../shopware-helper/productLocate';
+import { readProductPageMeta } from '../../shopware-helper/readProductPageMeta';
 import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 
 // Shopware's store API caps `limit` at MAX_LIMIT (100); a larger value is rejected with a 400.
@@ -36,6 +37,11 @@ export default defineShopwarePageIndex({
   /**
    * Point lookup: resolve the subject the current URL shows (same slug→id path as `bySlug.query.ts`).
    *
+   * Unlike Shopify — whose handle lookup returns the product itself — the SEO resolver yields only an
+   * id, so the page metadata the Studio selector labels the located page with costs one extra
+   * store-API read. It is absorbed by `cache.locate` (one read per product per TTL) and is non-fatal:
+   * when it fails the subject still resolves and consumers fall back to the route params.
+   *
    * `locales` carries the current locale's slug (taken from the URL). Full cross-locale slugs — which
    * also complete the SEO hreflang alternates — are a follow-up: the store API scopes SEO reads by the
    * `sw-language-id` header, so per-language slugs need live-store-verified per-language reads. See
@@ -49,7 +55,7 @@ export default defineShopwarePageIndex({
     const parentId = await useGetProductParentId(client)(seoEntry.id);
     const productId = parentId ?? seoEntry.id;
 
-    return buildProductLocate(productId, { [clientEnv.locale]: params.slug });
+    return buildProductLocate(productId, { [clientEnv.locale]: params.slug }, await readProductPageMeta(client, productId));
   },
   count: async ({ context }) => {
     const response = await context.storefrontClient.invoke('readProduct post /product', {

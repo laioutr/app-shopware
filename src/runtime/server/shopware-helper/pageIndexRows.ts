@@ -10,12 +10,15 @@ import type { PageRow } from '@laioutr-core/core-types/common';
  * encoded srcset can't be dereferenced by consumers outside the Nuxt image pipeline (the Cockpit
  * picker, sitemaps, indexers) that read `PageRow.meta.previewImage`.
  */
+/** Shared by `query` rows and `locate` results so both describe a product page identically. */
+export const toProductPageMeta = (product: ShopwareProduct): PageRow['meta'] => ({
+  title: swTranslated(product, 'name') ?? product.id,
+  previewImage: product.cover?.media?.url,
+  lastModified: product.updatedAt ?? undefined,
+});
+
 export const toProductPageRow = (product: ShopwareProduct): PageRow => ({
   params: { slug: entitySlug(product) },
   subject: { type: 'Product', id: product.id },
-  meta: {
-    title: swTranslated(product, 'name') ?? product.id,
-    previewImage: product.cover?.media?.url,
-    lastModified: product.updatedAt ?? undefined,
-  },
+  meta: toProductPageMeta(product),
 });

@@ -22,4 +22,21 @@ describe('buildProductLocate', () => {
   it('returns undefined when no product id resolved', () => {
     expect(buildProductLocate(undefined, { 'de-DE': 'handtuch' })).toBeUndefined();
   });
+
+  it('carries page metadata when the product read supplied it', () => {
+    const meta = { title: 'Handtuch', previewImage: 'https://cdn/handtuch.jpg', lastModified: '2026-07-01T00:00:00Z' };
+
+    expect(buildProductLocate('parent-1', { 'de-DE': 'handtuch' }, meta)).toEqual({
+      subject: { type: 'Product', id: 'parent-1' },
+      meta,
+      locales: { 'de-DE': { params: { slug: 'handtuch' } } },
+    });
+  });
+
+  it('omits meta when the metadata read failed', () => {
+    expect(buildProductLocate('parent-1', { 'de-DE': 'handtuch' }, undefined)).toEqual({
+      subject: { type: 'Product', id: 'parent-1' },
+      locales: { 'de-DE': { params: { slug: 'handtuch' } } },
+    });
+  });
 });
