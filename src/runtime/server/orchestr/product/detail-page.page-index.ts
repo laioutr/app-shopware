@@ -31,6 +31,7 @@ const pageIndexCriteria = {
  */
 export default defineShopwarePageIndex({
   for: ProductDetailPage,
+  label: 'Shopware Product',
   cache: { ttl: '1h', search: { ttl: '5m' }, locate: { ttl: '1 day' } },
   /**
    * Point lookup: resolve the subject the current URL shows (same slug→id path as `bySlug.query.ts`).
