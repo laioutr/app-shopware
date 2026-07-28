@@ -1,5 +1,42 @@
 # @laioutr-app/shopware
 
+## 0.12.0
+
+### Minor Changes
+
+- b84247b: Reflect a storefront login/logout inside the embedded checkout in laioutr's own session. The storefront bridge now sends `laioutr:auth-changed { from, code? }`; the embedded section adopts the customer-bound Shopware session server-side by redeeming the single-use code at `POST /store-api/laioutr/session-adopt` (via the new `/app-shopware/adopt-session` route), or clears the token on logout. The context token is fetched server-to-server and stored in an httpOnly cookie — it never reaches the browser.
+- 7c48f1a: Add an embedded Shopware checkout section for Studio. The new "Shopware Checkout" section embeds the storefront checkout in an iframe and speaks the parent side of the `laioutr:*` postMessage bridge shipped by the LaioutrConnector plugin — pinning the storefront origin via the ready/init handshake, auto-sizing the frame from the storefront's resize messages, and navigating to a configurable order-confirmation page (with the order id appended as `?order=`) on checkout completion.
+
+  A new `dynamic` (one-per-project) **Checkout** page type backs the hosting page: the cart's `checkoutLink` now resolves to the merchant's Checkout page instead of doing a full-page redirect to the storefront (the storefront URL must still be configured for the link to appear). The confirmation destination is set per section via an "Order Confirmation Page" link field, which the section resolves and navigates to on `laioutr:checkout-finish`.
+
+- ec9017b: Implement the Shopware cart: nested `CartCost` mapping, a product `CartItem` resolver plus a cart→items link, and `add`/`update`/`remove` line-item actions (each persisting the context-token cookie and surfacing blocking cart errors while logging warnings).
+
+  Checkout uses a same-origin handoff route that mints a single-use, short-lived session-handoff code server-to-server against the `LaioutrConnector` plugin and redirects to the storefront's `connect-session`, so the shopper keeps their cart and the raw Shopware context token never travels through the browser. Both `GetCheckoutUrlAction` and the cart's `checkoutLink` resolve to that route. Adds a `storefrontUrl` module option (required for checkout).
+
+  Products only; discount codes and canonical cart-error mapping are deferred.
+
+  Operational prerequisites: the `LaioutrConnector` plugin must be installed on the storefront; the laioutr origin(s) must be in the plugin's `callbackDomainWildcard` allowlist, or the handoff mint rejects the callbacks; and the store-api access key and the checkout storefront domain must belong to the **same Shopware sales channel** (the cart's context token is sales-channel-scoped — a mismatch fails the handoff with "Handoff was issued for a different sales channel").
+
+- a78cf40: Add context-token extension hooks and configurable checkout callbacks so a project that owns login via an external identity provider can integrate without any identity code in this module.
+
+  - `shopware:context-token:resolve` (Nitro bail hook): supply the `sw-context-token` from your own session store; the cookie remains the fallback.
+  - `shopware:context-token:changed` (Nitro notification): fired after the token is persisted, so you can mirror it into your own store.
+  - `checkoutLoginCallbackUrl` / `checkoutLogoutCallbackUrl` module options: override the in-checkout login/logout success callbacks (default: the request origin), e.g. to point logout at your provider's RP-logout.
+
+  The hooks only transport the token; establishing the customer binding remains the project's responsibility (a storefront login plugin or a native register/login path).
+
+### Patch Changes
+
+- a429c2f: Clarify the "Order Confirmation Page" field on the Shopware checkout section: leaving the link empty is a supported choice — Shopware's own order confirmation page then renders inside the embedded checkout frame, instead of the visitor being sent to a laioutr page with the order id appended.
+- d8f50ad: Restore responsive image thumbnails for Shopware media. A leftover demo override returned only the full-size image URL for any asset without an Adobe CDN custom field, which dropped every generated thumbnail from the encoded source. Thumbnails are now encoded in the source again, so responsive rendering picks the right size instead of always loading the full image.
+- 534cea6: Make the embedded Shopware checkout work on a first/direct visit. The checkout handoff route now bootstraps a guest `sw-context-token` when the visitor has none — instead of bouncing to the site root — so the storefront loads for a fresh shopper (an empty guest cart). The parent postMessage bridge also completes its handshake proactively on mount, fixing a race where a server-rendered iframe that finished loading before hydration would miss the storefront's one-shot `ready` and never connect.
+- d8f50ad: Fix the Shopware media library so assets appear correctly in the Studio media picker:
+
+  - Assets with no alt text are no longer dropped. Shopware returns `null` for an unset `alt`, which failed canonical media validation and made every such asset disappear — so the picker showed folders but no files. The adapter now maps an unset `alt` to `undefined`.
+  - File tiles now show their filename, recomposed from Shopware's base name and extension (e.g. `swag_paypal_paypal.svg`); it was previously missing.
+  - Alt text falls back to the asset's Shopware title when `alt` is unset.
+  - A search no longer returns folder tiles — results are a flat asset list (folder-scoped search doesn't recurse into subfolders, and whole-library search already returned none).
+
 ## 0.11.2
 
 ### Patch Changes
