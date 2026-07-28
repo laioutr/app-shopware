@@ -1,4 +1,4 @@
-import type { PageLocateResult } from '@laioutr-core/core-types/orchestr';
+import type { PageIndexLocateResult } from '@laioutr-core/core-types/orchestr';
 
 /**
  * Shape a product `locate` result from a resolved product id and a BCP-47 locale → slug map.
@@ -10,11 +10,11 @@ import type { PageLocateResult } from '@laioutr-core/core-types/orchestr';
 export const buildProductLocate = (
   productId: string | undefined,
   slugsByLocale: Record<string, string | undefined>,
-  meta?: PageLocateResult['meta']
-): PageLocateResult | undefined => {
+  meta?: PageIndexLocateResult['meta']
+): PageIndexLocateResult | undefined => {
   if (!productId) return undefined;
 
-  const locales: PageLocateResult['locales'] = {};
+  const locales: PageIndexLocateResult['locales'] = {};
   for (const [locale, slug] of Object.entries(slugsByLocale)) {
     if (slug) locales[locale] = { params: { slug } };
   }

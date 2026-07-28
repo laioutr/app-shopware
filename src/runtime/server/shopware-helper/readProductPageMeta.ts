@@ -1,6 +1,6 @@
 import { toProductPageMeta } from './pageIndexRows';
 import type { StorefrontClient } from '../types/shopware';
-import type { PageLocateResult } from '@laioutr-core/core-types/orchestr';
+import type { PageIndexLocateResult } from '@laioutr-core/core-types/orchestr';
 
 /** Mirrors the enumerate criteria's metadata fields; `seoUrls` is absent because `locate` already has the slug from the URL. */
 const metaCriteria = {
@@ -19,7 +19,10 @@ const metaCriteria = {
  * Swallows a missing product and a failed read — metadata is a labelling nicety and must never cost
  * the caller the subject it already resolved.
  */
-export const readProductPageMeta = async (storefrontClient: StorefrontClient, productId: string): Promise<PageLocateResult['meta']> => {
+export const readProductPageMeta = async (
+  storefrontClient: StorefrontClient,
+  productId: string
+): Promise<PageIndexLocateResult['meta']> => {
   try {
     const response = await storefrontClient.invoke('readProduct post /product', {
       body: { ...metaCriteria, ids: [productId], limit: 1 },

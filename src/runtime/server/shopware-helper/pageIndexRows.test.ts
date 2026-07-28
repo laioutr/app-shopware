@@ -12,7 +12,7 @@ const product = (overrides: Partial<ShopwareProduct>): ShopwareProduct =>
   }) as unknown as ShopwareProduct;
 
 describe('toProductPageRow', () => {
-  it('maps a product to a PageRow using its canonical seo slug', () => {
+  it('maps a product to a PageIndexRow using its canonical seo slug', () => {
     expect(toProductPageRow(product({ cover: { media: { url: 'https://cdn.example/towel.jpg' } } as ShopwareProduct['cover'] }))).toEqual({
       params: { slug: 'towel-flower-print' },
       subject: { type: 'Product', id: 'prod-1' },
