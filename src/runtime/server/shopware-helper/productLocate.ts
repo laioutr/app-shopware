@@ -1,4 +1,4 @@
-import type { PageLocateResult } from '@laioutr-core/core-types/common';
+import type { PageLocateResult } from '@laioutr-core/core-types/orchestr';
 
 /**
  * Shape a product `locate` result from a resolved product id and a BCP-47 locale → slug map.

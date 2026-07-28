@@ -1,6 +1,6 @@
 import { toProductPageMeta } from './pageIndexRows';
 import type { StorefrontClient } from '../types/shopware';
-import type { PageLocateResult } from '@laioutr-core/core-types/common';
+import type { PageLocateResult } from '@laioutr-core/core-types/orchestr';
 
 /** Mirrors the enumerate criteria's metadata fields; `seoUrls` is absent because `locate` already has the slug from the URL. */
 const metaCriteria = {

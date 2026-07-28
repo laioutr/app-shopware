@@ -1,7 +1,7 @@
 import { entitySlug } from './mappers/slugMapper';
 import { swTranslated } from './swTranslated';
 import type { ShopwareProduct } from '../types/shopware';
-import type { PageRow } from '@laioutr-core/core-types/common';
+import type { PageRow } from '@laioutr-core/core-types/orchestr';
 
 /**
  * Shared by `query` rows and `locate` results so both describe a product page identically.
