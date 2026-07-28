@@ -11,7 +11,6 @@ import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 const ENUM_PAGE_SIZE = 100;
 const SEARCH_DEFAULT_TAKE = 25;
 
-/** Include only the fields a page-index row needs, plus the associations that carry the slug and cover. */
 const pageIndexCriteria = {
   associations: { seoUrls: {}, cover: {} },
   includes: {
@@ -20,32 +19,22 @@ const pageIndexCriteria = {
     product_media: ['media'],
     media: ['url'],
   },
-  // Parents only: variants collapse into their parent, matching one detail page per product
-  // (the `bySlug` resolver also works off parent ids).
+  // Variants collapse into their parent — one detail page per product, matching `bySlug`'s parent ids.
   filter: [{ type: 'equals' as const, field: 'parentId', value: null }],
 };
 
-/**
- * Enumerate concrete `ProductDetailPage` instances from Shopware's `/product` store-API. One request
- * per page returns fully-formed products (slug via canonical SEO URL, translated name, cover image),
- * so no per-row enrichment fetch is needed. Search mode delegates term matching to the store-API.
- */
+/** `/product` returns fully-formed products (canonical SEO slug, translated name, cover), so rows need no per-row enrichment fetch. */
 export default defineShopwarePageIndex({
   for: ProductDetailPage,
   label: 'Shopware Product',
   cache: { ttl: '1h', search: { ttl: '5m' }, locate: { ttl: '1 day' } },
   /**
-   * Point lookup: resolve the subject the current URL shows (same slug→id path as `bySlug.query.ts`).
+   * Point lookup, same slug→id path as `bySlug.query.ts`. The SEO resolver yields only an id, so the
+   * page metadata costs a second store-API read — absorbed by `cache.locate`, and non-fatal: the
+   * subject still resolves when it fails.
    *
-   * Unlike Shopify — whose handle lookup returns the product itself — the SEO resolver yields only an
-   * id, so the page metadata the Studio selector labels the located page with costs one extra
-   * store-API read. It is absorbed by `cache.locate` (one read per product per TTL) and is non-fatal:
-   * when it fails the subject still resolves and consumers fall back to the route params.
-   *
-   * `locales` carries the current locale's slug (taken from the URL). Full cross-locale slugs — which
-   * also complete the SEO hreflang alternates — are a follow-up: the store API scopes SEO reads by the
-   * `sw-language-id` header, so per-language slugs need live-store-verified per-language reads. See
-   * docs/plans/2026-07-24-page-locate-current-subject-design.md.
+   * `locales` carries only the current locale's slug. The store API scopes SEO reads by the
+   * `sw-language-id` header, so cross-locale slugs need one read per language and are not implemented.
    */
   locate: async ({ context, params, clientEnv }) => {
     const client = context.storefrontClient;

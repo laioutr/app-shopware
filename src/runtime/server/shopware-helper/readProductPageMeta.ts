@@ -2,11 +2,7 @@ import { toProductPageMeta } from './pageIndexRows';
 import type { StorefrontClient } from '../types/shopware';
 import type { PageLocateResult } from '@laioutr-core/core-types/common';
 
-/**
- * The same fields and associations the enumerate criteria selects for a row's metadata, so a located
- * page and an enumerated one describe themselves identically. `seoUrls` is deliberately absent —
- * `locate` already knows the slug, it came in on the URL.
- */
+/** Mirrors the enumerate criteria's metadata fields; `seoUrls` is absent because `locate` already has the slug from the URL. */
 const metaCriteria = {
   associations: { cover: {} },
   includes: {
@@ -20,8 +16,8 @@ const metaCriteria = {
  * Read a resolved product's page metadata for `pageIndex.locate`. Translations follow the client's
  * `sw-language-id`, so the name comes back in the locale the lookup was made in.
  *
- * Returns `undefined` when the product is gone or the read fails: metadata is a labelling nicety and
- * must never cost the caller the subject it already resolved.
+ * Swallows a missing product and a failed read — metadata is a labelling nicety and must never cost
+ * the caller the subject it already resolved.
  */
 export const readProductPageMeta = async (storefrontClient: StorefrontClient, productId: string): Promise<PageLocateResult['meta']> => {
   try {
