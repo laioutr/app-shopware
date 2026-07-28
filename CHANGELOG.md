@@ -1,5 +1,152 @@
 # @laioutr-app/shopware
 
+## 0.12.0
+
+### Minor Changes
+
+- b84247b: Reflect a storefront login/logout inside the embedded checkout in laioutr's own session. The storefront bridge now sends `laioutr:auth-changed { from, code? }`; the embedded section adopts the customer-bound Shopware session server-side by redeeming the single-use code at `POST /store-api/laioutr/session-adopt` (via the new `/app-shopware/adopt-session` route), or clears the token on logout. The context token is fetched server-to-server and stored in an httpOnly cookie — it never reaches the browser.
+- 7c48f1a: Add an embedded Shopware checkout section for Studio. The new "Shopware Checkout" section embeds the storefront checkout in an iframe and speaks the parent side of the `laioutr:*` postMessage bridge shipped by the LaioutrConnector plugin — pinning the storefront origin via the ready/init handshake, auto-sizing the frame from the storefront's resize messages, and navigating to a configurable order-confirmation page (with the order id appended as `?order=`) on checkout completion.
+
+  A new `dynamic` (one-per-project) **Checkout** page type backs the hosting page: the cart's `checkoutLink` now resolves to the merchant's Checkout page instead of doing a full-page redirect to the storefront (the storefront URL must still be configured for the link to appear). The confirmation destination is set per section via an "Order Confirmation Page" link field, which the section resolves and navigates to on `laioutr:checkout-finish`.
+
+- ec9017b: Implement the Shopware cart: nested `CartCost` mapping, a product `CartItem` resolver plus a cart→items link, and `add`/`update`/`remove` line-item actions (each persisting the context-token cookie and surfacing blocking cart errors while logging warnings).
+
+  Checkout uses a same-origin handoff route that mints a single-use, short-lived session-handoff code server-to-server against the `LaioutrConnector` plugin and redirects to the storefront's `connect-session`, so the shopper keeps their cart and the raw Shopware context token never travels through the browser. Both `GetCheckoutUrlAction` and the cart's `checkoutLink` resolve to that route. Adds a `storefrontUrl` module option (required for checkout).
+
+  Products only; discount codes and canonical cart-error mapping are deferred.
+
+  Operational prerequisites: the `LaioutrConnector` plugin must be installed on the storefront; the laioutr origin(s) must be in the plugin's `callbackDomainWildcard` allowlist, or the handoff mint rejects the callbacks; and the store-api access key and the checkout storefront domain must belong to the **same Shopware sales channel** (the cart's context token is sales-channel-scoped — a mismatch fails the handoff with "Handoff was issued for a different sales channel").
+
+- a78cf40: Add context-token extension hooks and configurable checkout callbacks so a project that owns login via an external identity provider can integrate without any identity code in this module.
+
+  - `shopware:context-token:resolve` (Nitro bail hook): supply the `sw-context-token` from your own session store; the cookie remains the fallback.
+  - `shopware:context-token:changed` (Nitro notification): fired after the token is persisted, so you can mirror it into your own store.
+  - `checkoutLoginCallbackUrl` / `checkoutLogoutCallbackUrl` module options: override the in-checkout login/logout success callbacks (default: the request origin), e.g. to point logout at your provider's RP-logout.
+
+  The hooks only transport the token; establishing the customer binding remains the project's responsibility (a storefront login plugin or a native register/login path).
+
+### Patch Changes
+
+- a429c2f: Clarify the "Order Confirmation Page" field on the Shopware checkout section: leaving the link empty is a supported choice — Shopware's own order confirmation page then renders inside the embedded checkout frame, instead of the visitor being sent to a laioutr page with the order id appended.
+- d8f50ad: Restore responsive image thumbnails for Shopware media. A leftover demo override returned only the full-size image URL for any asset without an Adobe CDN custom field, which dropped every generated thumbnail from the encoded source. Thumbnails are now encoded in the source again, so responsive rendering picks the right size instead of always loading the full image.
+- 534cea6: Make the embedded Shopware checkout work on a first/direct visit. The checkout handoff route now bootstraps a guest `sw-context-token` when the visitor has none — instead of bouncing to the site root — so the storefront loads for a fresh shopper (an empty guest cart). The parent postMessage bridge also completes its handshake proactively on mount, fixing a race where a server-rendered iframe that finished loading before hydration would miss the storefront's one-shot `ready` and never connect.
+- d8f50ad: Fix the Shopware media library so assets appear correctly in the Studio media picker:
+
+  - Assets with no alt text are no longer dropped. Shopware returns `null` for an unset `alt`, which failed canonical media validation and made every such asset disappear — so the picker showed folders but no files. The adapter now maps an unset `alt` to `undefined`.
+  - File tiles now show their filename, recomposed from Shopware's base name and extension (e.g. `swag_paypal_paypal.svg`); it was previously missing.
+  - Alt text falls back to the asset's Shopware title when `alt` is unset.
+  - A search no longer returns folder tiles — results are a flat asset list (folder-scoped search doesn't recurse into subfolders, and whole-library search already returned none).
+
+## 0.11.2
+
+### Patch Changes
+
+- Updated dependencies [60ea122]
+- Updated dependencies [cd2e51e]
+- Updated dependencies [5e4342b]
+  - @laioutr-core/frontend-core@0.37.1
+  - @laioutr-core/kit@0.37.1
+  - @laioutr-core/canonical-types@0.26.2
+
+## 0.11.1
+
+### Patch Changes
+
+- Updated dependencies [72137a7]
+  - @laioutr-core/frontend-core@0.37.0
+  - @laioutr-core/canonical-types@0.26.1
+  - @laioutr-core/kit@0.37.0
+
+## 0.11.0
+
+### Minor Changes
+
+- a0df5b7: Follow the reshaped `ecommerce/cart/add-items` contract: handlers now return the per-item batch outcome (`{ items }`), reporting unresolved `sku` rows as rejected (`not-supported`) instead of dropping them. The Shopify `customer/address-get-all` handler returns the new `{ id, address }` row shape (address ids were previously stripped by the schema).
+
+### Patch Changes
+
+- Updated dependencies [26c6a9d]
+- Updated dependencies [125d5de]
+- Updated dependencies [5cd1a99]
+- Updated dependencies [e57e670]
+- Updated dependencies [66af5c0]
+- Updated dependencies [3416d47]
+- Updated dependencies [ca2aa8a]
+- Updated dependencies [fe1007a]
+- Updated dependencies [948df8c]
+- Updated dependencies [317d1d0]
+- Updated dependencies [6e3f5a5]
+  - @laioutr-core/canonical-types@0.26.0
+  - @laioutr-core/frontend-core@0.36.0
+  - @laioutr-core/kit@0.36.0
+
+## 0.10.1
+
+### Patch Changes
+
+- Updated dependencies [3df5972]
+  - @laioutr-core/frontend-core@0.35.1
+  - @laioutr-core/kit@0.35.1
+  - @laioutr-core/canonical-types@0.25.3
+
+## 0.10.0
+
+### Minor Changes
+
+- e072c7a: **Breaking:** Media libraries are now connected as an Orchestr integration facet. A connector declares static capabilities (search, tags, folders, sorts, upload transfer) and uses opaque-cursor pagination, explicit type/tag filtering, optional folder navigation, and proxied or staged upload with per-file results. Define one on the app's Orchestr builder instead of the standalone factory:
+
+  ```ts
+  // Before
+  export default defineMediaLibraryProvider({ name, label, iconSrc, list, upload });
+
+  // After
+  export default defineShopify.mediaLibrary({
+    capabilities: { search: true, folders: false, sorts, upload: { transfer: 'staged' } },
+    list,
+    createUploadTargets,
+    finalizeUploads,
+  });
+  ```
+
+  `defineMediaLibraryProvider()` still works as a **deprecated shim** — existing connectors keep registering without a rewrite, in a degraded mode (no folders, no staged upload, no declared sorts). `ProjectFrontendContext.mediaLibraries` now carries descriptors `{ id, label, iconSrc, capabilities }`.
+
+  The Shopify connector uploads via staged targets and blocks until each file is `READY` before returning it (one failed file no longer sinks the batch). The Shopware connector gains folder browsing over the real media-folder tree.
+
+  This frontend-core version is the threshold for the Cockpit `mediaLibraryV2` capability gate; the Cockpit media picker is updated separately to speak the new contract.
+
+  Folder browsing is folded into the single `list` method: `MediaListResult.folders` carries the
+  queried location's subfolders on the first (cursorless) page; the separate `browseFolders`
+  method and `media-folders` route are removed. Every media source now carries an optional
+  `origin` (`{ libraryId, externalId? }`), stamped by the `.mediaLibrary()` wrapper, which also
+  validates all adapter output at the trust boundary (canonical Zod parse, URL-scheme guard —
+  including nested poster/cover images — capability/response agreement) and logs a server-side
+  warning for every dropped item. Browse items may carry a transient `status`
+  (`processing`/`failed`) surfaced in the picker grid.
+
+  Media-library handlers now receive the per-request context built by the app's `extendRequest`
+  initwares as their second argument — `list(query, ctx)` — so adapters use the initware-provided
+  clients instead of constructing their own. `MediaQuery` gains `scope: 'folder' | 'all'` to
+  distinguish a whole-library search from browsing the root level (on Shopware, root holds only
+  unfiled assets), and both bundled adapters now honor `MediaQuery.type` server-side.
+
+### Patch Changes
+
+- Updated dependencies [e072c7a]
+  - @laioutr-core/frontend-core@0.35.0
+  - @laioutr-core/canonical-types@0.25.2
+  - @laioutr-core/kit@0.35.0
+
+## 0.9.21
+
+### Patch Changes
+
+- Updated dependencies [1ca1228]
+- Updated dependencies [fed75c6]
+- Updated dependencies [b33b105]
+  - @laioutr-core/frontend-core@0.34.0
+  - @laioutr-core/canonical-types@0.25.1
+  - @laioutr-core/kit@0.34.0
+
 ## 0.9.20
 
 ### Patch Changes

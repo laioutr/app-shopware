@@ -1,5 +1,6 @@
 import { createPassthroughToken } from '#imports';
 import { ShopwareCategory, ShopwareProduct } from '../types/shopware';
+import { Schemas } from '../types/storeApiTypes';
 
 export const currentProductIdsToken = createPassthroughToken<string[]>('@laioutr-app/shopware/currentProductIdsFragment');
 
@@ -31,3 +32,5 @@ export const suggestionResultsFragmentToken = createPassthroughToken<{
       | { type: 'pageType'; pageType: string; params: Record<string, string> };
   }>;
 }>('@laioutr/app-shopware/completionResults');
+
+export const cartFragmentToken = createPassthroughToken<Schemas['Cart']>('@laioutr-app/shopware/cartFragment');

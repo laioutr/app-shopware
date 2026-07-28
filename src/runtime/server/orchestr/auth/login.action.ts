@@ -1,19 +1,14 @@
-import { setCookie, useRuntimeConfig } from '#imports';
 import { AuthLoginAction } from '@laioutr-core/canonical-types/ecommerce';
-import { CONTEXT_TOKEN_COOKIE } from '../../const/cookieKeys';
 import { defineShopwareAction } from '../../middleware/defineShopware';
+import { persistContextToken } from '../../shopware-helper/persistContextToken';
 
 export default defineShopwareAction(AuthLoginAction, async ({ context, input, event }) => {
   try {
-    const config = useRuntimeConfig()['@laioutr-app/shopware'];
-
     context.storefrontClient.hook('onContextChanged', (newContextToken) => {
-      setCookie(event, CONTEXT_TOKEN_COOKIE, newContextToken, {
-        maxAge: 60 * 60 * 24 * 365, // days
-        path: '/',
-        sameSite: 'lax',
-        secure: config.endpoint.startsWith('https://'),
-      });
+      // Best-effort mirror: persistContextToken writes the cookie synchronously (before its
+      // awaited `changed` hook), so the cookie is always set; we don't block the callback on the
+      // host-mirror notification, and `.catch` keeps the floating promise handled.
+      persistContextToken(event, newContextToken).catch(() => {});
     });
 
     const res = await context.storefrontClient.invoke('loginCustomer post /account/login', {

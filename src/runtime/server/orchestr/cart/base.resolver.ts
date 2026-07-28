@@ -1,73 +1,39 @@
+import { useRuntimeConfig } from '#imports';
 import { CartBase, CartCost } from '@laioutr-core/canonical-types/entity/cart';
+import { Link } from '@laioutr-core/core-types/common';
+import { Checkout } from '../../../shared/pageTypes/checkout.pagetype';
+import { cartFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
+import { mapCartCost } from '../../shopware-helper/cartMapper';
+import { getCart } from '../../shopware-helper/getCart';
 
 export default defineShopwareComponentResolver({
   entityType: 'Cart',
   label: 'Shopware Cart Component Resolver',
   provides: [CartBase, CartCost],
-  resolve: async ({ context, clientEnv, $entity }) => {
-    const { storefrontClient } = context;
-
+  resolve: async ({ context, $entity, passthrough }) => {
     /* Cart is identified per unique context session */
-    const cart = await storefrontClient.invoke('readCart get /checkout/cart');
+    const cart = passthrough.get(cartFragmentToken) ?? (await getCart(context.storefrontClient));
+    passthrough.set(cartFragmentToken, cart);
 
-    // helper to build Money objects
-    const money = (amount: number, currency: string) => ({ amount, currency });
+    const config = useRuntimeConfig()['@laioutr-app/shopware'];
+    const totalQuantity = (cart.lineItems ?? []).reduce((sum, li) => sum + (li.quantity ?? 0), 0);
 
-    // safe defaults
-    const lineItems = cart.data?.lineItems ?? [];
-    const deliveries = cart.data?.deliveries ?? [];
-    const price = cart.data?.price ?? {};
-
-    // quantities
-    const totalQuantity = lineItems.reduce((sum, li) => sum + (li.quantity ?? 0), 0);
-
-    // subtotal (items only). Prefer cart.price.positionPrice; fallback to summing items
-    const subtotalAmount = price.positionPrice ?? lineItems.reduce((sum, li) => sum + (li.price?.totalPrice ?? 0), 0);
-
-    // shipping total
-    const shippingTotal = deliveries.reduce((sum, d) => sum + (d.shippingCosts?.totalPrice ?? 0), 0);
-
-    // grand total (items + shipping – promotions already reflected by Shopware totals)
-    const totalAmount = price.totalPrice ?? subtotalAmount + shippingTotal;
-
-    // taxes: sum item taxes + shipping taxes
-    const itemTaxes = (price.calculatedTaxes ?? []).reduce((sum, t) => sum + (t.tax ?? 0), 0);
-    const shippingTaxes = deliveries.reduce(
-      (sum, d) => sum + (d.shippingCosts?.calculatedTaxes ?? []).reduce((s, t) => s + (t.tax ?? 0), 0),
-      0
-    );
-    const totalTaxAmount = itemTaxes + shippingTaxes;
-
-    // taxesIncluded is based on taxStatus ("gross" means prices include tax)
-    const taxesIncluded = (price.taxStatus ?? 'tax-free') === 'net';
+    /*
+     * Link to the merchant's Studio checkout page (whichever page they tag with the
+     * `Checkout` page type), which hosts the embedded-storefront section. The section's
+     * iframe performs the actual same-origin session handoff (see server/routes/checkout.ts).
+     * Gated on `storefrontUrl`: with no storefront configured there is nothing to embed.
+     */
+    const checkoutLink: Link | undefined =
+      config.storefrontUrl ? { type: 'pageType', pageType: Checkout } : undefined;
 
     return {
       entities: [
         $entity({
-          id: cart.data?.token ?? '',
-
-          base: () => ({
-            totalQuantity,
-            discountCodes: [],
-          }),
-
-          cost: () => ({
-            subtotal: money(Number(subtotalAmount || 0), clientEnv.currency),
-            subtotalIsEstimated: false,
-
-            total: money(Number(totalAmount || 0), clientEnv.currency),
-            totalIsEstimated: false,
-
-            totalTax: money(Number(totalTaxAmount || 0), clientEnv.currency),
-            totalTaxIsEstimated: false,
-
-            totalDuty: money(0, clientEnv.currency), // Shopware doesn't track duties by default
-            totalDutyIsEstimated: false,
-
-            dutiesIncluded: false,
-            taxesIncluded,
-          }),
+          id: cart.token ?? '',
+          base: () => ({ totalQuantity, checkoutLink }),
+          cost: () => mapCartCost(cart, context.swCurrency),
         }),
       ],
     };
