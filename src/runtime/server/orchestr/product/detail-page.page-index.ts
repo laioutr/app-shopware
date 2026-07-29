@@ -31,10 +31,11 @@ export default defineShopwarePageIndex({
    * page metadata costs a second store-API read — absorbed by `cache.locate`, and non-fatal: the
    * subject still resolves when it fails.
    *
-   * `locales` carries only the current locale's slug. The store API scopes SEO reads by the
-   * `sw-language-id` header, so cross-locale slugs need one read per language and are not implemented.
+   * `locales` is left unset: the store API scopes SEO reads by the `sw-language-id` header, so
+   * cross-locale slugs need one read per language and are not implemented. Reporting only the current
+   * locale would claim the product has no page in any other.
    */
-  locate: async ({ context, params, clientEnv }) => {
+  locate: async ({ context, params }) => {
     const client = context.storefrontClient;
     const seoEntry = await useSeoResolver(client).resolve('product', params.slug);
     if (!seoEntry) return undefined;
@@ -42,7 +43,7 @@ export default defineShopwarePageIndex({
     const parentId = await useGetProductParentId(client)(seoEntry.id);
     const productId = parentId ?? seoEntry.id;
 
-    return buildProductLocate(productId, { [clientEnv.locale]: params.slug }, await readProductPageMeta(client, productId));
+    return buildProductLocate(productId, await readProductPageMeta(client, productId));
   },
   count: async ({ context }) => {
     const response = await context.storefrontClient.invoke('readProduct post /product', {
