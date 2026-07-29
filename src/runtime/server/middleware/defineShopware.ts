@@ -38,3 +38,4 @@ export const defineShopwareQuery = defineShopware.queryHandler;
 export const defineShopwareLink = defineShopware.linkHandler;
 export const defineShopwareComponentResolver = defineShopware.componentResolver;
 export const defineShopwareQueryTemplateProvider = defineShopware.queryTemplateProvider;
+export const defineShopwarePageIndex = defineShopware.pageIndex;
