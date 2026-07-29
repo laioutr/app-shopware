@@ -1,5 +1,11 @@
 # @laioutr-app/shopware
 
+## 0.13.1
+
+### Patch Changes
+
+- b10447c: Stop bundling a copy of `h3`'s type declarations into the published module types. `H3Event` now resolves from the host app's own `h3` install, so the Nitro hook signatures (`shopware:context-token:resolve`, `shopware:context-token:changed`) line up with the `H3Event` type used elsewhere in the app instead of a duplicate declared inside this package.
+
 ## 0.13.0
 
 ### Minor Changes
