@@ -1,5 +1,27 @@
 # @laioutr-app/shopware
 
+## 0.13.0
+
+### Minor Changes
+
+- d63ddd6: Provide a page index for the product detail page-type, so editors can pick a specific product when linking to or previewing a dynamic product page.
+
+  Products are enumerated from the storefront API with their title, slug and image — Shopify reads title, handle and featured image, Shopware name, slug and cover image — and a search term narrows the list. Shopify reads are scoped to the active locale's language where Shopify publishes that language, and fall back to the shop's default language where it does not, so an unsupported locale returns default-language titles rather than failing. Both connectors also implement `locate`, resolving a product detail page to its subject from the page URL, so Studio can tell which product a preview is showing even when it was reached by clicking a link inside the preview rather than picked from the list.
+
+  Located pages carry their metadata, so Studio names the product being previewed instead of showing its raw route params.
+
+  Neither connector reports per-locale route params — resolving a product's slug in every language costs one translated read per language on both platforms. `locate` therefore omits `locales` rather than returning just the locale it was called in, so hreflang alternates, `og:locale:alternate`, `x-default` and the locale switcher keep filling from the current locale's params instead of treating the product as absent from every other locale.
+
+### Patch Changes
+
+- Updated dependencies [d63ddd6]
+- Updated dependencies [d63ddd6]
+- Updated dependencies [f788876]
+  - @laioutr-core/frontend-core@0.38.0
+  - @laioutr-core/core-types@0.38.0
+  - @laioutr-core/canonical-types@0.26.3
+  - @laioutr-core/kit@0.38.0
+
 ## 0.12.0
 
 ### Minor Changes
