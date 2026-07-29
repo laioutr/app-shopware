@@ -7,10 +7,6 @@ import { buildProductLocate } from '../../shopware-helper/productLocate';
 import { readProductPageMeta } from '../../shopware-helper/readProductPageMeta';
 import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 
-// Shopware's store API caps `limit` at MAX_LIMIT (100); a larger value is rejected with a 400.
-const ENUM_PAGE_SIZE = 100;
-const SEARCH_DEFAULT_TAKE = 25;
-
 const pageIndexCriteria = {
   associations: { seoUrls: {}, cover: {} },
   includes: {
@@ -27,6 +23,8 @@ const pageIndexCriteria = {
 export default defineShopwarePageIndex({
   for: ProductDetailPage,
   label: 'Shopware Product',
+  // Shopware's store API caps `limit` at MAX_LIMIT (100); a larger value is rejected with a 400.
+  batchSize: 100,
   cache: { ttl: '1h', search: { ttl: '5m' }, locate: { ttl: '1 day' } },
   /**
    * Point lookup, same slug→id path as `bySlug.query.ts`. The SEO resolver yields only an id, so the
@@ -52,25 +50,20 @@ export default defineShopwarePageIndex({
     });
     return response.data.total ?? 0;
   },
-  query: ({ context, term, take }) => {
-    if (term) {
-      return context.storefrontClient
-        .invoke('readProduct post /product', {
-          body: { ...pageIndexCriteria, term, limit: Math.min(take ?? SEARCH_DEFAULT_TAKE, ENUM_PAGE_SIZE) },
-        })
-        .then((response) => (response.data.elements ?? []).map(toProductPageEntry));
-    }
-
-    return paginate(async ({ cursor }) => {
+  search: ({ context, term, take }) =>
+    context.storefrontClient
+      .invoke('readProduct post /product', { body: { ...pageIndexCriteria, term, limit: take } })
+      .then((response) => (response.data.elements ?? []).map(toProductPageEntry)),
+  list: ({ context, batchSize }) =>
+    paginate(async ({ cursor }) => {
       const page = cursor ? Number(cursor) : 1;
       const response = await context.storefrontClient.invoke('readProduct post /product', {
-        body: { ...pageIndexCriteria, page, limit: ENUM_PAGE_SIZE },
+        body: { ...pageIndexCriteria, page, limit: batchSize },
       });
       const elements = response.data.elements ?? [];
       return {
         entries: elements.map(toProductPageEntry),
-        nextCursor: elements.length < ENUM_PAGE_SIZE ? undefined : String(page + 1),
+        nextCursor: elements.length < batchSize ? undefined : String(page + 1),
       };
-    });
-  },
+    }),
 });
