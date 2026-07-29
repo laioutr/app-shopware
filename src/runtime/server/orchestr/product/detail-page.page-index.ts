@@ -2,7 +2,7 @@ import { paginate } from '#imports';
 import { ProductDetailPage } from '@laioutr-core/canonical-types/ecommerce';
 import { useGetProductParentId } from '../../composable/useGetProductParentId';
 import { defineShopwarePageIndex } from '../../middleware/defineShopware';
-import { toProductPageRow } from '../../shopware-helper/pageIndexRows';
+import { toProductPageEntry } from '../../shopware-helper/pageIndexEntries';
 import { buildProductLocate } from '../../shopware-helper/productLocate';
 import { readProductPageMeta } from '../../shopware-helper/readProductPageMeta';
 import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
@@ -23,7 +23,7 @@ const pageIndexCriteria = {
   filter: [{ type: 'equals' as const, field: 'parentId', value: null }],
 };
 
-/** `/product` returns fully-formed products (canonical SEO slug, translated name, cover), so rows need no per-row enrichment fetch. */
+/** `/product` returns fully-formed products (canonical SEO slug, translated name, cover), so entries need no per-entry enrichment fetch. */
 export default defineShopwarePageIndex({
   for: ProductDetailPage,
   label: 'Shopware Product',
@@ -58,7 +58,7 @@ export default defineShopwarePageIndex({
         .invoke('readProduct post /product', {
           body: { ...pageIndexCriteria, term, limit: Math.min(take ?? SEARCH_DEFAULT_TAKE, ENUM_PAGE_SIZE) },
         })
-        .then((response) => (response.data.elements ?? []).map(toProductPageRow));
+        .then((response) => (response.data.elements ?? []).map(toProductPageEntry));
     }
 
     return paginate(async ({ cursor }) => {
@@ -68,7 +68,7 @@ export default defineShopwarePageIndex({
       });
       const elements = response.data.elements ?? [];
       return {
-        rows: elements.map(toProductPageRow),
+        entries: elements.map(toProductPageEntry),
         nextCursor: elements.length < ENUM_PAGE_SIZE ? undefined : String(page + 1),
       };
     });

@@ -1,4 +1,4 @@
-import { toProductPageMeta } from './pageIndexRows';
+import { toProductPageMeta } from './pageIndexEntries';
 import type { StorefrontClient } from '../types/shopware';
 import type { PageIndexLocateResult } from '@laioutr-core/core-types/orchestr';
 
