@@ -55,7 +55,7 @@ export default defineShopwarePageIndex({
     context.storefrontClient
       .invoke('readProduct post /product', { body: { ...pageIndexCriteria, term, limit: take } })
       .then((response) => (response.data.elements ?? []).map(toProductPageEntry)),
-  list: ({ context, batchSize }) =>
+  list: ({ context, batchSize, startCursor }) =>
     paginate(async ({ cursor }) => {
       const page = cursor ? Number(cursor) : 1;
       const response = await context.storefrontClient.invoke('readProduct post /product', {
@@ -66,5 +66,5 @@ export default defineShopwarePageIndex({
         entries: elements.map(toProductPageEntry),
         nextCursor: elements.length < batchSize ? undefined : String(page + 1),
       };
-    }),
+    }, startCursor),
 });
