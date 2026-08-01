@@ -1,6 +1,6 @@
 {
   "name": "@laioutr-app/shopware",
-  "version": "0.13.3",
+  "version": "0.13.4",
   "description": "Shopware integration for laioutr",
   "license": "UNLICENSED",
   "sideEffects": false,
