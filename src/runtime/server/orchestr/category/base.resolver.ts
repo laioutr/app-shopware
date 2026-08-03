@@ -17,7 +17,8 @@ export default defineShopwareComponentResolver({
         passthrough.get(categoriesToken)!
       : (
           await storefrontClient.invoke('readCategoryList post /category', {
-            body: { ids: entityIds, associations: { seoUrls: {} } },
+            // Neither association is returned by default; without `media` the media component is always empty.
+            body: { ids: entityIds, associations: { seoUrls: {}, media: {} } },
           })
         ).data.elements;
 

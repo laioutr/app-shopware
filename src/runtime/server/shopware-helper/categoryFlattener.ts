@@ -1,7 +1,10 @@
-import { ShopwareCategory } from '../types/shopware';
+import type { ShopwareCategory } from '../types/shopware';
 
 /**
  * Returns a flat list of shopware categories
+ *
+ * Order is left as the navigation route returned it: that route nests and sorts each level
+ * server-side, so re-sorting here would only risk diverging from the shop's own order.
  *
  * **Warning**: This function mutates the input categories by overwriting their parentId property.
  */
