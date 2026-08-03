@@ -2,12 +2,14 @@ import slug from 'slug';
 import { ShopwareCategory, ShopwareProduct, ShopwareSeoUrl, WithSeoUrl } from '../../types/shopware';
 import { swTranslated } from '../swTranslated';
 
-const extractSlugFromPath = (path: string): string => path; // .split('/').slice(1).join('/').toLowerCase();
+/** Shopware's category SEO template emits a trailing slash (`Praesente/`); catch-all route params never carry one. */
+const extractSlugFromPath = (path: string): string => path.replace(/\/+$/, '');
 
 const seoUrlToSlug = (seoUrl: ShopwareSeoUrl): string => extractSlugFromPath(seoUrl.seoPathInfo);
 
 /** Determine whether a given slug matches a seoPath */
-export const isSlugMatchingSeoPath = (slug: string, seoPath: string) => extractSlugFromPath(seoPath) === slug.toLowerCase();
+export const isSlugMatchingSeoPath = (slug: string, seoPath: string) =>
+  extractSlugFromPath(seoPath).toLowerCase() === extractSlugFromPath(slug).toLowerCase();
 
 /** Return the canonical seoUrl or the first seoUrl if no canonical is available */
 export const findCanonicalSeoUrl = (seoUrls: ShopwareSeoUrl[]): ShopwareSeoUrl =>

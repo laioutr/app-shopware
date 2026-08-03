@@ -24,7 +24,11 @@ export default defineShopwareQueryTemplateProvider({
               },
             ]
           : [],
-        includes: { seoUrls: ['routeName', 'seoPathInfo'] },
+        associations: { seoUrls: {} },
+        includes: {
+          category: ['id', 'name', 'translated', 'seoUrls'],
+          seo_url: ['seoPathInfo', 'isCanonical', 'routeName'],
+        },
         limit: 50,
       },
     });

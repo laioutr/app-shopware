@@ -5,6 +5,7 @@ import { defineShopwarePageIndex } from '../../middleware/defineShopware';
 import { toProductPageEntry } from '../../shopware-helper/pageIndexEntries';
 import { buildProductLocate } from '../../shopware-helper/productLocate';
 import { readProductPageMeta } from '../../shopware-helper/readProductPageMeta';
+import { SHOPWARE_MAX_LIMIT, storeApiPageFetcher } from '../../shopware-helper/storeApiPageFetcher';
 import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 
 const pageIndexCriteria = {
@@ -23,8 +24,7 @@ const pageIndexCriteria = {
 export default defineShopwarePageIndex({
   for: ProductDetailPage,
   label: 'Shopware Product',
-  // Shopware's store API caps `limit` at MAX_LIMIT (100); a larger value is rejected with a 400.
-  batchSize: 100,
+  batchSize: SHOPWARE_MAX_LIMIT,
   cache: { ttl: '1h', search: { ttl: '5m' }, locate: { ttl: '1 day' } },
   /**
    * Point lookup, same slug→id path as `bySlug.query.ts`. The SEO resolver yields only an id, so the
@@ -56,15 +56,15 @@ export default defineShopwarePageIndex({
       .invoke('readProduct post /product', { body: { ...pageIndexCriteria, term, limit: take } })
       .then((response) => (response.data.elements ?? []).map(toProductPageEntry)),
   list: ({ context, batchSize, startCursor }) =>
-    paginate(async ({ cursor }) => {
-      const page = cursor ? Number(cursor) : 1;
-      const response = await context.storefrontClient.invoke('readProduct post /product', {
-        body: { ...pageIndexCriteria, page, limit: batchSize },
-      });
-      const elements = response.data.elements ?? [];
-      return {
-        entries: elements.map(toProductPageEntry),
-        nextCursor: elements.length < batchSize ? undefined : String(page + 1),
-      };
-    }, startCursor),
+    paginate(
+      storeApiPageFetcher(
+        ({ page, limit }) =>
+          context.storefrontClient
+            .invoke('readProduct post /product', { body: { ...pageIndexCriteria, page, limit } })
+            .then((response) => response.data),
+        toProductPageEntry,
+        batchSize
+      ),
+      startCursor
+    ),
 });

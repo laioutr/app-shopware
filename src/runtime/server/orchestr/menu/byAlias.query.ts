@@ -13,7 +13,7 @@ export default defineShopwareQuery({
         activeId: alias,
         rootId: alias,
       },
-      body: {},
+      body: { associations: { seoUrls: {} } },
     });
 
     // response.data may be undefined
