@@ -1,5 +1,26 @@
 # @laioutr-app/shopware
 
+## 0.14.0
+
+### Minor Changes
+
+- 5811cbe: Add a product-listing page index backed by categories, so category pages are enumerable, searchable, countable and locatable.
+
+  Category SEO slugs are normalised — Shopware appends a trailing slash that catch-all route params never carry, which previously made most category slugs unresolvable. The category resolver, the menu query and the products-by-category query templates request SEO URLs, so category links use the store's SEO paths instead of `<name>-<id>`. Existing `<name>-<id>` URLs continue to resolve.
+
+- dd91aa9: Implement the `Child Categories` link (`Category → Category`), so a section can render the current category's sub-categories — bind the Category Card Slider's category source to it in Studio. Children arrive in the order the shop defines, restricted to the categories it shows in navigation, and carry every category component.
+
+  Category media is no longer empty when a category is resolved by id rather than through the navigation menu. The store API returns the media association only when it is asked for, and the category resolver did not ask for it.
+
+### Patch Changes
+
+- Updated dependencies [f644aab]
+- Updated dependencies [3332842]
+  - @laioutr-core/canonical-types@0.27.0
+  - @laioutr-core/core-types@0.39.0
+  - @laioutr-core/frontend-core@0.39.0
+  - @laioutr-core/kit@0.39.0
+
 ## 0.13.5
 
 ### Patch Changes
