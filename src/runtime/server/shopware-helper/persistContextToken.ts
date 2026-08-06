@@ -1,5 +1,5 @@
 import { contextTokenCookieOptions } from './contextTokenCookie';
-import { deleteCookie, getRequestURL, setCookie, useNitroApp } from '#imports';
+import { deleteManagedCookie, setManagedCookie, useNitroApp } from '#imports';
 import type { H3Event } from 'h3';
 import { CONTEXT_TOKEN_COOKIE } from '../const/cookieKeys';
 
@@ -10,7 +10,7 @@ import { CONTEXT_TOKEN_COOKIE } from '../const/cookieKeys';
  */
 export const persistContextToken = async (event: H3Event, token: string | null | undefined): Promise<void> => {
   if (!token) return;
-  setCookie(event, CONTEXT_TOKEN_COOKIE, token, contextTokenCookieOptions(getRequestURL(event).protocol === 'https:'));
+  setManagedCookie(event, CONTEXT_TOKEN_COOKIE, token, contextTokenCookieOptions());
   await useNitroApp().hooks.callHook('shopware:context-token:changed', { event, token });
 };
 
@@ -20,6 +20,6 @@ export const persistContextToken = async (event: H3Event, token: string | null |
  * context.
  */
 export const clearContextToken = async (event: H3Event): Promise<void> => {
-  deleteCookie(event, CONTEXT_TOKEN_COOKIE, { path: '/' });
+  deleteManagedCookie(event, CONTEXT_TOKEN_COOKIE, { path: '/' });
   await useNitroApp().hooks.callHook('shopware:context-token:changed', { event, token: null });
 };
