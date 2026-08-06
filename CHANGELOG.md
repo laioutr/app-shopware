@@ -1,5 +1,21 @@
 # @laioutr-app/shopware
 
+## 0.14.3
+
+### Patch Changes
+
+- 59d2b99: Session cookies now survive the Cockpit Studio preview. Cart and customer-session cookies are issued with `SameSite=None; Secure; Partitioned` when the request comes from the Studio preview frame, so a cart built in the editor persists across reloads instead of resetting on every request. The preview gets its own cookie partition, keeping it separate from your real session on the same shop in the same browser. Top-level storefront traffic is unaffected and keeps its existing `SameSite` attributes.
+
+  App authors get two new server auto-imports, `setManagedCookie` and `deleteManagedCookie`, which apply this policy. Use them instead of h3's `setCookie` / `deleteCookie` so an app's cookies work inside the preview — and note that deletions must go through `deleteManagedCookie`, since a delete that omits `Partitioned` addresses the wrong cookie jar and silently leaves the cookie in place.
+
+  `Secure` is now derived from the request origin rather than set per connector, which fixes Shopify and Adobe Commerce cookies being dropped by the browser during local development over plain http on a non-loopback hostname.
+
+- Updated dependencies [59d2b99]
+  - @laioutr-core/frontend-core@0.40.2
+  - @laioutr-core/kit@0.40.2
+  - @laioutr-core/core-types@0.40.2
+  - @laioutr-core/canonical-types@0.27.3
+
 ## 0.14.2
 
 ### Patch Changes
