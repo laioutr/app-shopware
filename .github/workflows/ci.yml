@@ -23,17 +23,18 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: Authenticate to the Laioutr registry
-        run: |
-          cp .npmrc.config .npmrc
-          if [ -n "$NPMRC_LAIOUTR_TOKEN" ]; then
-            echo "//npm.laioutr.cloud/:_authToken=$NPMRC_LAIOUTR_TOKEN" >> .npmrc
-          fi
+      - name: Create .npmrc from template
         env:
-          NPMRC_LAIOUTR_TOKEN: ${{ secrets.NPMRC_LAIOUTR_TOKEN }}
+          NPM_LAIOUTR_TOKEN: ${{ secrets.NPM_LAIOUTR_TOKEN }}
+        run: sed "s|NPM_LAIOUTR_TOKEN|${NPM_LAIOUTR_TOKEN}|" .npmrc.config > .npmrc
 
       - name: Install dependencies
         run: pnpm install
+
+      # tsconfig.json extends ./.nuxt/tsconfig.json, which this generates. Without it the
+      # import resolver cannot read any path and every import reports as unresolved.
+      - name: Prepare
+        run: pnpm run dev:prepare
 
       - name: Lint
         run: pnpm run lint
@@ -52,14 +53,10 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: Authenticate to the Laioutr registry
-        run: |
-          cp .npmrc.config .npmrc
-          if [ -n "$NPMRC_LAIOUTR_TOKEN" ]; then
-            echo "//npm.laioutr.cloud/:_authToken=$NPMRC_LAIOUTR_TOKEN" >> .npmrc
-          fi
+      - name: Create .npmrc from template
         env:
-          NPMRC_LAIOUTR_TOKEN: ${{ secrets.NPMRC_LAIOUTR_TOKEN }}
+          NPM_LAIOUTR_TOKEN: ${{ secrets.NPM_LAIOUTR_TOKEN }}
+        run: sed "s|NPM_LAIOUTR_TOKEN|${NPM_LAIOUTR_TOKEN}|" .npmrc.config > .npmrc
 
       - name: Install dependencies
         run: pnpm install

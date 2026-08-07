@@ -118,8 +118,15 @@ pnpm test
 pnpm lint
 ```
 
-`@laioutr-core/*` and `@laioutr-app/ui` resolve from Laioutr's registry — copy `.npmrc.config` to
-`.npmrc` and add your token before installing.
+`@laioutr-core/*` and `@laioutr-app/ui` resolve from Laioutr's registry. Before installing, render
+the template with your token:
+
+```bash
+sed "s|NPM_LAIOUTR_TOKEN|$YOUR_TOKEN|" .npmrc.config > .npmrc
+```
+
+Releases go through [changesets](https://github.com/changesets/changesets): run `pnpm changeset` to
+describe your change, and merging the generated "Version Packages" PR publishes to npm.
 
 ## License
 
