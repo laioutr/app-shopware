@@ -5,7 +5,6 @@
   "repository": "laioutr/app-shopware",
   "license": "MIT",
   "type": "module",
-  "packageManager": "pnpm@10.15.0",
   "exports": {
     ".": {
       "types": "./dist/types.d.mts",
