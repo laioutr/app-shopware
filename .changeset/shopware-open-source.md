@@ -1,5 +1,5 @@
 ---
-'@laioutr/app-shopware': minor
+'@laioutr/app-shopware': patch
 ---
 
 **Breaking:** the app is now open source and publishes as `@laioutr/app-shopware` on public npm
