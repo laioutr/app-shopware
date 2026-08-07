@@ -20,6 +20,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          # setup-node caches on the detected package manager by default, which needs a
+          # committed pnpm-lock.yaml. There is none yet.
+          cache: ''
 
       - name: Authenticate to the Laioutr registry
         run: |
@@ -47,6 +50,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          # setup-node caches on the detected package manager by default, which needs a
+          # committed pnpm-lock.yaml. There is none yet.
+          cache: ''
 
       - name: Authenticate to the Laioutr registry
         run: |
