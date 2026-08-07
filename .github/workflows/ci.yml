@@ -1,0 +1,71 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.1
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+
+      - name: Authenticate to the Laioutr registry
+        run: |
+          cp .npmrc.config .npmrc
+          if [ -n "$LAIOUTR_NPM_TOKEN" ]; then
+            echo "//npm.laioutr.cloud/:_authToken=$LAIOUTR_NPM_TOKEN" >> .npmrc
+          fi
+        env:
+          LAIOUTR_NPM_TOKEN: ${{ secrets.LAIOUTR_NPM_TOKEN }}
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Lint
+        run: pnpm run lint
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.1
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+
+      - name: Authenticate to the Laioutr registry
+        run: |
+          cp .npmrc.config .npmrc
+          if [ -n "$LAIOUTR_NPM_TOKEN" ]; then
+            echo "//npm.laioutr.cloud/:_authToken=$LAIOUTR_NPM_TOKEN" >> .npmrc
+          fi
+        env:
+          LAIOUTR_NPM_TOKEN: ${{ secrets.LAIOUTR_NPM_TOKEN }}
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Playground prepare
+        run: pnpm run dev:prepare
+
+      - name: Test
+        run: pnpm run test

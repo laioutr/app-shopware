@@ -15,7 +15,7 @@ import { useShopwareEmbedBridge } from '../composables/useShopwareEmbedBridge';
  */
 const emit = defineEmits<{ 'checkout-finish': [orderId: string]; 'auth-changed': [payload: AuthChangedPayload] }>();
 
-const storefrontOrigin = computed(() => useRuntimeConfig().public['@laioutr-app/shopware']?.storefrontOrigin ?? '');
+const storefrontOrigin = computed(() => useRuntimeConfig().public['@laioutr/app-shopware']?.storefrontOrigin ?? '');
 
 const frameRef = ref<HTMLIFrameElement | null>(null);
 const height = ref<number>();

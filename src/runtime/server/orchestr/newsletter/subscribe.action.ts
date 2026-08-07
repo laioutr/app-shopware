@@ -10,7 +10,7 @@ export default defineShopwareAction(SubscribeAction, async ({ context, input }) 
   // be a domain configured in the sales channel — so the app's configured storefront URL is the
   // only valid value. Without it the subscription cannot be completed, so fail via the action's
   // own `error` status rather than posting a bogus URL.
-  const { storefrontUrl } = useRuntimeConfig()['@laioutr-app/shopware'];
+  const { storefrontUrl } = useRuntimeConfig()['@laioutr/app-shopware'];
   if (!storefrontUrl) {
     logger.error('Cannot subscribe to newsletter: storefrontUrl is not configured');
     return { status: 'error' as const };

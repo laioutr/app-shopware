@@ -16,7 +16,7 @@ export default defineShopwareComponentResolver({
     const cart = passthrough.get(cartFragmentToken) ?? (await getCart(context.storefrontClient));
     passthrough.set(cartFragmentToken, cart);
 
-    const config = useRuntimeConfig()['@laioutr-app/shopware'];
+    const config = useRuntimeConfig()['@laioutr/app-shopware'];
     const totalQuantity = (cart.lineItems ?? []).reduce((sum, li) => sum + (li.quantity ?? 0), 0);
 
     /*

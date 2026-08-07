@@ -23,7 +23,7 @@ const log = consola.withTag('shopware/checkout');
  * context token and persist it, giving the storefront a session to adopt (an empty guest cart).
  */
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()['@laioutr-app/shopware'];
+  const config = useRuntimeConfig()['@laioutr/app-shopware'];
 
   let contextToken = getCookie(event, CONTEXT_TOKEN_COOKIE);
   if (!contextToken) {

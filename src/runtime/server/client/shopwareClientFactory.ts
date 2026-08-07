@@ -9,7 +9,7 @@ import { CONTEXT_TOKEN_COOKIE } from '../const/cookieKeys';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: ignore not portable type TS2742
 export const shopwareClientFactory = async (event: OrchestrArgsBase['event']): Promise<StorefrontClient> => {
-  const config = useRuntimeConfig()['@laioutr-app/shopware'];
+  const config = useRuntimeConfig()['@laioutr/app-shopware'];
 
   // A host may supply the context token from its own session store (bail hook); the cookie is
   // the fallback. This is a cheap read only — it must never mint a token (see the design doc).

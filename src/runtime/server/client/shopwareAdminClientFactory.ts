@@ -7,7 +7,7 @@ type ShopwareAdminClient = ReturnType<typeof createAdminAPIClient>;
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: ignore not portable type TS2742
 export const shopwareAdminClientFactory = (): ShopwareAdminClient => {
-  const { adminClientId, adminClientSecret, adminEndpoint } = useRuntimeConfig()['@laioutr-app/shopware'];
+  const { adminClientId, adminClientSecret, adminEndpoint } = useRuntimeConfig()['@laioutr/app-shopware'];
   return createAdminAPIClient({
     baseURL: adminEndpoint,
     credentials: {

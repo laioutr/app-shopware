@@ -35,7 +35,7 @@ export interface ModuleOptions {
 }
 
 /**
- * The config the module adds to nuxt.runtimeConfig.public['@laioutr-app/shopware']
+ * The config the module adds to nuxt.runtimeConfig.public['@laioutr/app-shopware']
  */
 export interface RuntimeConfigModulePublic {
   /**
@@ -47,7 +47,7 @@ export interface RuntimeConfigModulePublic {
 }
 
 /**
- * The config the module adds to nuxt.runtimeConfig['@laioutr-app/shopware']
+ * The config the module adds to nuxt.runtimeConfig['@laioutr/app-shopware']
  */
 export interface RuntimeConfigModulePrivate extends ModuleOptions {}
 

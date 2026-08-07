@@ -10,7 +10,7 @@ import { adoptSession } from '../shopware-helper/resolveAdoptSession';
  * it never reaches the browser.
  */
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()['@laioutr-app/shopware'];
+  const config = useRuntimeConfig()['@laioutr/app-shopware'];
   const body = await readBody<{ code?: unknown }>(event);
   const code = typeof body?.code === 'string' ? body.code : null;
 
