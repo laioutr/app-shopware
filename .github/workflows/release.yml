@@ -21,6 +21,9 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          # Persisted for the release branch push, so it carries the same identity as the
+          # PR the action opens with this token.
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - uses: pnpm/action-setup@v4
 
@@ -51,4 +54,6 @@ jobs:
           commit: 'chore: release'
           createGithubReleases: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A PR opened with the default GITHUB_TOKEN cannot trigger further workflows, so
+          # release PRs would never get CI. This token gives them a different identity.
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
