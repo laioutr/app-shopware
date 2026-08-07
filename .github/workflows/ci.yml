@@ -26,11 +26,11 @@ jobs:
       - name: Authenticate to the Laioutr registry
         run: |
           cp .npmrc.config .npmrc
-          if [ -n "$LAIOUTR_NPM_TOKEN" ]; then
-            echo "//npm.laioutr.cloud/:_authToken=$LAIOUTR_NPM_TOKEN" >> .npmrc
+          if [ -n "$NPMRC_LAIOUTR_TOKEN" ]; then
+            echo "//npm.laioutr.cloud/:_authToken=$NPMRC_LAIOUTR_TOKEN" >> .npmrc
           fi
         env:
-          LAIOUTR_NPM_TOKEN: ${{ secrets.LAIOUTR_NPM_TOKEN }}
+          NPMRC_LAIOUTR_TOKEN: ${{ secrets.NPMRC_LAIOUTR_TOKEN }}
 
       - name: Install dependencies
         run: pnpm install
@@ -55,11 +55,11 @@ jobs:
       - name: Authenticate to the Laioutr registry
         run: |
           cp .npmrc.config .npmrc
-          if [ -n "$LAIOUTR_NPM_TOKEN" ]; then
-            echo "//npm.laioutr.cloud/:_authToken=$LAIOUTR_NPM_TOKEN" >> .npmrc
+          if [ -n "$NPMRC_LAIOUTR_TOKEN" ]; then
+            echo "//npm.laioutr.cloud/:_authToken=$NPMRC_LAIOUTR_TOKEN" >> .npmrc
           fi
         env:
-          LAIOUTR_NPM_TOKEN: ${{ secrets.LAIOUTR_NPM_TOKEN }}
+          NPMRC_LAIOUTR_TOKEN: ${{ secrets.NPMRC_LAIOUTR_TOKEN }}
 
       - name: Install dependencies
         run: pnpm install
