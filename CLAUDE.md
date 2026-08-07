@@ -6,38 +6,26 @@ Be direct and objective. Offer solutions alongside criticism rather than agreeme
 
 ## What this is
 
-A [Laioutr](https://laioutr.com) App: a Nuxt module that plugs [Shopware 6](https://www.shopware.com)
-into a Laioutr storefront as its commerce backend. It publishes as `@laioutr/app-shopware` on public
-npm and was extracted from the Laioutr monorepo, so some conventions here are platform-wide rather
-than local to this repo.
+A [Laioutr](https://laioutr.com) App: a Nuxt module plugging [Shopware 6](https://www.shopware.com)
+into a Laioutr storefront as its commerce backend. The README covers what it does, how it is
+configured, the checkout handoff and how to run the playground — this file does not repeat any of it.
 
-The module maps Shopware's Store API onto Laioutr's canonical entity model through Orchestr, so
-storefront components stay backend-agnostic.
+Extracted from the Laioutr monorepo, so several conventions below are platform-wide rather than local
+to this repo.
 
-## Setup and commands
-
-`@laioutr-core/*` and `@laioutr-app/ui` come from Laioutr's registry. Render the template with a
-token **before** installing — a bare `pnpm install` will fail to resolve them:
-
-```bash
-sed "s|NPM_LAIOUTR_TOKEN|$YOUR_TOKEN|" .npmrc.config > .npmrc
-pnpm install
-```
-
-```bash
-pnpm dev            # dev:prepare, then the playground on :3000 (needs .env — see .env.example)
-pnpm dev:prepare    # stub build + module prepare + playground prepare
-pnpm lint
-pnpm test
-pnpm test:types     # vue-tsc over the module and the playground
-pnpm changeset      # describe a change for the next release
-pnpm vitest run src/path/to/file.test.ts   # a single suite
-```
+## Working here
 
 **Run `pnpm dev:prepare` before lint or typecheck.** `tsconfig.json` extends `./.nuxt/tsconfig.json`,
 which that command generates. Without it the import resolver cannot read any path and lint reports
 every import as unresolved — hundreds of errors that are pure artifact. This is the standalone
 equivalent of the monorepo's "always use `turbo run`" rule; there is no turbo here.
+
+Beyond the commands in the README:
+
+```bash
+pnpm test:types                            # vue-tsc over the module and the playground
+pnpm vitest run src/path/to/file.test.ts   # a single suite
+```
 
 ## Architecture
 
@@ -82,8 +70,8 @@ Two hard don'ts:
 
 ### Nitro hooks
 
-This module exposes `shopware:context-token:resolve` and `shopware:context-token:changed`. Name new
-hooks `namespace:entity:action` in kebab-case, present tense before an action and past tense after.
+The hooks this module already exposes are documented in the README. Name new ones
+`namespace:entity:action` in kebab-case, present tense before an action and past tense after.
 
 A hook earns its place where code runs an effect the developer cannot otherwise reach. For hooks
 whose handlers influence a returned value, pass a `result: { value }` slot — hookable ignores handler
@@ -139,8 +127,7 @@ measurably degrades composition, and never anything already visible in the schem
 
 ### Changesets
 
-Releases run through changesets. `pnpm changeset` before opening a PR that changes published
-behaviour; merging the generated "chore: release" PR publishes to npm via OIDC.
+The release mechanics are in the README. What matters here is how an entry is written.
 
 Write for the **package consumer**, not the contributor. Build internals, refactor lists and
 type-system mechanics belong in the commit message. A purely internal change needs no changeset.
