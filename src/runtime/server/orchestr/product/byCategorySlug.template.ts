@@ -29,7 +29,7 @@ export default defineShopwareQueryTemplateProvider({
           category: ['id', 'name', 'translated', 'seoUrls'],
           seo_url: ['seoPathInfo', 'isCanonical', 'routeName'],
         },
-        limit: 50,
+        limit: context.settings.queryTemplateLimit,
       },
     });
 

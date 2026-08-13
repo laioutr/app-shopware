@@ -6,7 +6,11 @@ import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants'
 export default defineShopwareLink(ProductVariantsLink, async ({ entityIds, context, passthrough }) => {
   const allVariants =
     passthrough.get(productVariantsToken) ??
-    (await fetchAllProducts(context.storefrontClient, { productIds: entityIds, loadVariants: true }));
+    (await fetchAllProducts(context.storefrontClient, {
+      productIds: entityIds,
+      loadVariants: true,
+      resolveCriteria: context.resolveCriteria,
+    }));
 
   passthrough.set(productVariantsToken, allVariants);
 

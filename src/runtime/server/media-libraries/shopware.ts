@@ -64,11 +64,12 @@ export const buildShopwareMediaFilters = (query: MediaQuery): unknown[] => {
 
 const fetchChildFolders = async (
   api: ReturnType<typeof shopwareAdminClientFactory>,
-  parentId: string | undefined
+  parentId: string | undefined,
+  limit: number
 ): Promise<MediaFolder[]> => {
   const response = await api.invoke('searchMediaFolder post /search/media-folder', {
     body: {
-      limit: 500,
+      limit,
       filter: [{ type: 'equals', field: 'parentId', value: parentId ?? null }],
       sort: [{ field: 'name', order: 'ASC' }],
     },
@@ -107,7 +108,10 @@ export default defineShopware.mediaLibrary({
     // Folders ride in the list response on the FIRST (cursorless) page only (design §4.4);
     // a whole-library search (`scope: 'all'`) has no folder level, and any active search term
     // yields a flat asset result — so no folder tiles in either search case.
-    const folders = query.cursor || query.scope === 'all' || query.term ? undefined : await fetchChildFolders(api, query.folderId);
+    const folders =
+      query.cursor || query.scope === 'all' || query.term ?
+        undefined
+      : await fetchChildFolders(api, query.folderId, ctx.settings.mediaFolderLimit);
 
     const items: ProviderStudioMediaItem[] =
       response.data.data?.map((media: any) => ({

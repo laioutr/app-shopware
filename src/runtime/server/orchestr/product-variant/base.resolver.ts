@@ -13,6 +13,7 @@ import { MediaImage } from '@laioutr-core/core-types/common';
 import { productVariantsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { resolveProductVariantFields } from '../../orchestr-helper/requestedFields';
+import { toRequestCriteria } from '../../shopware-helper/criteria';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';
 
@@ -37,10 +38,12 @@ export default defineShopwareComponentResolver({
 
     // Load missing variant data
     if (missingVariantIds.length > 0) {
+      const criteria = await resolveProductVariantFields(context.resolveCriteria);
+
       const response = await context.storefrontClient.invoke('readProduct post /product', {
         body: {
           ids: missingVariantIds,
-          ...resolveProductVariantFields(),
+          ...toRequestCriteria(criteria),
         },
       });
       loadedVariants.push(...(response.data.elements ?? []));

@@ -43,7 +43,11 @@ export default defineShopwareComponentResolver({
     const loadedVariants = passthrough.get(productVariantsToken) ?? [];
     const missingVariantIds = variantIds.filter((id) => !loadedVariants.some((variant) => variant.id === id));
     if (missingVariantIds.length > 0) {
-      const response = await fetchAllProducts(context.storefrontClient, { productIds: missingVariantIds, loadVariants: false });
+      const response = await fetchAllProducts(context.storefrontClient, {
+        productIds: missingVariantIds,
+        loadVariants: false,
+        resolveCriteria: context.resolveCriteria,
+      });
       loadedVariants.push(...response);
     }
 

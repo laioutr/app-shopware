@@ -1,14 +1,10 @@
 import { extractShopwareId, isShopwareId } from './isShopwareId';
 import { isSlugMatchingSeoPath } from './mappers/slugMapper';
 import { useUserlandCache } from '#imports';
+import type { ShopwareCatalogSettings } from '../types/settings';
 import { StorefrontClient } from '../types/shopware';
 
 type SeoUrlType = 'product' | 'category';
-
-const typeToRouteNames: Record<SeoUrlType, string[]> = {
-  product: ['frontend.detail.page'],
-  category: ['frontend.navigation.page', 'frontend.landing.page'],
-};
 
 interface SeoEntry {
   type: SeoUrlType;
@@ -18,7 +14,7 @@ interface SeoEntry {
 
 const SEO_ENTRY_TTL = 60 * 60 * 24; // 1 day
 
-export const useSeoResolver = (storefrontClient: StorefrontClient) => {
+export const useSeoResolver = (storefrontClient: StorefrontClient, routeNames: ShopwareCatalogSettings['seoRouteNames']) => {
   const cache = useUserlandCache<SeoEntry>('shopware/seo-urls');
 
   /**
@@ -57,7 +53,7 @@ export const useSeoResolver = (storefrontClient: StorefrontClient) => {
                   { field: 'seoPathInfo', type: 'equals', value: slug },
                 ],
               },
-              { field: 'routeName', type: 'equalsAny', value: typeToRouteNames[type] as any },
+              { field: 'routeName', type: 'equalsAny', value: routeNames[type] as any },
             ],
           },
         ],

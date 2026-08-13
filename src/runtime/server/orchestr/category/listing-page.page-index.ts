@@ -1,5 +1,6 @@
 import { paginate } from '#imports';
 import { ProductListingPage } from '@laioutr-core/canonical-types/ecommerce';
+import type { ShopwareCatalogSettings } from '../../types/settings';
 import { defineShopwarePageIndex } from '../../middleware/defineShopware';
 import { toCategoryPageEntry } from '../../shopware-helper/pageIndexEntries';
 import { readCategoryPageMeta } from '../../shopware-helper/readCategoryPageMeta';
@@ -12,23 +13,23 @@ import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
  * the home page and the footer menu. `visible` is deliberately not filtered — a category hidden from
  * navigation still renders.
  */
-const membershipFilter = [
-  { type: 'equals' as const, field: 'type', value: 'page' },
-  { type: 'equals' as const, field: 'active', value: true },
-  { type: 'range' as const, field: 'level', parameters: { gt: 1 } },
+const buildMembershipFilter = ({ categoryPageIndex }: ShopwareCatalogSettings) => [
+  { type: 'equalsAny' as const, field: 'type', value: categoryPageIndex.types as any },
+  ...(categoryPageIndex.activeOnly ? [{ type: 'equals' as const, field: 'active', value: true }] : []),
+  { type: 'range' as const, field: 'level', parameters: { gt: categoryPageIndex.minLevel } },
 ];
 
-const pageIndexCriteria = {
+const buildPageIndexCriteria = (catalog: ShopwareCatalogSettings) => ({
   associations: { seoUrls: {}, media: {} },
   includes: {
     category: ['id', 'name', 'translated', 'updatedAt', 'seoUrls', 'media'],
     seo_url: ['seoPathInfo', 'isCanonical', 'routeName'],
     media: ['url'],
   },
-  filter: membershipFilter,
+  filter: buildMembershipFilter(catalog),
   // Page-number cursors need a stable upstream order, or a resumed walk shifts entries between passes.
   sort: [{ field: 'id', order: 'ASC' as const }],
-};
+});
 
 export default defineShopwarePageIndex({
   for: ProductListingPage,
@@ -46,7 +47,10 @@ export default defineShopwarePageIndex({
    * locale would claim the category has no page in any other.
    */
   locate: async ({ context, params }) => {
-    const seoEntry = await useSeoResolver(context.storefrontClient).resolve('category', params.slug);
+    const seoEntry = await useSeoResolver(context.storefrontClient, context.settings.catalog.seoRouteNames).resolve(
+      'category',
+      params.slug
+    );
     if (!seoEntry) return undefined;
 
     return {
@@ -56,7 +60,7 @@ export default defineShopwarePageIndex({
   },
   count: async ({ context }) => {
     const response = await context.storefrontClient.invoke('readCategoryList post /category', {
-      body: { ...pageIndexCriteria, limit: 1, 'total-count-mode': 'exact' },
+      body: { ...buildPageIndexCriteria(context.settings.catalog), limit: 1, 'total-count-mode': 'exact' },
     });
     return response.data.total ?? 0;
   },
@@ -65,9 +69,9 @@ export default defineShopwarePageIndex({
     context.storefrontClient
       .invoke('readCategoryList post /category', {
         body: {
-          ...pageIndexCriteria,
+          ...buildPageIndexCriteria(context.settings.catalog),
           filter: [
-            ...membershipFilter,
+            ...buildMembershipFilter(context.settings.catalog),
             {
               type: 'multi' as const,
               operator: 'or' as const,
@@ -77,7 +81,7 @@ export default defineShopwarePageIndex({
               ],
             },
           ],
-          limit: take,
+          limit: Math.min(take, context.settings.maxLimit),
         },
       })
       .then((response) => (response.data.elements ?? []).map(toCategoryPageEntry)),
@@ -86,10 +90,10 @@ export default defineShopwarePageIndex({
       storeApiPageFetcher(
         ({ page, limit }) =>
           context.storefrontClient
-            .invoke('readCategoryList post /category', { body: { ...pageIndexCriteria, page, limit } })
+            .invoke('readCategoryList post /category', { body: { ...buildPageIndexCriteria(context.settings.catalog), page, limit } })
             .then((response) => response.data),
         toCategoryPageEntry,
-        batchSize
+        Math.min(batchSize, context.settings.maxLimit)
       ),
       startCursor
     ),

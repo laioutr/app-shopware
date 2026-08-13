@@ -1,6 +1,7 @@
 import { CategoryBase, CategoryContent, CategoryMedia, CategorySeo } from '@laioutr-core/canonical-types/entity/category';
 import { categoriesToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
+import { toRequestCriteria } from '../../shopware-helper/criteria';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';
@@ -12,15 +13,18 @@ export default defineShopwareComponentResolver({
   resolve: async ({ entityIds, context, passthrough, $entity }) => {
     const { storefrontClient } = context;
 
-    const categories =
-      passthrough.has(categoriesToken) ?
-        passthrough.get(categoriesToken)!
-      : (
-          await storefrontClient.invoke('readCategoryList post /category', {
-            // Neither association is returned by default; without `media` the media component is always empty.
-            body: { ids: entityIds, associations: { seoUrls: {}, media: {} } },
-          })
-        ).data.elements;
+    const readCategories = async () => {
+      // Neither association is returned by default; without `media` the media component is always empty.
+      const criteria = await context.resolveCriteria('category', { includes: {}, associations: { seoUrls: {}, media: {} } });
+
+      const response = await storefrontClient.invoke('readCategoryList post /category', {
+        body: { ids: entityIds, ...toRequestCriteria(criteria) },
+      });
+
+      return response.data.elements;
+    };
+
+    const categories = passthrough.has(categoriesToken) ? passthrough.get(categoriesToken)! : await readCategories();
 
     if (!categories) {
       throw new Error(

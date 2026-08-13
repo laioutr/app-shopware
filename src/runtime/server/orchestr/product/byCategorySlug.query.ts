@@ -15,7 +15,7 @@ export default defineShopwareQuery(
   ProductsByCategorySlugQuery,
   async ({ context, input, pagination, filter: selectedFilters, sorting, passthrough }) => {
     const { categorySlug } = input;
-    const seoResolver = useSeoResolver(context.storefrontClient);
+    const seoResolver = useSeoResolver(context.storefrontClient, context.settings.catalog.seoRouteNames);
     const seoEntry = await seoResolver.resolve('category', categorySlug);
     if (!seoEntry) {
       throw new Error(`No seo url found for category slug: ${categorySlug}`);
@@ -33,7 +33,7 @@ export default defineShopwareQuery(
         includes: {
           product: ['id', 'parentId'],
         },
-        'total-count-mode': 'exact',
+        'total-count-mode': context.settings.totalCountMode,
         'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
         'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
         manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
@@ -53,11 +53,14 @@ export default defineShopwareQuery(
 
     cacheProductParentIds(response.data.elements.map((product) => [product.id, product.parentId ?? product.id]));
 
-    const allVariants = await fetchAllProducts(context.storefrontClient, {
-      productIds: Object.keys(parentIdToDefaultVariantId),
-      loadVariants: true,
-    });
-    passthrough.set(productVariantsToken, allVariants);
+    if (context.settings.loadVariantsOnListing) {
+      const allVariants = await fetchAllProducts(context.storefrontClient, {
+        productIds: Object.keys(parentIdToDefaultVariantId),
+        loadVariants: true,
+        resolveCriteria: context.resolveCriteria,
+      });
+      passthrough.set(productVariantsToken, allVariants);
+    }
 
     return {
       // Return the parent-id, in case the received product is a variant

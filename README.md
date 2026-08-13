@@ -71,6 +71,93 @@ export default defineNuxtConfig({
 in the private runtime config, and only `storefrontUrl`'s origin is exposed publicly. Read them
 from the environment rather than committing them to `nuxt.config.ts`.
 
+In a Laioutr project the same options come from the app's `config` object in `laioutrrc.json`,
+which the platform passes into this module — the `nuxt.config.ts` form above is for the playground
+and for standalone Nuxt apps.
+
+```jsonc
+// laioutrrc.json
+{
+  "apps": [
+    {
+      "name": "@laioutr/app-shopware",
+      "version": "0.14.5",
+      "config": { "endpoint": "https://shop.example.com/store-api" }
+    }
+  ]
+}
+```
+
+## Tuning the Store API reads
+
+What the app asks Shopware for, and what those reads cost, is reachable through two Nitro hooks
+rather than through config. A project's config is on its way to being editable from Studio, and
+none of this is an editor's decision: a wrong `includes` value empties an entity component with no
+error to trace it back from, and `maxLimit` describes the shop's deployment.
+
+Both are **filter** hooks, seeded with what the app would otherwise have used — register no
+handler and every read behaves exactly as it shipped.
+
+### `shopware:criteria:resolve`
+
+Fires once per store-API read that hydrates a canonical entity, carrying the projection and
+relations for that read.
+
+```ts
+// server/plugins/shopware-criteria.ts
+export default defineNitroPlugin((nitro) => {
+  nitro.hooks.hook('shopware:criteria:resolve', ({ target, result }) => {
+    if (target !== 'product') return;
+
+    result.criteria.includes.product.push('customFields');
+    result.criteria.associations.properties = { associations: { group: {} } };
+  });
+});
+```
+
+| `target` | Read |
+| --- | --- |
+| `product` | A product read, composed — the variant branch nested under it has already been through `product-variant`. |
+| `product-variant` | A standalone variant read *and* the branch nested inside a product read, so widening variants widens them everywhere. |
+| `category` | The category component resolver's read. |
+| `menu` | The navigation read behind `MenuByAliasQuery`. |
+| `product-review` | The review component resolver's read. |
+
+Reads that hydrate nothing have no target and never fire: the id-only listing queries, both page
+indexes, the breadcrumb link and the child-category link. Their payloads never reach a mapper.
+
+`category` and `menu` arrive with an empty `includes` and stay that way unless a handler fills it —
+Shopware returns whole rows when a read projects nothing. Putting a field there turns the read into
+a whitelist, which is a way to make it *smaller*, not larger.
+
+### `shopware:settings:resolve`
+
+Fires once per Orchestr request, carrying what the reads cost and how far they reach.
+
+```ts
+// server/plugins/shopware-settings.ts
+export default defineNitroPlugin((nitro) => {
+  nitro.hooks.hook('shopware:settings:resolve', ({ result }) => {
+    result.settings.maxLimit = 25;
+    result.settings.totalCountMode = 'next-pages';
+    result.settings.catalog.menuDepth = 3;
+  });
+});
+```
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `maxLimit` | `100` | The shop's `api.max_limit`. Page-index walks and the media library's folder read are clamped to it; a larger `limit` is rejected with a 400. |
+| `totalCountMode` | `exact` | `total-count-mode` for product listing reads. `next-pages` is markedly cheaper on a large catalog but leaves the total an estimate. |
+| `loadVariantsOnListing` | `true` | Pre-load every variant of every product on a category listing. Off, the variant resolver fetches on demand: smaller listing payloads, one extra read where the listing itself renders a variant picker. |
+| `queryTemplateLimit` | `50` | How many categories the Studio query-template picker offers. |
+| `mediaFolderLimit` | `500` | Page size for the media library's folder reads. |
+| `catalog.menuDepth` | unset | Navigation depth for menu reads. Left unset, Shopware applies its own default of two levels. |
+| `catalog.categoryPageIndex.types` | `['page']` | Shopware category `type` values the listing-page index covers. Add `'landing_page'` for shops that serve landing pages as listing pages. |
+| `catalog.categoryPageIndex.minLevel` | `1` | Only categories *deeper* than this level are indexed — the default drops the navigation roots the storefront renders as the home page and the footer menu. |
+| `catalog.categoryPageIndex.activeOnly` | `true` | Restrict the index to active categories. |
+| `catalog.seoRouteNames` | `frontend.detail.page`; `frontend.navigation.page`, `frontend.landing.page` | `seo_url.routeName` values the slug resolver accepts, per entity type. Extend it when a plugin serves detail or listing pages under its own route name. |
+
 ## Checkout
 
 The app registers a `Checkout` page type. Tag one page with it in Studio and drop the

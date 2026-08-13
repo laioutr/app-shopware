@@ -5,7 +5,7 @@ import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 export default defineShopwareQuery(CategoryBySlugQuery, async ({ context, input }) => {
   const { slug } = input;
 
-  const seoResolver = useSeoResolver(context.storefrontClient);
+  const seoResolver = useSeoResolver(context.storefrontClient, context.settings.catalog.seoRouteNames);
   const seoEntry = await seoResolver.resolve('category', slug);
 
   if (!seoEntry) {
