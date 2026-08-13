@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { RuntimeConfigModulePrivate, RuntimeConfigModulePublic } from './module';
+import type { ShopwareCriteria, ShopwareCriteriaTarget } from './runtime/server/types/criteria';
+import type { ShopwareSettings } from './runtime/server/types/settings';
 import type { HookResult } from '@nuxt/schema';
 import type { H3Event } from 'h3';
 
@@ -32,6 +34,12 @@ declare module 'nitropack' {
      * own store (e.g. keyed by the external IdP subject) — persisting on a value, clearing on null.
      */
     'shopware:context-token:changed': (args: { event: H3Event; token: string | null }) => HookResult;
+    'shopware:criteria:resolve': (args: {
+      event: H3Event;
+      target: ShopwareCriteriaTarget;
+      result: { criteria: ShopwareCriteria };
+    }) => HookResult;
+    'shopware:settings:resolve': (args: { event: H3Event; result: { settings: ShopwareSettings } }) => HookResult;
   }
 }
 

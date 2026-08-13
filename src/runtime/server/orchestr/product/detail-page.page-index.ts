@@ -37,7 +37,7 @@ export default defineShopwarePageIndex({
    */
   locate: async ({ context, params }) => {
     const client = context.storefrontClient;
-    const seoEntry = await useSeoResolver(client).resolve('product', params.slug);
+    const seoEntry = await useSeoResolver(client, context.settings.catalog.seoRouteNames).resolve('product', params.slug);
     if (!seoEntry) return undefined;
 
     const parentId = await useGetProductParentId(client)(seoEntry.id);
@@ -53,7 +53,9 @@ export default defineShopwarePageIndex({
   },
   search: ({ context, term, take }) =>
     context.storefrontClient
-      .invoke('readProduct post /product', { body: { ...pageIndexCriteria, term, limit: take } })
+      .invoke('readProduct post /product', {
+        body: { ...pageIndexCriteria, term, limit: Math.min(take, context.settings.maxLimit) },
+      })
       .then((response) => (response.data.elements ?? []).map(toProductPageEntry)),
   list: ({ context, batchSize, startCursor }) =>
     paginate(
@@ -63,7 +65,7 @@ export default defineShopwarePageIndex({
             .invoke('readProduct post /product', { body: { ...pageIndexCriteria, page, limit } })
             .then((response) => response.data),
         toProductPageEntry,
-        batchSize
+        Math.min(batchSize, context.settings.maxLimit)
       ),
       startCursor
     ),

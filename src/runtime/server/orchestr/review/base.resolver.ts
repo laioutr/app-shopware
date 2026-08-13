@@ -1,6 +1,7 @@
 import { ReviewBase } from '@laioutr-core/canonical-types/entity/review';
 import { currentProductIdsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
+import { toRequestCriteria } from '../../shopware-helper/criteria';
 import { ShopwareProductReview } from '../../types/shopware';
 
 export default defineShopwareComponentResolver({
@@ -14,14 +15,17 @@ export default defineShopwareComponentResolver({
 
     let entities = [] as ShopwareProductReview[];
 
+    const criteria = await context.resolveCriteria('product-review', {
+      includes: { product_review: ['id', 'title', 'content', 'points', 'externalUser'] },
+      associations: {},
+    });
+
     for (const productId of currentProductIds) {
       const res = await context.storefrontClient.invoke('readProductReviews post /product/{productId}/reviews', {
         pathParams: { productId },
         body: {
           ids: entityIds,
-          includes: {
-            product_review: ['id', 'title', 'content', 'points', 'externalUser'],
-          },
+          ...toRequestCriteria(criteria),
         },
       });
 

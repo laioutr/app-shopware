@@ -5,7 +5,7 @@ import { defineShopwareQuery } from '../../middleware/defineShopware';
 import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 
 export default defineShopwareQuery(ProductBySlugQuery, async ({ context, input, passthrough }) => {
-  const seoResolver = useSeoResolver(context.storefrontClient);
+  const seoResolver = useSeoResolver(context.storefrontClient, context.settings.catalog.seoRouteNames);
   const seoEntry = await seoResolver.resolve('product', input.slug);
   if (!seoEntry) {
     throw new Error(`No product found for slug: ${input.slug}`);

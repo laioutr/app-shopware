@@ -26,7 +26,7 @@ export default defineShopwareQuery(
         includes: {
           product: ['id', 'parentId'],
         },
-        'total-count-mode': 'exact',
+        'total-count-mode': context.settings.totalCountMode,
         'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
         'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
         manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
