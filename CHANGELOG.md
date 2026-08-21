@@ -1,5 +1,13 @@
 # @laioutr/app-shopware
 
+## 0.15.1
+
+### Patch Changes
+
+- a5a3ec4: Percent-encode spaces in media URLs so images whose Shopware filename contains a space render
+  instead of 404ing. Shopware serves such filenames unencoded, and the space-delimited composite src
+  the app builds made the image provider truncate the URL at the first space.
+
 ## 0.15.0
 
 ### Minor Changes
