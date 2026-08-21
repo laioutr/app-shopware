@@ -1,25 +1,34 @@
-name: ci
+name: ci (fork)
 
+# A fork PR receives no secrets under `pull_request`, leaving the private registry unreachable.
+# pull_request_target runs in base-repo context, where the token exists, and takes its workflow
+# definition from main rather than from the fork. These jobs still execute fork code with that
+# token in scope, so the fork-ci environment holds every run until a maintainer has read the diff.
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  pull_request_target:
     branches:
       - main
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-fork-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   lint:
-    # A fork PR gets no secrets and so cannot reach the private registry; ci-fork.yml runs it
-    # behind an approval gate instead.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
+    environment: fork-ci
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Pin the commit that was approved; the PR branch can move after a maintainer signs off.
+          ref: ${{ github.event.pull_request.head.sha }}
+          # Keep the run's token out of .git/config, where checked-out fork code could read it.
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v4
 
@@ -47,11 +56,15 @@ jobs:
         run: pnpm run lint
 
   test:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
+    environment: fork-ci
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v4
 
