@@ -40,6 +40,49 @@ describe('mapCartCost', () => {
     const noShip = { ...grossCart, deliveries: [] };
     expect(mapCartCost(noShip as never, 'EUR').shipping).toBeUndefined();
   });
+
+  // Shopware sends clean 2-decimal amounts, but summing them in JS floats does not stay
+  // 2-decimal: 7.43 + 0.39 === 7.819999999999999. `Money.fromDecimal` rejects anything with
+  // more decimals than the currency allows, so these carts used to throw
+  // "The currency EUR supports only 2 decimal digits" instead of mapping.
+  it('sums item tax and shipping tax without float drift', () => {
+    const cart = {
+      ...grossCart,
+      deliveries: [{ shippingCosts: { totalPrice: 5.9, calculatedTaxes: [{ price: 5.9, tax: 0.39, taxRate: 7 }] } }],
+      price: { ...grossCart.price, positionPrice: 107.82, totalPrice: 113.72, calculatedTaxes: [{ price: 107.82, tax: 7.43, taxRate: 7 }] },
+    };
+
+    expect(mapCartCost(cart as never, 'EUR').tax?.total).toMatchObject({ amount: 782, currency: 'EUR' }); // 7.43 + 0.39
+  });
+
+  it('sums several tax rates without float drift', () => {
+    const cart = {
+      ...grossCart,
+      deliveries: [],
+      price: {
+        ...grossCart.price,
+        calculatedTaxes: [
+          { price: 2.71, tax: 0.19, taxRate: 7 },
+          { price: 2, tax: 0.38, taxRate: 19 },
+        ],
+      },
+    };
+
+    expect(mapCartCost(cart as never, 'EUR').tax?.total).toMatchObject({ amount: 57, currency: 'EUR' }); // 0.19 + 0.38
+  });
+
+  it('sums the line-item subtotal fallback without float drift', () => {
+    const cart = {
+      ...grossCart,
+      lineItems: [
+        { id: 'li1', type: 'product', quantity: 1, price: { totalPrice: 0.19 } },
+        { id: 'li2', type: 'product', quantity: 1, price: { totalPrice: 0.38 } },
+      ],
+      price: { ...grossCart.price, positionPrice: undefined, totalPrice: undefined, calculatedTaxes: [] },
+    };
+
+    expect(mapCartCost(cart as never, 'EUR').subtotal).toMatchObject({ amount: 57, currency: 'EUR' }); // 0.19 + 0.38
+  });
 });
 
 const shirtLine = {

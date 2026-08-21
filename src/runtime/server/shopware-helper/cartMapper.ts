@@ -17,20 +17,29 @@ import { Schemas } from '../types/storeApiTypes';
 /** Map a Shopware cart's aggregate price into the canonical nested `CartCost`. */
 export const mapCartCost = (cart: Schemas['Cart'], currency: string): EntityComponentType<typeof CartCost> => {
   const money = (value: number) => Money.fromDecimal(value, currency);
+  const zero = money(0);
 
   const lineItems = cart.lineItems ?? [];
   const deliveries = cart.deliveries ?? [];
   const price = cart.price;
 
-  const subtotalValue = price?.positionPrice ?? lineItems.reduce((sum, li) => sum + (li.price?.totalPrice ?? 0), 0);
-  const totalValue = price?.totalPrice ?? subtotalValue;
+  // Every amount below is summed in minor units (via `Money.add`), never as decimals.
+  // Shopware sends clean 2-decimal values, but adding them as floats does not stay
+  // 2-decimal — 7.43 + 0.39 === 7.819999999999999 — and `Money.fromDecimal` rejects any
+  // value with more decimals than the currency has, so a cart with taxed shipping or more
+  // than one tax rate used to throw instead of mapping.
+  const subtotal =
+    price?.positionPrice === undefined ?
+      lineItems.reduce((sum, li) => sum.add(money(li.price?.totalPrice ?? 0)), zero)
+    : money(price.positionPrice);
+  const total = price?.totalPrice === undefined ? subtotal : money(price.totalPrice);
 
-  const shippingValue = deliveries.reduce((sum, d) => sum + (d.shippingCosts?.totalPrice ?? 0), 0);
+  const shipping = deliveries.reduce((sum, d) => sum.add(money(d.shippingCosts?.totalPrice ?? 0)), zero);
 
-  const itemTaxValue = (price?.calculatedTaxes ?? []).reduce((sum, t) => sum + (t.tax ?? 0), 0);
-  const shippingTaxValue = deliveries.reduce(
-    (sum, d) => sum + (d.shippingCosts?.calculatedTaxes ?? []).reduce((s, t) => s + (t.tax ?? 0), 0),
-    0
+  const itemTax = (price?.calculatedTaxes ?? []).reduce((sum, t) => sum.add(money(t.tax ?? 0)), zero);
+  const shippingTax = deliveries.reduce(
+    (sum, d) => (d.shippingCosts?.calculatedTaxes ?? []).reduce((s, t) => s.add(money(t.tax ?? 0)), sum),
+    zero
   );
 
   // Shopware runtime returns 'gross' | 'net' | 'tax-free'; the generated enum omits
@@ -43,12 +52,12 @@ export const mapCartCost = (cart: Schemas['Cart'], currency: string): EntityComp
   }));
 
   return {
-    subtotal: money(subtotalValue),
+    subtotal,
     subtotalIsEstimated: false,
-    total: money(totalValue),
+    total,
     totalIsEstimated: false,
-    ...(deliveries.length > 0 ? { shipping: { total: money(shippingValue), isEstimated: false } } : {}),
-    tax: { total: money(itemTaxValue + shippingTaxValue), isEstimated: false, isIncluded: taxIncluded },
+    ...(deliveries.length > 0 ? { shipping: { total: shipping, isEstimated: false } } : {}),
+    tax: { total: itemTax.add(shippingTax), isEstimated: false, isIncluded: taxIncluded },
     ...(taxes.length > 0 ? { taxes } : {}),
   };
 };
