@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { mapMedia } from './mediaMapper';
+import { mapMedia, mediaToSrc } from './mediaMapper';
 import { Media } from '@laioutr-core/core-types/common';
+import { getImage } from '../../app/image/providers/shopware';
 
 // A Shopware admin `/search/media` row for an image asset with no `alt` set.
 // Shopware types `alt` as `string` but the API returns `null` at runtime — the
@@ -39,5 +40,64 @@ describe('mapMedia', () => {
 
   it('prefers `alt` over `title` when both are set', () => {
     expect(mapMedia({ ...swImageRow, alt: 'Alt text', title: 'PayPal' } as never).alt).toBe('Alt text');
+  });
+});
+
+// Shopware can deliver media URLs with literal (unencoded) spaces in the
+// filename, e.g. `.../1672993996/Erdbeertraum mit Ranke.png?width=450`. The
+// composite src format is space-delimited (`<url> <w>x<h>, ...`), so an
+// unencoded space corrupts it: the image provider truncates the URL at the
+// first space and the browser 404s.
+const swMediaWithSpaces = {
+  mimeType: 'image/png',
+  alt: null,
+  url: 'https://cdn.example/media/2a/3c/c2/1672993996/Erdbeertraum mit Ranke.png?width=3000',
+  thumbnails: [
+    { url: 'https://cdn.example/media/2a/3c/c2/1672993996/Erdbeertraum mit Ranke.png?width=450', width: 450, height: 450 },
+    { url: 'https://cdn.example/media/2a/3c/c2/1672993996/Erdbeertraum mit Ranke.png?width=1024', width: 1024, height: 1024 },
+  ],
+  metaData: { width: 856, height: 1112 },
+};
+
+describe('mediaToSrc', () => {
+  it('percent-encodes spaces in media and thumbnail URLs so the space-delimited fragment stays parseable', () => {
+    const src = mediaToSrc(swMediaWithSpaces as never);
+    const [orgSrc, rawFragment] = src.split('#');
+
+    expect(orgSrc).toBe('https://cdn.example/media/2a/3c/c2/1672993996/Erdbeertraum%20mit%20Ranke.png?width=3000');
+
+    const entries = decodeURIComponent(rawFragment).split(', ');
+    expect(entries).toEqual([
+      'https://cdn.example/media/2a/3c/c2/1672993996/Erdbeertraum%20mit%20Ranke.png?width=450 450x450',
+      'https://cdn.example/media/2a/3c/c2/1672993996/Erdbeertraum%20mit%20Ranke.png?width=1024 1024x1024',
+      'https://cdn.example/media/2a/3c/c2/1672993996/Erdbeertraum%20mit%20Ranke.png?width=3000 856x1112',
+    ]);
+  });
+
+  it('leaves already-encoded URLs untouched (no double encoding)', () => {
+    const src = mediaToSrc({
+      ...swMediaWithSpaces,
+      url: 'https://cdn.example/media/2a/3c/c2/1672993996/Erdbeertraum%20mit%20Ranke.png?width=3000',
+      thumbnails: [],
+    } as never);
+
+    expect(src.split('#')[0]).toBe(
+      'https://cdn.example/media/2a/3c/c2/1672993996/Erdbeertraum%20mit%20Ranke.png?width=3000',
+    );
+  });
+
+  it('round-trips through the shopware image provider without truncating at spaces', () => {
+    const src = mediaToSrc(swMediaWithSpaces as never);
+    // The provider returns width/height alongside the url, beyond what
+    // @nuxt/image's ResolvedImage declares.
+    const image = getImage(src, { modifiers: { width: 400 } } as never, {} as never) as {
+      url: string;
+      width: number;
+      height: number;
+    };
+
+    expect(image.url).toBe('https://cdn.example/media/2a/3c/c2/1672993996/Erdbeertraum%20mit%20Ranke.png?width=450');
+    expect(image.width).toBe(450);
+    expect(image.height).toBe(450);
   });
 });
