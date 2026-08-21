@@ -4,6 +4,11 @@ import { Schemas } from '../types/storeApiTypes';
 
 type SwMedia = Schemas['Media'];
 
+// Shopware can deliver media URLs with literal (unencoded) spaces in the
+// filename. The composite format below is space-delimited, so a raw space
+// would make the image provider truncate the URL at the first space.
+const encodeSpaces = (url: string) => url.replaceAll(' ', '%20');
+
 // Source and thumbnails are encoded in a valid url like this:
 // /original-source.jpg#/thumbnail-1.jpg 100x100, /thumbnail-2.jpg 200x200
 export const mediaToSrc = (media: SwMedia) => {
@@ -12,9 +17,10 @@ export const mediaToSrc = (media: SwMedia) => {
   }
 
   const thumbnails = media.thumbnails ?? [];
-  const thumbnailSrc = thumbnails.map((thumb) => `${thumb.url} ${thumb.width}x${thumb.height}`);
-  const orgSrc = `${media.url} ${media.metaData?.width ?? 0}x${media.metaData?.height ?? 0}`;
-  return `${media.url}#${encodeURIComponent([...thumbnailSrc, orgSrc].join(', '))}`;
+  const thumbnailSrc = thumbnails.map((thumb) => `${encodeSpaces(thumb.url)} ${thumb.width}x${thumb.height}`);
+  const mediaUrl = encodeSpaces(media.url);
+  const orgSrc = `${mediaUrl} ${media.metaData?.width ?? 0}x${media.metaData?.height ?? 0}`;
+  return `${mediaUrl}#${encodeURIComponent([...thumbnailSrc, orgSrc].join(', '))}`;
 };
 
 export const mapMediaSourceImage = (media: SwMedia): MediaSourceImage => {
