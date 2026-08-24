@@ -41,33 +41,37 @@ export default defineShopwareComponentResolver({
     const variantIds = entityIds.map((id) => parentIdToDefaultVariantId?.[id] ?? id);
 
     const loadedVariants = passthrough.get(productVariantsToken) ?? [];
-    const missingVariantIds = variantIds.filter((id) => !loadedVariants.some((variant) => variant.id === id));
-    if (missingVariantIds.length > 0) {
+    // The parent carries the entity's identity, slug and cheapest price, so it is fetched alongside
+    // the variant rather than left to whichever link happened to populate the passthrough first.
+    const missingIds = [...new Set([...variantIds, ...entityIds])].filter((id) => !loadedVariants.some((variant) => variant.id === id));
+    if (missingIds.length > 0) {
       const response = await fetchAllProducts(context.storefrontClient, {
-        productIds: missingVariantIds,
+        productIds: missingIds,
         loadVariants: false,
         resolveCriteria: context.resolveCriteria,
       });
       loadedVariants.push(...response);
     }
 
-    const shopwareProducts = variantIds
-      .map((id) => {
-        const rawVariant = loadedVariants.find((variant) => variant.id === id);
+    const shopwareProducts = entityIds
+      .map((entityId) => {
+        const rawVariant = loadedVariants.find((variant) => variant.id === (parentIdToDefaultVariantId?.[entityId] ?? entityId));
         if (!rawVariant) return undefined;
         return {
+          entityId,
           rawVariant,
-          rawProduct: loadedVariants.find((variant) => variant.id === variant.parentId) ?? rawVariant,
+          rawProduct: loadedVariants.find((variant) => variant.id === entityId) ?? rawVariant,
         };
       })
       .filter((product): product is NonNullable<typeof product> => !!product);
 
-    const entities = shopwareProducts.map(({ rawProduct, rawVariant }) => {
+    const entities = shopwareProducts.map(({ entityId, rawProduct, rawVariant }) => {
       const mappedCover = rawProduct.cover?.media ? mapMedia(rawVariant.cover?.media ?? rawProduct.cover.media) : FALLBACK_IMAGE;
 
       return $entity({
-        // The parent-id is the actual product-id, even if the product has variants.
-        id: rawProduct.id,
+        // Answer under the id that was asked for: the queries hand over parent-ids, while the data
+        // below is read off the variant they selected.
+        id: entityId,
 
         base: {
           name: swTranslated(rawProduct, 'name'),
