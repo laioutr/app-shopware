@@ -5,13 +5,17 @@ import { ShopwareFilters } from '../types/shopware';
 export type ShopwareAggregationKey = 'price' | 'shipping-free' | 'manufacturer';
 export interface ShopwareAggregation {
   name: string;
-  min?: number;
-  max?: number;
+  /** A decimal, serialized as a string on some instances and as a number on others. */
+  min?: number | string;
+  max?: number | string;
   entities?: Array<{ id: string; name: string }>;
 }
 export type ShopwareAggregations = Record<ShopwareAggregationKey, ShopwareAggregation>;
 
-export const mapShopwareAggregationToAvailableFilters = (facets: ShopwareAggregations): AvailableFilter[] => {
+/** Shopware reports price bounds to four decimals, so the sub-cent digits have to be rounded away. */
+const toMoney = (decimal: number | string | undefined, currency: string) => Money.fromDecimal(Number(decimal ?? 0), currency, Math.round);
+
+export const mapShopwareAggregationToAvailableFilters = (facets: ShopwareAggregations, currency: string): AvailableFilter[] => {
   const filters = [] as AvailableFilter[];
 
   const listFacets = ['manufacturer'] as ShopwareAggregationKey[];
@@ -36,8 +40,8 @@ export const mapShopwareAggregationToAvailableFilters = (facets: ShopwareAggrega
         id: facetObj.name,
         label: facetObj.name,
         type: 'range',
-        min: 0,
-        max: facetObj.max ?? 0,
+        min: toMoney(facetObj.min, currency),
+        max: toMoney(facetObj.max, currency),
       });
     } else if (booleanFacets.includes(facetKey)) {
       filters.push({
