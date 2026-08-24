@@ -93,6 +93,8 @@ export const mapCartItem = (
   const parentId = payload.parentId ?? lineItem.referencedId ?? lineItem.id;
   const slug = getEntitySeoSlug(payload) ?? createFallbackSlug(lineItem.label ?? '', lineItem.referencedId ?? lineItem.id);
 
+  const cover = lineItem.cover as Schemas['Media'] | undefined;
+
   const availableStock = payload.availableStock;
   const inStock = availableStock === undefined ? payload.available !== false : availableStock > 0;
 
@@ -102,8 +104,10 @@ export const mapCartItem = (
       quantity: lineItem.quantity,
       title: lineItem.label ?? '',
       code: payload.productNumber,
+      // The generated schema types `cover` as ProductMedia, but the store-api serializes
+      // the media entity directly (core sets `LineItem::$cover` to the ProductMedia's media).
       // Cart covers are product images (never video), so the narrowing cast is safe.
-      cover: lineItem.cover?.media ? (mapMedia(lineItem.cover.media) as MediaImage) : undefined,
+      cover: cover ? (mapMedia(cover) as MediaImage) : undefined,
       link: {
         type: 'reference' as const,
         reference: { type: 'Product' as const, id: parentId, slug },

@@ -100,7 +100,8 @@ const shirtLine = {
   },
   price: { unitPrice: 10, totalPrice: 20, listPrice: { price: 12 }, quantity: 2, calculatedTaxes: [] },
   quantityInformation: { minPurchase: 1, maxPurchase: 5, purchaseSteps: 1 },
-  cover: { media: { mimeType: 'image/jpeg', url: 'http://localhost:8000/a.jpg', metaData: { width: 100, height: 100 }, thumbnails: [] } },
+  // The cart serializes the cover as the media entity itself (no ProductMedia nesting).
+  cover: { apiAlias: 'media', mimeType: 'image/jpeg', url: 'http://localhost:8000/a.jpg', metaData: { width: 100, height: 100 }, thumbnails: [] },
 };
 
 describe('mapCartItem', () => {
@@ -110,6 +111,7 @@ describe('mapCartItem', () => {
     expect(item.base).toMatchObject({ type: 'product', quantity: 2, title: 'Cool Shirt', code: 'SKU-1' });
     expect(item.base.link).toMatchObject({ type: 'reference', reference: { type: 'Product', id: 'p1', slug: 'cool-shirt' } });
     expect(item.base.cover?.type).toBe('image');
+    expect(item.base.cover?.sources[0]).toMatchObject({ provider: 'shopware', width: 100, height: 100 });
     expect(item.cost.single).toMatchObject({ amount: 1000, currency: 'EUR' });
     expect(item.cost.subtotal).toMatchObject({ amount: 2000, currency: 'EUR' });
     expect(item.cost.total).toMatchObject({ amount: 2000, currency: 'EUR' });
