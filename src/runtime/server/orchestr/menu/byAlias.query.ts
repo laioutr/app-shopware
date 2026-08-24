@@ -9,7 +9,9 @@ export default defineShopwareQuery({
   run: async ({ input, context, passthrough }) => {
     const { alias } = input;
 
-    const criteria = await context.resolveCriteria('menu', { includes: {}, associations: { seoUrls: {} } });
+    // Seo urls reach this response through the client's `sw-include-seo-urls` header: some instances
+    // accept no association on the navigation route beyond the ones it loads itself.
+    const criteria = await context.resolveCriteria('menu', { includes: {}, associations: {} });
 
     const response = await context.storefrontClient.invoke('readNavigation post /navigation/{activeId}/{rootId}', {
       pathParams: {
