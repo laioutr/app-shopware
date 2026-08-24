@@ -28,12 +28,12 @@ describe('resolveProductVariantFields', () => {
 });
 
 describe('resolveProductFields', () => {
-  it('offers its criteria under the product target', async () => {
+  it('runs the variant target before composing the product read', async () => {
     const resolve = vi.fn(passthroughResolver);
 
     await resolveProductFields(resolve);
 
-    expect(targetsSeenBy(resolve)).toEqual(['product']);
+    expect(targetsSeenBy(resolve)).toEqual(['product-variant', 'product']);
   });
 
   it('returns what the resolver handed back, not what it was seeded with', async () => {
@@ -53,10 +53,20 @@ describe('resolveProductFields', () => {
     expect(criteria.associations).not.toHaveProperty('children');
   });
 
-  it('projects no variant-only field, leaving those to the variant read', async () => {
+  it('projects the variant fields too, since a product without variants is its own variant', async () => {
     const criteria = await resolveProductFields(passthroughResolver);
 
-    expect(criteria.includes.product).toContain('metaTitle');
-    expect(criteria.includes.product).not.toContain('optionIds');
+    expect(criteria.includes.product).toEqual(expect.arrayContaining(['metaTitle', 'available', 'availableStock', 'optionIds']));
+  });
+
+  it('carries a variant-target addition into the product projection', async () => {
+    const resolve: ResolveCriteria = async (target, criteria) =>
+      target === 'product-variant' ?
+        { ...criteria, includes: { ...criteria.includes, product: [...criteria.includes.product, 'customFields'] } }
+      : criteria;
+
+    const criteria = await resolveProductFields(resolve);
+
+    expect(criteria.includes.product).toContain('customFields');
   });
 });
