@@ -1,56 +1,40 @@
 import type { ResolveCriteria, ShopwareCriteria } from '../types/criteria';
-import type { ShopwareAssociationsQuery } from '../types/shopware';
 import { MediaIncludes } from '../const/includes';
-import { mergeIncludes } from '../shopware-helper/criteria';
 
-/** Add an empty association object to the shopware-request if the component is requested */
-const addAssociation = (name: string, add: boolean, association: ShopwareAssociationsQuery = {}) => (add ? { [name]: association } : {});
-
-export const resolveProductFields = async (
-  { loadVariants }: { loadVariants: boolean },
-  resolveCriteria: ResolveCriteria
-): Promise<ShopwareCriteria> => {
-  const variantFields = loadVariants ? await resolveProductVariantFields(resolveCriteria) : undefined;
-
-  return resolveCriteria('product', {
+export const resolveProductFields = async (resolveCriteria: ResolveCriteria): Promise<ShopwareCriteria> =>
+  resolveCriteria('product', {
     associations: {
       cover: { associations: { media: {} } },
       media: { associations: { media: {} } },
-      ...addAssociation('children', loadVariants, variantFields ? { associations: variantFields.associations } : {}),
     },
-    includes: mergeIncludes(
-      {
-        product: [
-          'id',
-          'parentId',
-          'name',
-          'seoUrls',
-          'productNumber',
-          'ean',
-          'translated',
-          'manufacturer',
-          'description',
-          'cover',
-          'metaTitle',
-          'metaDescription',
-          'cover',
-          'media',
-          'minPurchase',
-          'purchaseSteps',
-          'maxPurchase',
-          'calculatedPrice',
-          'calculatedPrices',
-          'children',
-          'ratingAverage',
-          'productReviews',
-        ],
-        product_media: ['id', 'mediaId', 'media'],
-        media: MediaIncludes,
-      },
-      variantFields?.includes ?? {}
-    ),
+    includes: {
+      product: [
+        'id',
+        'parentId',
+        'name',
+        'seoUrls',
+        'productNumber',
+        'ean',
+        'translated',
+        'manufacturer',
+        'description',
+        'cover',
+        'metaTitle',
+        'metaDescription',
+        'cover',
+        'media',
+        'minPurchase',
+        'purchaseSteps',
+        'maxPurchase',
+        'calculatedPrice',
+        'calculatedPrices',
+        'ratingAverage',
+        'productReviews',
+      ],
+      product_media: ['id', 'mediaId', 'media'],
+      media: MediaIncludes,
+    },
   });
-};
 
 export const resolveProductVariantFields = async (resolveCriteria: ResolveCriteria): Promise<ShopwareCriteria> =>
   resolveCriteria('product-variant', {

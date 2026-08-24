@@ -10,17 +10,19 @@ export default defineShopwareLink(ProductVariantsLink, async ({ entityIds, conte
       productIds: entityIds,
       loadVariants: true,
       resolveCriteria: context.resolveCriteria,
+      maxLimit: context.settings.maxLimit,
     }));
 
   passthrough.set(productVariantsToken, allVariants);
 
   return {
     links: entityIds.map((productId) => {
-      const product = allVariants.find((variant) => variant.id === productId);
+      const variants = allVariants.filter((variant) => variant.parentId === productId);
       return {
         sourceId: productId,
-        // A products children are its variants. If it has no children, it is a single variant product.
-        targetIds: product?.children && product?.children.length > 0 ? product?.children.map((child) => child.id) : [productId],
+        // A product's variants are the children this sales channel sells. With none of its own, the
+        // product is its single variant.
+        targetIds: variants.length > 0 ? variants.map((variant) => variant.id) : [productId],
       };
     }),
   };
