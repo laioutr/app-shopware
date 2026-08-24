@@ -1,6 +1,6 @@
 {
   "name": "@laioutr/app-shopware",
-  "version": "0.15.3",
+  "version": "0.15.4",
   "description": "Laioutr integration with Shopware 6",
   "repository": "github:laioutr/app-shopware",
   "license": "MIT",
