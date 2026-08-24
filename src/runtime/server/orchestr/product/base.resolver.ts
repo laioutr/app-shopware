@@ -7,6 +7,7 @@ import {
   ProductInfo,
   ProductMedia,
   ProductPrices,
+  ProductRating,
   ProductSeo,
 } from '@laioutr-core/canonical-types/entity/product';
 import { FALLBACK_IMAGE } from '../../const/fallbacks';
@@ -20,7 +21,7 @@ import { swTranslated } from '../../shopware-helper/swTranslated';
 export default defineShopwareComponentResolver({
   label: 'Shopware Product Connector',
   entityType: 'Product',
-  provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductSeo, ProductDescription],
+  provides: [ProductBase, ProductInfo, ProductPrices, ProductMedia, ProductFlags, ProductSeo, ProductDescription, ProductRating],
   resolve: async ({ entityIds, context, $entity, passthrough }) => {
     // If the product has variants, we select the first variant as default data source. In that case the parent might not contain much information.
     // This case only happens if the resolver is called with a product-id that does not exist in parentIdToDefaultVariantId.
@@ -110,6 +111,17 @@ export default defineShopwareComponentResolver({
             isOnSale: hasSavings,
             isStartingFrom: rawProduct.calculatedCheapestPrice?.hasRange || rawProduct.calculatedPrice.hasRange,
           };
+        },
+
+        rating: () => {
+          const average = rawProduct.ratingAverage ?? rawVariant.ratingAverage;
+          // Shopware reports 0 for a product nobody has rated, which is outside the 1-5 scale the
+          // component accepts. A resolver must supply every component it provides, so absence is
+          // expressed as a non-object value: `getEntityComponent` reads that back as "not loaded".
+          if (!average || average < 1) return undefined as never;
+
+          // Shopware keeps the review count on the reviews endpoint, not on the product.
+          return { average: Math.min(average, 5), count: 0 };
         },
 
         flags: [] as any[],

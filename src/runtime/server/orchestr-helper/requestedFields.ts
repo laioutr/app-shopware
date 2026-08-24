@@ -104,6 +104,7 @@ export const resolveProductFields = ({ loadVariants }: { loadVariants: boolean }
         'calculatedPrice',
         'calculatedPrices',
         'children',
+        'ratingAverage',
       ],
       product_media: ['id', 'mediaId', 'media'],
       media: MediaIncludes,
