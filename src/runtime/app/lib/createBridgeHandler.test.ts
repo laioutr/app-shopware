@@ -48,6 +48,7 @@ describe('createBridgeHandler', () => {
       route: null,
       navigationId: null,
       salesChannelId: null,
+      returnFallback: false,
     });
     expect(options.onCheckoutFinish).toHaveBeenCalledWith('ord_9');
     expect(options.onPwRecovery).toHaveBeenCalledTimes(1);

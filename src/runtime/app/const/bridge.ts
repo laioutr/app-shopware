@@ -29,7 +29,14 @@ export type BridgeInboundMessage =
   | { type: 'laioutr:resize'; payload: { height: number } }
   | {
       type: 'laioutr:page-loaded';
-      payload: { path: string; route: string | null; navigationId: string | null; salesChannelId: string | null };
+      payload: {
+        path: string;
+        route: string | null;
+        navigationId: string | null;
+        salesChannelId: string | null;
+        /** Whether the storefront has a configured return URL of its own to fall back on. */
+        returnFallback: boolean;
+      };
     }
   | { type: 'laioutr:checkout-finish'; payload: { orderId: string } }
   | { type: 'laioutr:pw-recovery'; payload: Record<string, never> }

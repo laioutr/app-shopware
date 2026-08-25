@@ -3,13 +3,14 @@
 ---
 
 Submit the embedded checkout's order from the top-level window, so redirect-based payment
-providers work.
+providers work — and return the shopper to Laioutr afterwards.
 
 PayPal, Klarna and other providers that redirect out of checkout refuse to render inside an
 iframe, and once framed they cannot navigate back out — the shopper reached a dead end with the
-order already created. The confirm form now submits into the top-level window instead.
+order already created. The confirm form now submits into the top-level window instead, and both
+outcomes come back: a completed order lands on the configured Order Confirmation Page, and a
+failed or cancelled payment returns to the checkout page with the retry rendered in the frame.
 
-No configuration changes. The section keeps a single-use handoff code in the storefront frame
-while the shopper is on the confirm page, so the top-level submit arrives with a session even
-when the storefront sits on a different registrable domain than the frontend. Requires a
-`LaioutrConnector` build that exposes the `/laioutr/checkout-order` route.
+The section gains a **Checkout Page** link, which it uses to bring shoppers back for a retry.
+Requires a `LaioutrConnector` build that exposes `POST /laioutr/checkout-order` and the return
+trip.

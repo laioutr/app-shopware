@@ -1,5 +1,14 @@
 import { consola } from 'consola';
-import { createError, defineEventHandler, getCookie, getRequestURL, sendRedirect, useRuntimeConfig } from '#imports';
+import {
+  createError,
+  defineEventHandler,
+  getCookie,
+  getQuery,
+  getRequestURL,
+  sendRedirect,
+  useRuntimeConfig,
+} from '#imports';
+import { RETRY_ORDER_QUERY_KEY } from '../const/checkout';
 import { CONTEXT_TOKEN_COOKIE } from '../const/cookieKeys';
 import { bootstrapGuestContextToken } from '../shopware-helper/bootstrapContextToken';
 import { persistContextToken } from '../shopware-helper/persistContextToken';
@@ -36,10 +45,13 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  const retryOrderId = getQuery(event)[RETRY_ORDER_QUERY_KEY];
+
   const plan = await resolveCheckout({
     config,
     contextToken,
     origin: getRequestURL(event).origin,
+    retryOrderId: typeof retryOrderId === 'string' ? retryOrderId : null,
     mint: mintSessionHandoffCode,
   });
 

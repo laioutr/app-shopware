@@ -11,6 +11,12 @@ export interface MintSessionHandoffParams {
   logoutSuccessCallback: string;
   /** Internal Shopware route the handoff lands on after redeem. */
   redirectRoute: string;
+  /** Absolute URL of the laioutr page shown after a completed order. */
+  finishSuccessCallback?: string;
+  /** Absolute URL of the laioutr checkout page, used to re-frame a payment retry. */
+  checkoutCallback?: string;
+  /** Parameters for `redirectRoute`; the retry route is keyed by `orderId`. */
+  redirectRouteParams?: Record<string, string>;
 }
 
 /**
@@ -47,10 +53,15 @@ export const mintSessionHandoffCode = async (params: MintSessionHandoffParams): 
         'sw-access-key': params.accessToken,
         'sw-context-token': params.contextToken,
       },
+      // Undefined keys are omitted rather than sent as null, so a plugin build that predates
+      // the return trip still accepts the call.
       body: {
         'login-success-callback': params.loginSuccessCallback,
         'logout-success-callback': params.logoutSuccessCallback,
         'redirect-route': params.redirectRoute,
+        ...(params.finishSuccessCallback ? { 'finish-success-callback': params.finishSuccessCallback } : {}),
+        ...(params.checkoutCallback ? { 'checkout-callback': params.checkoutCallback } : {}),
+        ...(params.redirectRouteParams ? { 'redirect-route-params': params.redirectRouteParams } : {}),
       },
     });
   } catch (err) {

@@ -1,6 +1,6 @@
 import { buildConnectSessionUrl } from './checkoutUrl';
 import type { MintSessionHandoffParams } from './sessionHandoff';
-import { CHECKOUT_REDIRECT_ROUTE } from '../const/checkout';
+import { CHECKOUT_REDIRECT_ROUTE, CHECKOUT_RETRY_ROUTE } from '../const/checkout';
 
 /** Outcome of the checkout handoff decision: a redirect target, or a fail-closed error. */
 export type CheckoutPlan =
@@ -19,6 +19,8 @@ export interface ResolveCheckoutDeps {
   contextToken: string | null | undefined;
   /** Request origin used for the login/logout success callbacks. */
   origin: string;
+  /** Order to retry payment for, from the storefront's `retry-order` bounce. */
+  retryOrderId?: string | null;
   /** Injected minter (real: {@link mintSessionHandoffCode}) — keeps this decision logic pure/testable. */
   mint: (params: MintSessionHandoffParams) => Promise<string>;
 }
@@ -36,7 +38,7 @@ export interface ResolveCheckoutDeps {
  * fallback. No branch mutates the cart.
  */
 export const resolveCheckout = async (deps: ResolveCheckoutDeps): Promise<CheckoutPlan> => {
-  const { config, contextToken, origin, mint } = deps;
+  const { config, contextToken, origin, retryOrderId, mint } = deps;
 
   if (!contextToken) {
     // No cart context — nothing to hand off. Keep the shopper on the laioutr frontend (its root);
@@ -55,7 +57,8 @@ export const resolveCheckout = async (deps: ResolveCheckoutDeps): Promise<Checko
       contextToken,
       loginSuccessCallback: config.checkoutLoginCallbackUrl ?? origin,
       logoutSuccessCallback: config.checkoutLogoutCallbackUrl ?? origin,
-      redirectRoute: CHECKOUT_REDIRECT_ROUTE,
+      redirectRoute: retryOrderId ? CHECKOUT_RETRY_ROUTE : CHECKOUT_REDIRECT_ROUTE,
+      ...(retryOrderId ? { redirectRouteParams: { orderId: retryOrderId } } : {}),
     });
 
     return { kind: 'redirect', url: buildConnectSessionUrl({ storefrontUrl: config.storefrontUrl, code }) };

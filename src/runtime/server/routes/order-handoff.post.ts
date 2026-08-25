@@ -1,5 +1,5 @@
 import { consola } from 'consola';
-import { createError, defineEventHandler, getCookie, getRequestURL, useRuntimeConfig } from '#imports';
+import { createError, defineEventHandler, getCookie, getRequestURL, readBody, useRuntimeConfig } from '#imports';
 import { CHECKOUT_REDIRECT_ROUTE } from '../const/checkout';
 import { CONTEXT_TOKEN_COOKIE } from '../const/cookieKeys';
 import { mintSessionHandoffCode } from '../shopware-helper/sessionHandoff';
@@ -28,6 +28,13 @@ export default defineEventHandler(async (event) => {
 
   const origin = getRequestURL(event).origin;
 
+  // The section resolves these from its own configured links, so they arrive per mint rather
+  // than from runtime config. A body that is absent or malformed leaves the plugin's own
+  // configured fallbacks in charge.
+  const body = await readBody<{ finishUrl?: unknown; checkoutUrl?: unknown }>(event).catch(() => ({}));
+  const finishUrl = typeof body?.finishUrl === 'string' ? body.finishUrl : undefined;
+  const checkoutUrl = typeof body?.checkoutUrl === 'string' ? body.checkoutUrl : undefined;
+
   try {
     const code = await mintSessionHandoffCode({
       endpoint: config.endpoint,
@@ -36,6 +43,8 @@ export default defineEventHandler(async (event) => {
       loginSuccessCallback: config.checkoutLoginCallbackUrl ?? origin,
       logoutSuccessCallback: config.checkoutLogoutCallbackUrl ?? origin,
       redirectRoute: CHECKOUT_REDIRECT_ROUTE,
+      finishSuccessCallback: finishUrl,
+      checkoutCallback: checkoutUrl,
     });
 
     return { code };

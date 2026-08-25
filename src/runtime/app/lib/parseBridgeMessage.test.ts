@@ -36,7 +36,14 @@ describe('parseBridgeMessage', () => {
   it('accepts page-loaded and defaults missing optional fields to null', () => {
     expect(parseBridgeMessage(envelope('laioutr:page-loaded', { path: '/checkout' }))).toEqual({
       type: 'laioutr:page-loaded',
-      payload: { path: '/checkout', route: null, navigationId: null, salesChannelId: null },
+      payload: { path: '/checkout', route: null, navigationId: null, salesChannelId: null, returnFallback: false },
+    });
+  });
+
+  it('reads returnFallback from page-loaded when the storefront reports one', () => {
+    expect(parseBridgeMessage(envelope('laioutr:page-loaded', { path: '/checkout', returnFallback: true }))).toEqual({
+      type: 'laioutr:page-loaded',
+      payload: { path: '/checkout', route: null, navigationId: null, salesChannelId: null, returnFallback: true },
     });
   });
 

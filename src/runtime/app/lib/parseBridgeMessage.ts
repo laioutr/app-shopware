@@ -35,6 +35,7 @@ export const parseBridgeMessage = (data: unknown): BridgeInboundMessage | null =
               route: typeof payload.route === 'string' ? payload.route : null,
               navigationId: typeof payload.navigationId === 'string' ? payload.navigationId : null,
               salesChannelId: typeof payload.salesChannelId === 'string' ? payload.salesChannelId : null,
+              returnFallback: payload.returnFallback === true,
             },
           }
         : null;

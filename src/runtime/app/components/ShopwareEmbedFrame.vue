@@ -5,6 +5,7 @@ import {
   CHECKOUT_CONFIRM_ROUTE,
   CHECKOUT_ENDPOINT_PATH,
   ORDER_HANDOFF_ENDPOINT_PATH,
+  RETRY_ORDER_QUERY_KEY,
 } from '../../shared/const/checkout';
 import { useShopwareEmbedBridge } from '../composables/useShopwareEmbedBridge';
 import { createOrderHandoffRefresher } from '../lib/createOrderHandoffRefresher';
@@ -25,6 +26,15 @@ import { createOrderHandoffRefresher } from '../lib/createOrderHandoffRefresher'
  */
 const emit = defineEmits<{ 'checkout-finish': [orderId: string]; 'auth-changed': [payload: AuthChangedPayload] }>();
 
+const props = defineProps<{
+  /** Absolute URL of the page a completed order lands on. */
+  finishUrl?: string;
+  /** Absolute URL of this checkout page, used to re-frame a failed payment's retry. */
+  checkoutUrl?: string;
+  /** Order whose payment failed, re-framed on the storefront's order-edit page. */
+  retryOrderId?: string;
+}>();
+
 const storefrontOrigin = computed(() => useRuntimeConfig().public['@laioutr/app-shopware']?.storefrontOrigin ?? '');
 
 const frameRef = ref<HTMLIFrameElement | null>(null);
@@ -38,7 +48,10 @@ const loaded = ref(false);
 const handoff = createOrderHandoffRefresher({
   mint: async () => {
     try {
-      const response = await $fetch<{ code: string }>(ORDER_HANDOFF_ENDPOINT_PATH, { method: 'POST' });
+      const response = await $fetch<{ code: string }>(ORDER_HANDOFF_ENDPOINT_PATH, {
+        method: 'POST',
+        body: { finishUrl: props.finishUrl, checkoutUrl: props.checkoutUrl },
+      });
       return response.code;
     } catch {
       return null;
@@ -54,7 +67,11 @@ let hasShownFramePage = false;
 const onFramePageLoaded = (payload: BridgePageLoadedPayload) => {
   loaded.value = true;
 
-  if (payload.route === CHECKOUT_CONFIRM_ROUTE) {
+  // Retargeting the form with no configured return would strand the shopper on a Shopware page
+  // at the end of a successful order. Staying in the frame is the better degraded state.
+  const canReturn = Boolean(props.finishUrl) || payload.returnFallback;
+
+  if (payload.route === CHECKOUT_CONFIRM_ROUTE && canReturn) {
     handoff.start();
   } else {
     handoff.stop();
@@ -88,6 +105,13 @@ const onFrameLoad = () => {
   sendInit();
 };
 
+/** A retry rides in the frame URL so the same-origin handoff route can target the order-edit page. */
+const frameSrc = computed(() =>
+  props.retryOrderId ?
+    `${CHECKOUT_ENDPOINT_PATH}?${RETRY_ORDER_QUERY_KEY}=${encodeURIComponent(props.retryOrderId)}`
+  : CHECKOUT_ENDPOINT_PATH
+);
+
 const frameStyle = computed(() => ({ height: height.value ? `${height.value}px` : '600px' }));
 </script>
 
@@ -103,7 +127,7 @@ const frameStyle = computed(() => ({ height: height.value ? `${height.value}px` 
       </div>
       <iframe
         ref="frameRef"
-        :src="CHECKOUT_ENDPOINT_PATH"
+        :src="frameSrc"
         title="Checkout"
         class="shopware-embed-frame__iframe"
         :style="frameStyle"

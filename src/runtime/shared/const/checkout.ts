@@ -37,3 +37,12 @@ export const ORDER_HANDOFF_ENDPOINT_PATH = '/app-shopware/order-handoff';
  * only page whose submit needs one, and a code outlives its mint by about a minute.
  */
 export const CHECKOUT_CONFIRM_ROUTE = 'frontend.checkout.confirm.page';
+
+/**
+ * Storefront route that can still take payment for an order whose cart is gone. A cancelled or
+ * declined payment lands here, and the frame is pointed at it so the retry happens in place.
+ */
+export const CHECKOUT_RETRY_ROUTE = 'frontend.account.edit-order.page';
+
+/** Query key the storefront uses to hand a failed order back for a retry. */
+export const RETRY_ORDER_QUERY_KEY = 'retry-order';

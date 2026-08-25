@@ -101,4 +101,35 @@ describe('resolveCheckout', () => {
       })
     );
   });
+
+  it('mints an edit-order handoff when a retry order is given', async () => {
+    const mint = vi.fn().mockResolvedValue('code-1');
+
+    const plan = await resolveCheckout({
+      config,
+      contextToken: 'ctx-token',
+      origin: 'https://store.laioutr.com',
+      retryOrderId: 'ord1',
+      mint,
+    });
+
+    expect(mint).toHaveBeenCalledWith(
+      expect.objectContaining({
+        redirectRoute: 'frontend.account.edit-order.page',
+        redirectRouteParams: { orderId: 'ord1' },
+      })
+    );
+    expect(plan).toEqual({ kind: 'redirect', url: expect.stringContaining('code-1') });
+  });
+
+  it('mints a confirm handoff without route params when no retry order is given', async () => {
+    const mint = vi.fn().mockResolvedValue('code-2');
+
+    await resolveCheckout({ config, contextToken: 'ctx-token', origin: 'https://store.laioutr.com', mint });
+
+    expect(mint).toHaveBeenCalledWith(
+      expect.objectContaining({ redirectRoute: 'frontend.checkout.confirm.page' })
+    );
+    expect(mint.mock.calls[0][0].redirectRouteParams).toBeUndefined();
+  });
 });

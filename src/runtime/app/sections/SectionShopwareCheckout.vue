@@ -18,6 +18,13 @@ export const definition = defineSection({
           description:
             'If set, the customer is redirected here after completing an order, with the order id appended as ?order=. If left empty, Shopware’s own order confirmation page is shown inside the checkout frame instead.',
         },
+        {
+          type: 'link',
+          name: 'checkoutLink',
+          label: 'Checkout Page',
+          description:
+            'The page this section sits on. Used to bring the customer back here when a payment fails or is cancelled, so they can choose another method without leaving the site.',
+        },
       ],
     },
   ],
@@ -25,12 +32,32 @@ export const definition = defineSection({
 </script>
 
 <script setup lang="ts">
-import { defineSection, definitionToProps, linkResolver, navigateTo, refreshNuxtData } from '#imports';
+import { computed, defineSection, definitionToProps, linkResolver, navigateTo, refreshNuxtData, useRoute } from '#imports';
 import type { AuthChangedPayload } from '../const/bridge';
-import { ADOPT_SESSION_ENDPOINT_PATH } from '../../shared/const/checkout';
+import { ADOPT_SESSION_ENDPOINT_PATH, RETRY_ORDER_QUERY_KEY } from '../../shared/const/checkout';
 import ShopwareEmbedFrame from '../components/ShopwareEmbedFrame.vue';
 
 const props = defineProps(definitionToProps(definition));
+
+const route = useRoute();
+
+/**
+ * The storefront redirects to these from the top-level window, so they have to be absolute.
+ * On the server there is no origin to resolve against; the frame only mints client-side, so
+ * the path it would send there is never used.
+ */
+const toAbsolute = (path: string) => (import.meta.client ? new URL(path, window.location.origin).href : path);
+
+const finishUrl = computed(() => (props.finishLink ? toAbsolute(linkResolver.resolve(props.finishLink)) : undefined));
+const checkoutUrl = computed(() =>
+  props.checkoutLink ? toAbsolute(linkResolver.resolve(props.checkoutLink)) : undefined
+);
+
+/** Set when the storefront bounced a failed payment back here; the frame re-opens it for a retry. */
+const retryOrderId = computed(() => {
+  const value = route.query[RETRY_ORDER_QUERY_KEY];
+  return typeof value === 'string' ? value : undefined;
+});
 
 /**
  * On order completion the embedded storefront posts `laioutr:checkout-finish`. Navigate to
@@ -57,5 +84,11 @@ const onAuthChanged = async (payload: AuthChangedPayload) => {
 </script>
 
 <template>
-  <ShopwareEmbedFrame @checkout-finish="onCheckoutFinish" @auth-changed="onAuthChanged" />
+  <ShopwareEmbedFrame
+    :finish-url="finishUrl"
+    :checkout-url="checkoutUrl"
+    :retry-order-id="retryOrderId"
+    @checkout-finish="onCheckoutFinish"
+    @auth-changed="onAuthChanged"
+  />
 </template>

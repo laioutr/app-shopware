@@ -5,7 +5,9 @@ import { CHECKOUT_CONFIRM_ROUTE } from '../../shared/const/checkout';
 export {
   ADOPT_SESSION_ENDPOINT_PATH,
   CHECKOUT_ENDPOINT_PATH,
+  CHECKOUT_RETRY_ROUTE,
   ORDER_HANDOFF_ENDPOINT_PATH,
+  RETRY_ORDER_QUERY_KEY,
 } from '../../shared/const/checkout';
 
 /**
