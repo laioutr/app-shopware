@@ -32,7 +32,16 @@ export const definition = defineSection({
 </script>
 
 <script setup lang="ts">
-import { computed, defineSection, definitionToProps, linkResolver, navigateTo, refreshNuxtData, useRoute } from '#imports';
+import {
+  computed,
+  defineSection,
+  definitionToProps,
+  linkResolver,
+  navigateTo,
+  ref,
+  refreshNuxtData,
+  useRoute,
+} from '#imports';
 import type { AuthChangedPayload } from '../const/bridge';
 import { ADOPT_SESSION_ENDPOINT_PATH, RETRY_ORDER_QUERY_KEY } from '../../shared/const/checkout';
 import ShopwareEmbedFrame from '../components/ShopwareEmbedFrame.vue';
@@ -40,6 +49,7 @@ import ShopwareEmbedFrame from '../components/ShopwareEmbedFrame.vue';
 const props = defineProps(definitionToProps(definition));
 
 const route = useRoute();
+const frame = ref<InstanceType<typeof ShopwareEmbedFrame> | null>(null);
 
 /**
  * The storefront redirects to these from the top-level window, so they have to be absolute.
@@ -78,13 +88,23 @@ const onCheckoutFinish = async (orderId: string) => {
  * the new auth state.
  */
 const onAuthChanged = async (payload: AuthChangedPayload) => {
-  await $fetch(ADOPT_SESSION_ENDPOINT_PATH, { method: 'POST', body: { code: payload.code } });
+  try {
+    await $fetch(ADOPT_SESSION_ENDPOINT_PATH, { method: 'POST', body: { code: payload.code } });
+  } catch (cause) {
+    // Losing the checkout to an error overlay is worse than reading the shopper as logged out,
+    // which is the whole cost of a failed adopt. Logged rather than swallowed: it is the only
+    // signal that laioutr and the storefront now disagree about who is shopping.
+    console.warn('[app-shopware] could not adopt the storefront session', cause);
+  }
+
   await refreshNuxtData();
+  frame.value?.refreshHandoff();
 };
 </script>
 
 <template>
   <ShopwareEmbedFrame
+    ref="frame"
     :finish-url="finishUrl"
     :checkout-url="checkoutUrl"
     :retry-order-id="retryOrderId"

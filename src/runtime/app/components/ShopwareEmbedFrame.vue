@@ -64,6 +64,7 @@ const handoff = createOrderHandoffRefresher({
 // frame; each later one is an in-frame navigation, so scroll the parent viewport back to the
 // top — mirroring a normal full-page navigation.
 let hasShownFramePage = false;
+let handoffActive = false;
 const onFramePageLoaded = (payload: BridgePageLoadedPayload) => {
   loaded.value = true;
 
@@ -71,7 +72,9 @@ const onFramePageLoaded = (payload: BridgePageLoadedPayload) => {
   // at the end of a successful order. Staying in the frame is the better degraded state.
   const canReturn = Boolean(props.finishUrl) || payload.returnFallback;
 
-  if (payload.route === CHECKOUT_CONFIRM_ROUTE && canReturn) {
+  handoffActive = payload.route === CHECKOUT_CONFIRM_ROUTE && canReturn;
+
+  if (handoffActive) {
     handoff.start();
   } else {
     handoff.stop();
@@ -91,6 +94,19 @@ const { sendInit, sendOrderHandoff } = useShopwareEmbedBridge(frameRef, {
   onAuthChanged: (payload) => emit('auth-changed', payload),
   // laioutr:pw-recovery is received but unused in v1.
 });
+
+/**
+ * Mint again now that laioutr holds a different context token.
+ *
+ * The storefront announces a page load before it announces the login that caused it, so the code
+ * minted on `page-loaded` still encodes the token from before — redeeming it would install a
+ * session with no customer, and the order route would bounce the shopper back to registration.
+ */
+const refreshHandoff = () => {
+  if (handoffActive) handoff.start();
+};
+
+defineExpose({ refreshHandoff });
 
 onBeforeUnmount(() => handoff.stop());
 
