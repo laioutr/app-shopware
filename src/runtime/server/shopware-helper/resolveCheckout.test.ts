@@ -21,6 +21,39 @@ describe('resolveCheckout', () => {
     expect(plan).toEqual({ kind: 'redirect', url: 'https://shop.example.com/laioutr/connect-session?code=the-code' });
   });
 
+  it('points the auth callbacks at the adopt route in redirect mode, so a storefront login syncs back', async () => {
+    const mint = vi.fn().mockResolvedValue('the-code');
+
+    await resolveCheckout({
+      config: { ...config, checkoutMode: 'redirect' },
+      contextToken: 'ctx-token',
+      origin: 'https://store.laioutr.com',
+      mint,
+    });
+
+    expect(mint).toHaveBeenCalledWith({
+      endpoint: 'https://shop.example.com/store-api',
+      accessToken: 'sw-key',
+      contextToken: 'ctx-token',
+      loginSuccessCallback: 'https://store.laioutr.com/app-shopware/adopt-session',
+      logoutSuccessCallback: 'https://store.laioutr.com/app-shopware/adopt-session',
+      redirectRoute: 'frontend.checkout.confirm.page',
+    });
+  });
+
+  it('lets an explicit SSO callback override the adopt route', async () => {
+    const mint = vi.fn().mockResolvedValue('the-code');
+
+    await resolveCheckout({
+      config: { ...config, checkoutMode: 'redirect', checkoutLoginCallbackUrl: 'https://idp.example.com/login' },
+      contextToken: 'ctx-token',
+      origin: 'https://store.laioutr.com',
+      mint,
+    });
+
+    expect(mint.mock.calls[0][0].loginSuccessCallback).toBe('https://idp.example.com/login');
+  });
+
   it('fails closed with 500 and never mints when storefrontUrl is unconfigured', async () => {
     const mint = vi.fn();
 
