@@ -46,3 +46,12 @@ export const CHECKOUT_RETRY_ROUTE = 'frontend.account.edit-order.page';
 
 /** Query key the storefront uses to hand a failed order back for a retry. */
 export const RETRY_ORDER_QUERY_KEY = 'retry-order';
+
+/**
+ * Marks the frame's own navigation to the retry route, so the storefront leaves it in place.
+ *
+ * Without it the storefront cannot tell this apart from a shopper the payment provider bounced
+ * to the same route at top level, and would send the frame back to Laioutr — which points the
+ * frame at the retry again, forever.
+ */
+export const RETRY_FRAME_MARKER_KEY = 'laioutr-retry';

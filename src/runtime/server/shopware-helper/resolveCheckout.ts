@@ -1,6 +1,6 @@
 import { buildConnectSessionUrl } from './checkoutUrl';
 import type { MintSessionHandoffParams } from './sessionHandoff';
-import { CHECKOUT_REDIRECT_ROUTE, CHECKOUT_RETRY_ROUTE } from '../const/checkout';
+import { CHECKOUT_REDIRECT_ROUTE, CHECKOUT_RETRY_ROUTE, RETRY_FRAME_MARKER_KEY } from '../const/checkout';
 
 /** Outcome of the checkout handoff decision: a redirect target, or a fail-closed error. */
 export type CheckoutPlan =
@@ -58,7 +58,9 @@ export const resolveCheckout = async (deps: ResolveCheckoutDeps): Promise<Checko
       loginSuccessCallback: config.checkoutLoginCallbackUrl ?? origin,
       logoutSuccessCallback: config.checkoutLogoutCallbackUrl ?? origin,
       redirectRoute: retryOrderId ? CHECKOUT_RETRY_ROUTE : CHECKOUT_REDIRECT_ROUTE,
-      ...(retryOrderId ? { redirectRouteParams: { orderId: retryOrderId } } : {}),
+      ...(retryOrderId ?
+        { redirectRouteParams: { orderId: retryOrderId, [RETRY_FRAME_MARKER_KEY]: '1' } }
+      : {}),
     });
 
     return { kind: 'redirect', url: buildConnectSessionUrl({ storefrontUrl: config.storefrontUrl, code }) };

@@ -116,7 +116,9 @@ describe('resolveCheckout', () => {
     expect(mint).toHaveBeenCalledWith(
       expect.objectContaining({
         redirectRoute: 'frontend.account.edit-order.page',
-        redirectRouteParams: { orderId: 'ord1' },
+        // The marker tells the storefront this navigation is ours, so it does not bounce the
+        // frame back to the page that opened it.
+        redirectRouteParams: { orderId: 'ord1', 'laioutr-retry': '1' },
       })
     );
     expect(plan).toEqual({ kind: 'redirect', url: expect.stringContaining('code-1') });
