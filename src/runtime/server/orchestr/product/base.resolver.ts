@@ -49,6 +49,7 @@ export default defineShopwareComponentResolver({
         productIds: missingIds,
         loadVariants: false,
         resolveCriteria: context.resolveCriteria,
+        maxLimit: context.settings.maxLimit,
       });
       loadedVariants.push(...response);
     }
