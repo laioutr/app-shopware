@@ -11,6 +11,7 @@ const setup = (overrides: Partial<CreateBridgeHandlerOptions> = {}) => {
     getFrameWindow: () => frameWindow,
     storefrontOrigin: STOREFRONT,
     postInit: vi.fn(),
+    postOrderHandoff: vi.fn(),
     onResize: vi.fn(),
     onPageLoaded: vi.fn(),
     onCheckoutFinish: vi.fn(),
@@ -18,14 +19,14 @@ const setup = (overrides: Partial<CreateBridgeHandlerOptions> = {}) => {
     onAuthChanged: vi.fn(),
     ...overrides,
   } satisfies CreateBridgeHandlerOptions;
-  const { handleMessage, sendInit } = createBridgeHandler(options);
+  const { handleMessage, sendInit, sendOrderHandoff } = createBridgeHandler(options);
   const emit = (type: string, payload: unknown = {}, from: { source?: unknown; origin?: string } = {}) =>
     handleMessage({
       source: 'source' in from ? from.source : frameWindow,
       origin: from.origin ?? STOREFRONT,
       data: { source: BRIDGE_SOURCE, version: BRIDGE_VERSION, type, payload },
     });
-  return { options, frameWindow, emit, sendInit };
+  return { options, frameWindow, emit, sendInit, sendOrderHandoff };
 };
 
 describe('createBridgeHandler', () => {
@@ -112,6 +113,26 @@ describe('createBridgeHandler', () => {
       const { options, sendInit } = setup({ storefrontOrigin: '' });
       sendInit();
       expect(options.postInit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sendOrderHandoff', () => {
+    it('posts the code to the configured origin', () => {
+      const { options, frameWindow, sendOrderHandoff } = setup();
+      sendOrderHandoff('handoff-code');
+      expect(options.postOrderHandoff).toHaveBeenCalledWith(frameWindow, STOREFRONT, 'handoff-code');
+    });
+
+    it('no-ops before the frame window exists', () => {
+      const { options, sendOrderHandoff } = setup({ getFrameWindow: () => null });
+      sendOrderHandoff('handoff-code');
+      expect(options.postOrderHandoff).not.toHaveBeenCalled();
+    });
+
+    it('no-ops when the storefront origin is not configured', () => {
+      const { options, sendOrderHandoff } = setup({ storefrontOrigin: '' });
+      sendOrderHandoff('handoff-code');
+      expect(options.postOrderHandoff).not.toHaveBeenCalled();
     });
   });
 });

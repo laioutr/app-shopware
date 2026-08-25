@@ -1,5 +1,10 @@
 import { onBeforeUnmount, onMounted, type Ref } from 'vue';
-import { type AuthChangedPayload, type BridgePageLoadedPayload, buildInitMessage } from '../const/bridge';
+import {
+  type AuthChangedPayload,
+  type BridgePageLoadedPayload,
+  buildInitMessage,
+  buildOrderHandoffMessage,
+} from '../const/bridge';
 import { createBridgeHandler } from '../lib/createBridgeHandler';
 
 export type UseShopwareEmbedBridgeOptions = {
@@ -20,16 +25,19 @@ export type UseShopwareEmbedBridgeOptions = {
  *
  * Returns `sendInit` — call it on the iframe's `load` event to proactively complete the
  * handshake, since the plugin's one-shot `ready` can fire before this listener attaches
- * (the SSR iframe loads before Vue hydrates).
+ * (the SSR iframe loads before Vue hydrates) — and `sendOrderHandoff`, which hands the
+ * storefront a freshly minted code for its top-level order submit.
  */
 export const useShopwareEmbedBridge = (
   frameRef: Ref<HTMLIFrameElement | null>,
   options: UseShopwareEmbedBridgeOptions
-): { sendInit: () => void } => {
-  const { handleMessage, sendInit } = createBridgeHandler({
+): { sendInit: () => void; sendOrderHandoff: (code: string) => void } => {
+  const { handleMessage, sendInit, sendOrderHandoff } = createBridgeHandler({
     getFrameWindow: () => frameRef.value?.contentWindow ?? null,
     storefrontOrigin: options.storefrontOrigin,
     postInit: (frameWindow, targetOrigin) => frameWindow.postMessage(buildInitMessage(), targetOrigin),
+    postOrderHandoff: (frameWindow, targetOrigin, code) =>
+      frameWindow.postMessage(buildOrderHandoffMessage(code), targetOrigin),
     onResize: options.onResize,
     onPageLoaded: options.onPageLoaded,
     onCheckoutFinish: options.onCheckoutFinish,
@@ -49,5 +57,5 @@ export const useShopwareEmbedBridge = (
   });
   onBeforeUnmount(() => window.removeEventListener('message', listener));
 
-  return { sendInit };
+  return { sendInit, sendOrderHandoff };
 };

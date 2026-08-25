@@ -16,6 +16,8 @@ export type CreateBridgeHandlerOptions = {
   storefrontOrigin: string;
   /** Post the contentless handshake reply to the (validated) origin. */
   postInit: (frameWindow: Window, targetOrigin: string) => void;
+  /** Post a freshly minted order-handoff code to the (validated) origin. */
+  postOrderHandoff: (frameWindow: Window, targetOrigin: string, code: string) => void;
   onResize?: (height: number) => void;
   onPageLoaded?: (payload: BridgePageLoadedPayload) => void;
   onCheckoutFinish?: (orderId: string) => void;
@@ -52,6 +54,18 @@ export const createBridgeHandler = (options: CreateBridgeHandlerOptions) => {
     }
   };
 
+  /**
+   * Hand the storefront a freshly minted handoff code so its confirm form can submit into the
+   * top-level window with a session to install. Posted to the configured origin rather than a
+   * learned one: nothing in the storefront asks for a code, so there is no message to pin off.
+   */
+  const sendOrderHandoff = (code: string): void => {
+    const frameWindow = options.getFrameWindow();
+    if (frameWindow && options.storefrontOrigin) {
+      options.postOrderHandoff(frameWindow, options.storefrontOrigin, code);
+    }
+  };
+
   const handleMessage = (event: BridgeMessageEvent): void => {
     const frameWindow = options.getFrameWindow();
     if (!frameWindow || event.source !== frameWindow) return;
@@ -84,5 +98,5 @@ export const createBridgeHandler = (options: CreateBridgeHandlerOptions) => {
     }
   };
 
-  return { handleMessage, sendInit };
+  return { handleMessage, sendInit, sendOrderHandoff };
 };

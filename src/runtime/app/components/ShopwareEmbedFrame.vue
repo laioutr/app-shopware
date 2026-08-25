@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, useRuntimeConfig } from '#imports';
-import type { AuthChangedPayload } from '../const/bridge';
-import { CHECKOUT_ENDPOINT_PATH } from '../../shared/const/checkout';
+import { computed, onBeforeUnmount, ref, useRuntimeConfig } from '#imports';
+import type { AuthChangedPayload, BridgePageLoadedPayload } from '../const/bridge';
+import {
+  CHECKOUT_CONFIRM_ROUTE,
+  CHECKOUT_ENDPOINT_PATH,
+  ORDER_HANDOFF_ENDPOINT_PATH,
+} from '../../shared/const/checkout';
 import { useShopwareEmbedBridge } from '../composables/useShopwareEmbedBridge';
+import { createOrderHandoffRefresher } from '../lib/createOrderHandoffRefresher';
 
 /**
  * Embeds the Shopware storefront checkout in an iframe and speaks the parent side of the
@@ -12,6 +17,11 @@ import { useShopwareEmbedBridge } from '../composables/useShopwareEmbedBridge';
  * code and 302s the iframe into the embedded storefront, adopting the cart context. Height
  * follows the storefront's `laioutr:resize` messages so there is no inner scrollbar. When
  * `storefrontOrigin` is not configured the embed cannot work, so a notice renders instead.
+ *
+ * The storefront's confirm form submits into the top-level window rather than the frame, so
+ * redirect-based payment providers are never framed — they refuse it, and a framed provider
+ * cannot navigate the top window back out. That submit needs a handoff code, which this
+ * component keeps fresh in the frame for as long as the shopper is on the confirm page.
  */
 const emit = defineEmits<{ 'checkout-finish': [orderId: string]; 'auth-changed': [payload: AuthChangedPayload] }>();
 
@@ -21,19 +31,42 @@ const frameRef = ref<HTMLIFrameElement | null>(null);
 const height = ref<number>();
 const loaded = ref(false);
 
+/**
+ * Mint failures are swallowed: the frame keeps whatever code it last received, and submits
+ * in-frame if it never received one — degraded, but no worse than not running this at all.
+ */
+const handoff = createOrderHandoffRefresher({
+  mint: async () => {
+    try {
+      const response = await $fetch<{ code: string }>(ORDER_HANDOFF_ENDPOINT_PATH, { method: 'POST' });
+      return response.code;
+    } catch {
+      return null;
+    }
+  },
+  deliver: (code) => sendOrderHandoff(code),
+});
+
 // The storefront posts `page-loaded` on every in-frame page load. The first one reveals the
 // frame; each later one is an in-frame navigation, so scroll the parent viewport back to the
 // top — mirroring a normal full-page navigation.
 let hasShownFramePage = false;
-const onFramePageLoaded = () => {
+const onFramePageLoaded = (payload: BridgePageLoadedPayload) => {
   loaded.value = true;
+
+  if (payload.route === CHECKOUT_CONFIRM_ROUTE) {
+    handoff.start();
+  } else {
+    handoff.stop();
+  }
+
   if (hasShownFramePage) {
     window.scrollTo({ top: 0, left: 0 });
   }
   hasShownFramePage = true;
 };
 
-const { sendInit } = useShopwareEmbedBridge(frameRef, {
+const { sendInit, sendOrderHandoff } = useShopwareEmbedBridge(frameRef, {
   storefrontOrigin: storefrontOrigin.value,
   onResize: (value) => (height.value = value),
   onPageLoaded: onFramePageLoaded,
@@ -41,6 +74,8 @@ const { sendInit } = useShopwareEmbedBridge(frameRef, {
   onAuthChanged: (payload) => emit('auth-changed', payload),
   // laioutr:pw-recovery is received but unused in v1.
 });
+
+onBeforeUnmount(() => handoff.stop());
 
 /**
  * The plugin's one-shot `laioutr:ready` can fire before our message listener attaches

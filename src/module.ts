@@ -1,7 +1,11 @@
 /* eslint-disable import-x/export, @typescript-eslint/no-empty-object-type */
 import { addPlugin, addServerHandler, createResolver, defineNuxtModule, installModule } from '@nuxt/kit';
 import { defu } from 'defu';
-import { ADOPT_SESSION_ENDPOINT_PATH, CHECKOUT_ENDPOINT_PATH } from './runtime/server/const/checkout';
+import {
+  ADOPT_SESSION_ENDPOINT_PATH,
+  CHECKOUT_ENDPOINT_PATH,
+  ORDER_HANDOFF_ENDPOINT_PATH,
+} from './runtime/server/const/checkout';
 import { registerLaioutrApp } from '@laioutr-core/kit';
 import type { NuxtModule } from '@nuxt/schema';
 import { name, version } from '../package.json';
@@ -93,6 +97,14 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       route: ADOPT_SESSION_ENDPOINT_PATH,
       method: 'post',
       handler: resolveRuntimeModule('./server/routes/adopt-session.post'),
+    });
+
+    // POST endpoint the embedded checkout section polls for the single-use code that lets the
+    // storefront's top-level order submit install a session (see server/routes/order-handoff.post.ts).
+    addServerHandler({
+      route: ORDER_HANDOFF_ENDPOINT_PATH,
+      method: 'post',
+      handler: resolveRuntimeModule('./server/routes/order-handoff.post'),
     });
 
     await registerLaioutrApp({

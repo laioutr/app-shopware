@@ -13,6 +13,16 @@ export const BRIDGE_VERSION = 1;
 /** Handshake reply this (parent) frame posts to pin the storefront origin. */
 export const BRIDGE_INIT_TYPE = 'laioutr:init';
 
+/**
+ * Message this (parent) frame posts to hand the storefront a fresh single-use handoff code.
+ *
+ * The storefront's confirm form submits into the top-level window, which carries no storefront
+ * session of its own when the two sit on different registrable domains. The code travels in the
+ * form so the storefront can install one before the order is placed. Codes expire in about a
+ * minute, so this is posted repeatedly while the frame sits on the confirm page.
+ */
+export const BRIDGE_ORDER_HANDOFF_TYPE = 'laioutr:order-handoff';
+
 /** Messages the storefront bridge sends to this (parent) frame. */
 export type BridgeInboundMessage =
   | { type: 'laioutr:ready'; payload: Record<string, never> }
@@ -43,4 +53,12 @@ export const buildInitMessage = () => ({
   version: BRIDGE_VERSION,
   type: BRIDGE_INIT_TYPE,
   payload: {},
+});
+
+/** A freshly minted handoff code, posted to the pinned storefront origin. */
+export const buildOrderHandoffMessage = (code: string) => ({
+  source: BRIDGE_SOURCE,
+  version: BRIDGE_VERSION,
+  type: BRIDGE_ORDER_HANDOFF_TYPE,
+  payload: { code },
 });
