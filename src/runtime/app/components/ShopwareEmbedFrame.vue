@@ -4,6 +4,7 @@ import type { AuthChangedPayload, BridgePageLoadedPayload } from '../const/bridg
 import {
   CHECKOUT_CONFIRM_ROUTE,
   CHECKOUT_ENDPOINT_PATH,
+  CHECKOUT_RETRY_ROUTE,
   ORDER_HANDOFF_ENDPOINT_PATH,
   RETRY_ORDER_QUERY_KEY,
 } from '../../shared/const/checkout';
@@ -72,7 +73,11 @@ const onFramePageLoaded = (payload: BridgePageLoadedPayload) => {
   // at the end of a successful order. Staying in the frame is the better degraded state.
   const canReturn = Boolean(props.finishUrl) || payload.returnFallback;
 
-  handoffActive = payload.route === CHECKOUT_CONFIRM_ROUTE && canReturn;
+  // The retry page submits the same form to pay an order whose payment failed, so it needs a
+  // code just as much as the confirm page does.
+  const submitsAnOrder = payload.route === CHECKOUT_CONFIRM_ROUTE || payload.route === CHECKOUT_RETRY_ROUTE;
+
+  handoffActive = submitsAnOrder && canReturn;
 
   if (handoffActive) {
     handoff.start();

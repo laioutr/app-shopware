@@ -11,6 +11,9 @@ order already created. The confirm form now submits into the top-level window in
 outcomes come back: a completed order lands on the configured Order Confirmation Page, and a
 failed or cancelled payment returns to the checkout page with the retry rendered in the frame.
 
+The retry itself leaves the frame the same way, so a shopper who picks another redirect
+provider is not sent straight back into the dead end they just escaped.
+
 The section gains a **Checkout Page** link, which it uses to bring shoppers back for a retry.
 Requires a `LaioutrConnector` build that exposes `POST /laioutr/checkout-order` and the return
 trip.
