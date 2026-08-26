@@ -9,6 +9,14 @@ type Option = NonNullable<Setting['option']>;
 
 const byPosition = (a: { position?: number | null }, b: { position?: number | null }) => (a.position ?? 0) - (b.position ?? 0);
 
+/**
+ * Shops commonly leave every configurator setting at position 0 and carry the
+ * ordering on the option instead, so the setting alone decides nothing. Keep it as
+ * the primary key for shops that do set it, and let the option break the tie.
+ */
+const bySettingThenOption = (a: Setting & { option: Option }, b: Setting & { option: Option }) =>
+  (a.position ?? 0) - (b.position ?? 0) || (a.option.position ?? 0) - (b.option.position ?? 0);
+
 const mapSwatch = (option: Option): Swatch | undefined => {
   const hex = swTranslated(option, 'colorHexCode') ?? option.colorHexCode;
   if (hex) return ['color', hex];
@@ -49,7 +57,7 @@ export const mapProductOptionGroups = (product: Pick<ShopwareProduct, 'configura
       wellKnownName: guessWellKnownName(group.name),
       // The merchant's configurator order, which is what keeps a size run out of
       // alphabetical order.
-      values: [...group.settings].sort(byPosition).map((setting) => ({
+      values: [...group.settings].sort(bySettingThenOption).map((setting) => ({
         value: swTranslated(setting.option, 'name') ?? '',
         swatch: mapSwatch(setting.option),
       })),

@@ -48,4 +48,30 @@ describe('mapProductOptionGroups', () => {
     const result = mapProductOptionGroups({ configuratorSettings: [{ position: 1 }, setting('Farbe', 0, 'Rot', 1)] } as never);
     expect(result.groups).toHaveLength(1);
   });
+
+  // Shape taken verbatim from Shopware's public demo shop (product SW10095M), where
+  // every configurator setting sits at position 0 and the option carries the order.
+  // A fixture that positioned both agreed with the wrong sort and hid this.
+  it('orders by the option when the configurator leaves every setting at zero', () => {
+    const realShape = [
+      { position: 0, option: { translated: { name: 'Refill' }, position: 8, group: { id: 'g1', translated: { name: 'Selection' }, position: 1 } } },
+      { position: 0, option: { translated: { name: 'spice grinder' }, position: 1, group: { id: 'g1', translated: { name: 'Selection' }, position: 1 } } },
+      { position: 0, option: { translated: { name: 'Spicejar' }, position: 2, group: { id: 'g1', translated: { name: 'Selection' }, position: 1 } } },
+    ];
+
+    const result = mapProductOptionGroups({ configuratorSettings: realShape } as never);
+
+    expect(result.groups[0]!.values.map((value) => value.value)).toEqual(['spice grinder', 'Spicejar', 'Refill']);
+  });
+
+  it('lets an explicit setting position win over the option position', () => {
+    const result = mapProductOptionGroups({
+      configuratorSettings: [
+        { position: 2, option: { translated: { name: 'B' }, position: 1, group: { id: 'g1', translated: { name: 'G' }, position: 0 } } },
+        { position: 1, option: { translated: { name: 'A' }, position: 9, group: { id: 'g1', translated: { name: 'G' }, position: 0 } } },
+      ],
+    } as never);
+
+    expect(result.groups[0]!.values.map((value) => value.value)).toEqual(['A', 'B']);
+  });
 });
