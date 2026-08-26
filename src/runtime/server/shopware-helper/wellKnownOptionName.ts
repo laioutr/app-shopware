@@ -23,6 +23,7 @@ const OPTION_NAME_ALIASES: Record<'color' | 'size' | 'material' | 'style' | 'typ
     'color', // en (US), es
     'colour', // en (GB)
     'farbe', // de
+    'farbton', // de — shade rather than colour, and a real axis name in the wild
     'kleur', // nl
     'couleur', // fr
     'colore', // it
@@ -171,4 +172,19 @@ const OPTION_NAME_LOOKUP = new Map<string, WellKnownOptionName>(
   )
 );
 
-export const guessWellKnownName = (name: string): WellKnownOptionName | undefined => OPTION_NAME_LOOKUP.get(normalizeOptionName(name));
+export const guessWellKnownName = (name: string): WellKnownOptionName | undefined => {
+  const normalized = normalizeOptionName(name);
+  const exact = OPTION_NAME_LOOKUP.get(normalized);
+  if (exact) return exact;
+
+  // Merchants routinely name one axis after two things — "Colour / Material",
+  // "Größe / Weite". The leading known term is the axis and the rest qualifies it,
+  // so the first token that resolves wins. Tried only after the whole name fails,
+  // so every name that already resolved keeps resolving to the same thing.
+  for (const token of normalized.split(/[^\p{L}\p{N}]+/u)) {
+    const match = OPTION_NAME_LOOKUP.get(token);
+    if (match) return match;
+  }
+
+  return undefined;
+};

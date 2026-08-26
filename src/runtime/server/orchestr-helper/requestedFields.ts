@@ -57,7 +57,9 @@ export const resolveProductFields = async (resolveCriteria: ResolveCriteria): Pr
       media: { associations: { media: {} } },
       // Only the parent carries the configurator, which is what defines the option
       // axes; `properties` on the same row are filterable facets and never do.
-      configuratorSettings: { associations: { option: { associations: { group: {} } } } },
+      // `media` needs its own association: without it the option's swatch image is
+      // never returned, whatever the group's displayType claims.
+      configuratorSettings: { associations: { option: { associations: { group: {}, media: {} } } } },
     },
     includes: mergeIncludes(
       {
