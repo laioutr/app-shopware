@@ -60,6 +60,10 @@ export const resolveProductFields = async (resolveCriteria: ResolveCriteria): Pr
       // `media` needs its own association: without it the option's swatch image is
       // never returned, whatever the group's displayType claims.
       configuratorSettings: { associations: { option: { associations: { group: {}, media: {} } } } },
+      // Only the variant projection's `includes` are merged below, never its
+      // associations, so the selected options need associating here too or the
+      // default variant reports none.
+      options: { associations: { group: {} } },
     },
     includes: mergeIncludes(
       {
