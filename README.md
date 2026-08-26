@@ -160,16 +160,31 @@ export default defineNitroPlugin((nitro) => {
 
 ## Checkout
 
-The app registers a `Checkout` page type. Tag one page with it in Studio and drop the
-**Shopware Checkout** section on it; the cart's `checkoutLink` resolves to that page, so nothing
-in the storefront needs to know its slug.
+`checkoutMode` picks how a shopper reaches the Shopware checkout. It must match the plugin's
+**embedded mode** setting — nothing enforces agreement, and a mismatch serves a chrome-less
+storefront loading a bridge with no parent frame.
 
-Two same-origin routes carry the handoff, both under the app's `/app-shopware/` namespace:
+**`embedded`** (the default) frames the storefront on a Laioutr page. The app registers a
+`Checkout` page type: tag one page with it in Studio and drop the **Shopware Checkout** section
+on it; the cart's `checkoutLink` resolves to that page, so nothing needs to know its slug.
+
+**`redirect`** navigates the browser to the storefront at top level instead. The cart button
+links straight to the handoff route and no Studio checkout page is needed — the **Shopware
+Checkout** section has no role and warns in dev if placed on a page. Because the shopper is
+genuinely top-level on the storefront with a first-party session, redirect-based payment
+providers work without any break-out, and `X-Frame-Options: deny` is preserved. Configure the
+storefront side in the Shopware admin: turn **embedded mode off**, list the Laioutr domain under
+**Allowed callback domains**, and set **Order success page** to the Laioutr page a completed
+order should land on. Leave **Checkout page (payment retry)** empty — un-embedded, the storefront
+handles a failed payment itself.
+
+Three same-origin routes carry the handoff, all under the app's `/app-shopware/` namespace:
 
 | Route | Purpose |
 | --- | --- |
 | `GET /app-shopware/checkout` | Mints a single-use handoff code server-side and redirects to the storefront's `connect-session`, which adopts the cart and lands on the confirm page. |
 | `POST /app-shopware/adopt-session` | Called by the checkout section when the embedded storefront reports a login or logout, so the new session is adopted (or cleared) server-side. |
+| `GET /app-shopware/adopt-session` | Redirect mode only. The storefront bounces the browser here on a login or logout; the code is redeemed into the session cookie and the shopper is sent back to `return-to`, which is honoured only for the configured storefront origin. |
 
 The Shopware context token is held server-side and passed by code, never by URL and never in the
 browser — a code is redeemed once and cannot be replayed.
