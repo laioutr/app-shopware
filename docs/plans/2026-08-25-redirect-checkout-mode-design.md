@@ -81,11 +81,17 @@ than checked at runtime, because the check would cost a request on every checkou
 | mode | `checkoutLink` |
 | --- | --- |
 | `embedded` | `{ type: 'pageType', pageType: Checkout }` — unchanged |
-| `redirect` | `{ type: 'url', href: CHECKOUT_ENDPOINT_PATH }` |
+| `redirect` | `{ type: 'url', href: '<origin>/app-shopware/checkout' }` |
 
 `LinkUrl` already exists in `@laioutr-core/core-types`, so no new link machinery. Both branches
-stay gated on `storefrontUrl`. In redirect mode the cart button is a plain anchor straight to
-the handoff route, and the merchant needs no Studio Checkout page at all.
+stay gated on `storefrontUrl`. In redirect mode the merchant needs no Studio Checkout page at all.
+
+**That redirect href must be absolute.** The handoff route is a Nitro server route, not a page,
+and frontend-core registers a catch-all that matches every path — so a relative href rendered
+through `NuxtLink` is claimed by vue-router, and the shopper gets a client-side 404 without the
+server ever seeing the request. An absolute URL is how the link says it leaves the Vue app. The
+origin comes from the request, exposed on the Orchestr context by `defineShopware.extendRequest`,
+so each market builds its own.
 
 `resolveCheckout` keeps `redirectRoute: CHECKOUT_REDIRECT_ROUTE`, which is the confirm page.
 Laioutr renders the cart in both modes, so the shopper arrives ready to confirm. In redirect

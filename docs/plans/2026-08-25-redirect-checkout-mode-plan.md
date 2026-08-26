@@ -574,7 +574,10 @@ Expected: no new errors beyond the known `#imports`-in-server-routes baseline.
 
 **Interfaces:**
 - Consumes: `CHECKOUT_ENDPOINT_PATH`, the `Checkout` page-type token, `Link` from `@laioutr-core/core-types/common`.
-- Produces: `resolveCheckoutLink(params: { storefrontUrl?: string; checkoutMode?: 'embedded' | 'redirect' }): Link | undefined`
+- Produces: `resolveCheckoutLink(params: { storefrontUrl?: string; checkoutMode?: 'embedded' | 'redirect'; origin?: string }): Link | undefined`
+
+The redirect href must be absolute — a relative one is claimed by frontend-core's catch-all
+route and never reaches the server handler. `defineShopware.extendRequest` exposes `origin`.
 
 - [ ] **Step 1: Write the failing test**
 

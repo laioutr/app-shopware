@@ -18,7 +18,7 @@ export default defineShopwareComponentResolver({
     const config = useRuntimeConfig()['@laioutr/app-shopware'];
     const totalQuantity = (cart.lineItems ?? []).reduce((sum, li) => sum + (li.quantity ?? 0), 0);
 
-    const checkoutLink = resolveCheckoutLink(config);
+    const checkoutLink = resolveCheckoutLink({ ...config, origin: context.origin });
 
     return {
       entities: [
