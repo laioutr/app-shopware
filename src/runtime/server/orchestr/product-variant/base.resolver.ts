@@ -16,6 +16,7 @@ import { resolveProductVariantFields } from '../../orchestr-helper/requestedFiel
 import { toRequestCriteria } from '../../shopware-helper/criteria';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';
+import { guessWellKnownName } from '../../shopware-helper/wellKnownOptionName';
 
 export default defineShopwareComponentResolver({
   entityType: 'ProductVariant',
@@ -157,10 +158,14 @@ export default defineShopwareComponentResolver({
 
             options: () => ({
               selected:
-                entity.options?.map((option) => ({
-                  name: swTranslated(option.group, 'name') ?? swTranslated(option, 'name') ?? 'Unknown Property',
-                  value: swTranslated(option, 'name') ?? swTranslated(option, 'option') ?? 'Unknown Value',
-                })) ?? [],
+                entity.options?.map((option) => {
+                  const name = swTranslated(option.group, 'name') ?? swTranslated(option, 'name') ?? 'Unknown Property';
+                  return {
+                    name,
+                    wellKnownName: guessWellKnownName(name),
+                    value: swTranslated(option, 'name') ?? swTranslated(option, 'option') ?? 'Unknown Value',
+                  };
+                }) ?? [],
             }),
           })
         ),
