@@ -54,7 +54,7 @@
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
     "@laioutr-app/ui": "^2.10.6",
-    "@laioutr-core/canonical-types": "^0.27.4",
+    "@laioutr-core/canonical-types": "^0.31.0",
     "@laioutr-core/core-types": "^0.40.3",
     "@laioutr-core/devtools": "^0.40.3",
     "@laioutr-core/frontend-core": "^0.40.3",
@@ -83,7 +83,7 @@
     "vue-tsc": "2.2.10"
   },
   "peerDependencies": {
-    "@laioutr-core/canonical-types": ">=0.27.4",
+    "@laioutr-core/canonical-types": ">=0.31.0",
     "@laioutr-core/core-types": ">=0.40.3",
     "@laioutr-core/frontend-core": ">=0.40.3",
     "@laioutr-core/kit": ">=0.40.3",

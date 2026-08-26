@@ -55,6 +55,9 @@ export const resolveProductFields = async (resolveCriteria: ResolveCriteria): Pr
     associations: {
       cover: { associations: { media: {} } },
       media: { associations: { media: {} } },
+      // Only the parent carries the configurator, which is what defines the option
+      // axes; `properties` on the same row are filterable facets and never do.
+      configuratorSettings: { associations: { option: { associations: { group: {} } } } },
     },
     includes: mergeIncludes(
       {
@@ -80,9 +83,15 @@ export const resolveProductFields = async (resolveCriteria: ResolveCriteria): Pr
           'calculatedPrices',
           'ratingAverage',
           'productReviews',
+          'configuratorSettings',
         ],
         product_media: ['id', 'mediaId', 'media'],
         media: MediaIncludes,
+        product_configurator_setting: ['id', 'optionId', 'option', 'position'],
+        // Merged with the variant projection's narrower list, which carries neither
+        // the swatch fields nor the ordering the configurator is authored in.
+        property_group_option: ['colorHexCode', 'media', 'position'],
+        property_group: ['displayType', 'position'],
       },
       variantFields.includes
     ),

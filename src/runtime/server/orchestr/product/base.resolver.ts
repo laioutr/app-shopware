@@ -6,17 +6,20 @@ import {
   ProductFlags,
   ProductInfo,
   ProductMedia,
+  ProductOptionGroups,
   ProductPrices,
   ProductRating,
   ProductSeo,
 } from '@laioutr-core/canonical-types/entity/product';
 import { MediaImage } from '@laioutr-core/core-types/common';
+import type { ShopwareProduct } from '../../types/shopware';
 import { FALLBACK_IMAGE } from '../../const/fallbacks';
 import { parentIdToDefaultVariantIdToken, productVariantsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
+import { mapProductOptionGroups } from '../../shopware-helper/optionGroupsMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';
 
 export default defineShopwareComponentResolver({
@@ -31,6 +34,7 @@ export default defineShopwareComponentResolver({
     ProductSeo,
     ProductDescription,
     ProductDefaultVariant,
+    ProductOptionGroups,
     ProductRating,
   ],
   resolve: async ({ entityIds, context, $entity, passthrough }) => {
@@ -81,7 +85,17 @@ export default defineShopwareComponentResolver({
 
         defaultVariant: {
           id: rawVariant.id,
+          sku: rawVariant.productNumber ?? undefined,
+          // Typed locally because the resolver hands `rawVariant` back as `any`.
+          options: (rawVariant.options as ShopwareProduct['options'])
+            ?.map((option) => swTranslated(option, 'name') ?? '')
+            .filter(Boolean),
+          status: rawVariant.available ? 'inStock' : 'outOfStock',
         },
+
+        // The configurator hangs off the parent, never the variant the rest of this
+        // projection reads from.
+        optionGroups: mapProductOptionGroups(rawProduct),
 
         info: {
           cover: mappedCover,
@@ -152,6 +166,11 @@ export default defineShopwareComponentResolver({
     ttl: '1 day',
     components: {
       prices: {
+        ttl: '15 minutes',
+      },
+      // Half of it is stock-derived, so it decays like prices rather than living for
+      // the resolver's full day. `optionGroups` needs no override: nothing in it is.
+      defaultVariant: {
         ttl: '15 minutes',
       },
     },
