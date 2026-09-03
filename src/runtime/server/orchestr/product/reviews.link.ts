@@ -3,8 +3,25 @@ import { ProductReviewsLink } from '@laioutr-core/canonical-types/ecommerce';
 import { currentProductIdsToken } from '../../const/passthroughTokens';
 import { defineShopwareLink } from '../../middleware/defineShopware';
 
-export default defineShopwareLink(ProductReviewsLink, async ({ entityIds, context, pagination, passthrough }) => {
+/**
+ * The storefront names its own sortings; each maps to the review field Shopware orders by. An
+ * unknown name falls through to Shopware's default order rather than failing the listing.
+ */
+const REVIEW_SORTINGS: Record<string, { field: string; order: 'ASC' | 'DESC' }> = {
+  newest: { field: 'createdAt', order: 'DESC' },
+  oldest: { field: 'createdAt', order: 'ASC' },
+  'rating-high': { field: 'points', order: 'DESC' },
+  'rating-low': { field: 'points', order: 'ASC' },
+};
+
+export default defineShopwareLink(ProductReviewsLink, async ({ entityIds, context, pagination, sorting, filter, passthrough }) => {
   const { storefrontClient } = context;
+
+  const sort = sorting ? REVIEW_SORTINGS[sorting] : undefined;
+
+  // Only the star rating is filterable today, and it arrives as the digit the picker showed.
+  const points = Number(filter?.points);
+  const criteriaFilter = Number.isFinite(points) ? [{ type: 'equals', field: 'points', value: points }] : undefined;
 
   const productToReviews: Record<string, string[]> = {};
 
@@ -15,6 +32,8 @@ export default defineShopwareLink(ProductReviewsLink, async ({ entityIds, contex
         body: {
           page: pagination.page,
           limit: pagination.limit,
+          ...(sort ? { sort: [sort] } : {}),
+          ...(criteriaFilter ? { filter: criteriaFilter } : {}),
           includes: {
             product_review: ['id'],
           },
