@@ -51,6 +51,7 @@ export default defineNuxtConfig({
       adminEndpoint: import.meta.env.SHOPWARE_DEMO_ADMIN_ENDPOINT,
       adminClientId: import.meta.env.SHOPWARE_DEMO_ADMIN_CLIENT_ID,
       adminClientSecret: import.meta.env.SHOPWARE_DEMO_ADMIN_CLIENT_SECRET,
+      checkoutMode: 'redirect' as const,
     },
     laioutrrcShopware,
   ),
