@@ -3,7 +3,7 @@ import { defineShopwareQueryTemplateProvider } from '../../middleware/defineShop
 
 export default defineShopwareQueryTemplateProvider({
   for: MenuByAliasQuery,
-  run: async ({ input, context }) => [
+  run: async () => [
     {
       input: {
         alias: 'main-navigation',

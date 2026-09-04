@@ -1,5 +1,5 @@
-import { AuthLoginOauthAction } from '@laioutr-core/canonical-types/ecommerce';
 import { useRuntimeConfig } from '#imports';
+import { AuthLoginOauthAction } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 
 /**
