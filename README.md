@@ -17,8 +17,9 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
 
 - Products, categories, menus, reviews and search served through Laioutr's Orchestr layer, mapped
   onto the canonical entity model — so storefront components stay backend-agnostic
-- Cart as a first-class entity: add, update and remove items, with server-held Shopware context
-  tokens that never reach the browser
+- Cart as a first-class entity: add, update and remove items, redeem discount codes, and read back
+  the shop's automatic cart discounts — with server-held Shopware context tokens that never reach
+  the browser
 - Embedded checkout — the Shopware storefront's own checkout rendered in-page, with a same-origin
   session handoff so the visitor is never bounced to another domain
 - Auth bridge: a storefront login or logout inside the embedded checkout propagates back into the

@@ -62,17 +62,27 @@ export const mapCartCost = (cart: Schemas['Cart'], currency: string): EntityComp
   };
 };
 
-/** Map a Shopware product line item into the canonical `CartItem` component values. */
-export const mapCartItem = (
-  lineItem: Schemas['LineItem'],
-  currency: string
-): {
+type MappedCartItem = {
   base: EntityComponentType<typeof CartItemBase>;
   cost: EntityComponentType<typeof CartItemCost>;
   availability: EntityComponentType<typeof CartItemAvailability>;
   quantityRule: EntityComponentType<typeof CartItemQuantityRule>;
   productData: EntityComponentType<typeof CartItemProductData>;
-} => {
+};
+
+/**
+ * Line-item types this app surfaces as canonical `CartItem`s.
+ *
+ * Shopware carries promotions as line items of type `promotion` — both codes the customer
+ * entered and cart-wide discounts the shop applies automatically. Their (negative) price is
+ * already part of `cart.price.positionPrice`, so dropping them leaves a cart whose items add
+ * up to more than its subtotal with nothing to explain the gap.
+ */
+export const isSupportedCartLineItem = (lineItem: Schemas['LineItem']): boolean =>
+  lineItem.type === 'product' || lineItem.type === 'promotion';
+
+/** Map a Shopware product line item into the canonical `CartItem` component values. */
+export const mapCartItem = (lineItem: Schemas['LineItem'], currency: string): MappedCartItem => {
   const money = (value: number) => Money.fromDecimal(value, currency);
 
   const price = lineItem.price;
@@ -137,6 +147,45 @@ export const mapCartItem = (
       canChange: true,
     },
     // Shopware referencePrice → canonical UnitPrice mapping is deferred; productData is optional.
+    productData: undefined,
+  };
+};
+
+/**
+ * Map a Shopware promotion line item into the canonical `CartItem` component values.
+ *
+ * The amount is negative: Shopware prices a promotion as a discount off the cart, and the
+ * canonical `Money` carries the sign.
+ *
+ * `discount-code` is the closest canonical type, but the code is only there for a promotion
+ * the customer redeemed — an automatic cart discount reaches us with an empty `code` and an
+ * empty `referencedId`, so `code` is left unset rather than blank.
+ */
+export const mapDiscountItem = (lineItem: Schemas['LineItem'], currency: string): MappedCartItem => {
+  const money = (value: number) => Money.fromDecimal(value, currency);
+
+  const price = lineItem.price;
+  const total = price?.totalPrice ?? 0;
+  const payload = (lineItem.payload ?? {}) as Partial<{ code: string }>;
+  const code = payload.code || lineItem.referencedId || undefined;
+
+  return {
+    base: {
+      type: 'discount-code' as const,
+      quantity: lineItem.quantity,
+      // Shopware labels the item with the promotion's translated name.
+      title: lineItem.label ?? '',
+      code,
+    },
+    cost: {
+      single: money(price?.unitPrice ?? total),
+      subtotal: money(total),
+      total: money(total),
+    },
+    // A promotion in the cart is applied by definition, and its quantity is Shopware's to
+    // decide — the canonical components are required, so they state exactly that.
+    availability: { status: 'inStock' as const, quantity: lineItem.quantity },
+    quantityRule: { min: 1, max: 1, increment: 1, canChange: false },
     productData: undefined,
   };
 };
