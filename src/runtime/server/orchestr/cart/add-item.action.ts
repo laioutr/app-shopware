@@ -7,6 +7,21 @@ import { persistContextToken } from '../../shopware-helper/persistContextToken';
 export default defineShopwareAction(CartAddItemsAction, async ({ event, context, input }) => {
   const { storefrontClient } = context;
 
+  /**
+   * Persist the token only when it actually changed. This action can issue several requests —
+   * the products in one batch, then a request per discount code — and each answers with the
+   * same session token, while `shopware:context-token:changed` fires on every persist. A host
+   * app mirroring the token into its own store should hear about one change, not one per
+   * request. Persisting eagerly rather than once at the end keeps a token Shopware minted on
+   * an earlier request even if a later one throws.
+   */
+  let persistedToken: string | undefined;
+  const persistToken = async (token: string | null | undefined) => {
+    if (!token || token === persistedToken) return;
+    persistedToken = token;
+    await persistContextToken(event, token);
+  };
+
   const products = input.filter((i) => i.type === 'product');
 
   if (products.length > 0) {
@@ -27,7 +42,7 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
       },
     });
 
-    await persistContextToken(event, cart.data.token);
+    await persistToken(cart.data.token);
     handleCartMutationErrors(cart.data.errors);
   }
 
@@ -42,7 +57,7 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
       body: { items: [{ type: 'promotion' as const, referencedId: code }] },
     });
 
-    await persistContextToken(event, cart.data.token);
+    await persistToken(cart.data.token);
 
     const { rejections, rest } = takeDiscountCodeErrors(cart.data.errors);
     handleCartMutationErrors(rest);
