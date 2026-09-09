@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { mapCartCost, mapCartItem } from './cartMapper';
+import { isSupportedCartLineItem, mapCartCost, mapCartItem, mapDiscountItem } from './cartMapper';
 
 // A minimal Shopware cart: 1 line (net 100.00, gross 119.00, 19% tax) + 5.00 shipping (1.00 tax).
 const grossCart = {
@@ -83,6 +83,19 @@ describe('mapCartCost', () => {
 
     expect(mapCartCost(cart as never, 'EUR').subtotal).toMatchObject({ amount: 57, currency: 'EUR' }); // 0.19 + 0.38
   });
+
+  it('subtracts a promotion line in the subtotal fallback', () => {
+    const cart = {
+      ...grossCart,
+      lineItems: [
+        { id: 'li1', type: 'product', quantity: 1, price: { totalPrice: 119 } },
+        { id: 'li-promo', type: 'promotion', quantity: 1, price: { totalPrice: -11.9 } },
+      ],
+      price: { ...grossCart.price, positionPrice: undefined, totalPrice: undefined, calculatedTaxes: [] },
+    };
+
+    expect(mapCartCost(cart as never, 'EUR').subtotal).toMatchObject({ amount: 10710, currency: 'EUR' });
+  });
 });
 
 const shirtLine = {
@@ -135,5 +148,59 @@ describe('mapCartItem', () => {
     expect(mapCartItem(line as never, 'EUR').base.link).toMatchObject({
       reference: { slug: 'cool-shirt-v1' },
     });
+  });
+});
+
+// A cart-wide discount the shop applies on its own: Shopware leaves both the payload code and
+// the referencedId empty, and prices the line negatively.
+const automaticDiscountLine = {
+  id: 'li-promo',
+  type: 'promotion',
+  quantity: 1,
+  label: '10% Warenkorbrabatt',
+  referencedId: '',
+  payload: { code: '', promotionId: 'promo-1', discountType: 'percentage', value: '10' },
+  price: { unitPrice: -11.9, totalPrice: -11.9, quantity: 1, calculatedTaxes: [] },
+};
+
+describe('isSupportedCartLineItem', () => {
+  it('accepts products and promotions', () => {
+    expect(isSupportedCartLineItem({ type: 'product' } as never)).toBe(true);
+    expect(isSupportedCartLineItem({ type: 'promotion' } as never)).toBe(true);
+  });
+
+  it('rejects the line-item types this app does not surface', () => {
+    for (const type of ['credit', 'custom', 'discount', 'container', 'quantity']) {
+      expect(isSupportedCartLineItem({ type } as never)).toBe(false);
+    }
+  });
+});
+
+describe('mapDiscountItem', () => {
+  it('maps an automatic cart discount without a code', () => {
+    const item = mapDiscountItem(automaticDiscountLine as never, 'EUR');
+
+    expect(item.base).toMatchObject({ type: 'discount-code', quantity: 1, title: '10% Warenkorbrabatt' });
+    expect(item.base.code).toBeUndefined();
+    expect(item.cost.single).toMatchObject({ amount: -1190, currency: 'EUR' });
+    expect(item.cost.subtotal).toMatchObject({ amount: -1190, currency: 'EUR' });
+    expect(item.cost.total).toMatchObject({ amount: -1190, currency: 'EUR' });
+    expect(item.availability).toEqual({ status: 'inStock', quantity: 1 });
+    expect(item.quantityRule).toEqual({ min: 1, max: 1, increment: 1, canChange: false });
+  });
+
+  it('carries the code of a redeemed promotion', () => {
+    const line = { ...automaticDiscountLine, referencedId: 'SUMMER10', payload: { code: 'SUMMER10' } };
+    expect(mapDiscountItem(line as never, 'EUR').base.code).toBe('SUMMER10');
+  });
+
+  it('falls back to the referencedId when the payload carries no code', () => {
+    const line = { ...automaticDiscountLine, referencedId: 'SUMMER10', payload: {} };
+    expect(mapDiscountItem(line as never, 'EUR').base.code).toBe('SUMMER10');
+  });
+
+  it('maps a discount without a price to zero rather than throwing', () => {
+    const line = { ...automaticDiscountLine, price: undefined };
+    expect(mapDiscountItem(line as never, 'EUR').cost.total).toMatchObject({ amount: 0, currency: 'EUR' });
   });
 });

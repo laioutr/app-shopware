@@ -7,7 +7,7 @@ import {
 } from '@laioutr-core/canonical-types/entity/cart-item';
 import { cartFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
-import { mapCartItem } from '../../shopware-helper/cartMapper';
+import { isSupportedCartLineItem, mapCartItem, mapDiscountItem } from '../../shopware-helper/cartMapper';
 import { getCart } from '../../shopware-helper/getCart';
 
 export default defineShopwareComponentResolver({
@@ -22,9 +22,9 @@ export default defineShopwareComponentResolver({
 
     const entities = entityIds
       .map((id) => lineItemsById.get(id))
-      .filter((li): li is NonNullable<typeof li> => !!li && li.type === 'product')
+      .filter((li): li is NonNullable<typeof li> => !!li && isSupportedCartLineItem(li))
       .map((li) => {
-        const mapped = mapCartItem(li, context.swCurrency);
+        const mapped = li.type === 'promotion' ? mapDiscountItem(li, context.swCurrency) : mapCartItem(li, context.swCurrency);
         return $entity({
           id: li.id,
           base: () => mapped.base,
