@@ -1,18 +1,19 @@
-import { useEvent, useUserlandCache } from '#imports';
+import { useUserlandCache } from '#imports';
 import { StorefrontClient } from '../types/shopware';
 
 const useProductParentIdCache = () => useUserlandCache<string>('shopware/product-parent-id');
 
 const PRODUCT_PARENT_ID_CACHE_TTL = 60 * 60 * 24 * 7; // 7 days
+const entryOptions = { maxAge: PRODUCT_PARENT_ID_CACHE_TTL };
 
 export const useGetProductParentId = (storefrontClient: StorefrontClient) => {
   const cache = useProductParentIdCache();
 
   /** Given a variant-id, return the parent-id. Returns undefined if no parent-id is found. */
   return async (id: string) => {
-    const cachedParentId = await cache.getItem(id);
-    if (cachedParentId) {
-      return cachedParentId;
+    const cached = await cache.readOne(id, entryOptions);
+    if (cached && !cached.absent) {
+      return cached.value;
     }
 
     try {
@@ -25,7 +26,7 @@ export const useGetProductParentId = (storefrontClient: StorefrontClient) => {
 
       const parentId = response.data.elements?.[0]?.parentId;
       if (parentId) {
-        cache.setItem(id, parentId, { ttl: PRODUCT_PARENT_ID_CACHE_TTL });
+        cache.writeOne(id, parentId, entryOptions);
         return parentId;
       }
       return undefined;
@@ -37,15 +38,11 @@ export const useGetProductParentId = (storefrontClient: StorefrontClient) => {
 
 /** Store parent-ids in the cache. */
 export const cacheProductParentIds = (productIdsToParentIds: [productId: string, parentId: string][]) => {
-  const event = useEvent();
-  const cache = useProductParentIdCache();
-  event.waitUntil(
-    cache.setItems(
-      productIdsToParentIds.map(([productId, parentId]) => ({
-        key: productId,
-        value: parentId,
-      })),
-      { ttl: PRODUCT_PARENT_ID_CACHE_TTL }
-    )
+  useProductParentIdCache().write(
+    productIdsToParentIds.map(([productId, parentId]) => ({
+      key: productId,
+      value: parentId,
+      options: entryOptions,
+    }))
   );
 };
