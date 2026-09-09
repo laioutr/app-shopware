@@ -1,5 +1,42 @@
 # @laioutr/app-shopware
 
+## 0.19.0
+
+### Minor Changes
+
+- dbada21: Cart discounts reach the storefront. Shopware carries a promotion as a cart line item, and the app kept only line items
+  of type `product` — so a shop's automatic cart discount, or a code redeemed inside the embedded checkout, vanished on the
+  way out. The totals were never wrong (Shopware prices the cart with the discount already applied), but the items added up
+  to more than the subtotal with nothing on the page to account for the difference.
+
+  A promotion now resolves as a `CartItem` of type `discount-code`, carrying the promotion's translated name as its title
+  and its discount as a negative amount. `code` is set for a promotion the customer redeemed and left unset for one the
+  shop applies on its own, which has no code to show.
+
+  `CartAddItemsAction` accepts `{ type: 'discount-code', code }` and redeems it against Shopware. A code that Shopware
+  turns down comes back as a rejected item — carrying Shopware's own reason and message — rather than as a thrown error,
+  and every result is reported in input order. Codes were previously dropped without a request, a result row, or an error.
+
+  Items the app cannot add (`sku`, `custom`) are now reported as rejected instead of being left out of the result entirely.
+
+- 73fc672: **Breaking:** the app now requires `@laioutr-core/orchestr`, `@laioutr-core/frontend-core`, `@laioutr-core/core-types` and
+  `@laioutr-core/kit` at 0.52.0 or newer, and `@laioutr-core/canonical-types` at 0.33.0 or newer. A project still on an
+  older platform release cannot install this version.
+
+  ```jsonc
+  // before
+  "@laioutr-core/orchestr": ">=0.40.3"
+  // after
+  "@laioutr-core/orchestr": ">=0.52.0"
+  ```
+
+  Platform 0.52 reshaped the cache store an app writes through, and the app's own caches — product parent ids, SEO url
+  lookups and Shopware's system entities — move with it. Entries go stale on exactly the same schedule as before.
+
+  One behavioural difference reaches the storefront: a cache write no longer holds up the response. The store schedules it
+  behind the request, so a slow or failing write costs a request nothing where it previously either delayed it or surfaced
+  as an error.
+
 ## 0.18.0
 
 ### Minor Changes
