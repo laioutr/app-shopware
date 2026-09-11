@@ -51,7 +51,7 @@ export default defineShopwareQuery(
     );
     passthrough.set(parentIdToDefaultVariantIdToken, parentIdToDefaultVariantId);
 
-    cacheProductParentIds(response.data.elements.map((product) => [product.id, product.parentId ?? product.id]));
+    cacheProductParentIds(response.data.elements.map((product) => [product.id, product.parentId]));
 
     if (context.settings.loadVariantsOnListing) {
       const allVariants = await fetchAllProducts(context.storefrontClient, {
