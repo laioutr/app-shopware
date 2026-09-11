@@ -44,7 +44,7 @@ export default defineShopwareQuery(
     );
     passthrough.set(parentIdToDefaultVariantIdToken, parentIdToDefaultVariantId);
 
-    cacheProductParentIds(response.data.elements.map((product) => [product.id, product.parentId ?? product.id]));
+    cacheProductParentIds(response.data.elements.map((product) => [product.id, product.parentId]));
 
     return {
       // Return the parent-id, in case the received product is a variant
