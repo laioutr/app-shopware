@@ -33,8 +33,12 @@ export default defineShopwareQuery({
     };
   },
   cache: {
-    strategy: 'ttl',
     ttl: '10 minutes',
+    swr: true,
+    staleMaxAge: '10 minutes',
+    // The menu resolver requires `categoriesToken`, which only this handler sets. A cache hit skips
+    // the handler, so without the replay a hit whose resolver entry has expired throws.
+    includePassthrough: true,
     buildCacheKey({ input }) {
       return input.alias;
     },

@@ -52,9 +52,8 @@ export default defineShopwareLink({
     };
   },
   cache: {
-    strategy: 'ttl',
     ttl: '10 minutes',
-    // `linkRunner` already prefixes a client-env key, so locale, market and currency are covered.
-    buildCacheKey: ({ entityIds, pagination }) => `${[...entityIds].sort().join(',')}:${pagination.offset}:${pagination.limit}`,
+    swr: true,
+    staleMaxAge: '10 minutes',
   },
 });
