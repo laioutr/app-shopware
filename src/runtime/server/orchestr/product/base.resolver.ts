@@ -164,14 +164,22 @@ export default defineShopwareComponentResolver({
   },
   cache: {
     ttl: '1 day',
+    swr: true,
+    staleMaxAge: '1 hour',
     components: {
+      // A price is what the visitor is asked to pay, so its stale window is a minute rather than the
+      // resolver's hour: an upstream outage must not keep quoting an old one all day.
       prices: {
         ttl: '15 minutes',
+        swr: true,
+        staleMaxAge: '1 minute',
       },
       // Half of it is stock-derived, so it decays like prices rather than living for
       // the resolver's full day. `optionGroups` needs no override: nothing in it is.
       defaultVariant: {
         ttl: '15 minutes',
+        swr: true,
+        staleMaxAge: '1 minute',
       },
     },
   },

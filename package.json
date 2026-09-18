@@ -50,11 +50,11 @@
     "@changesets/cli": "^2.31.0",
     "@laioutr-app/ui": "^2.10.6",
     "@laioutr-core/canonical-types": "^0.33.0",
-    "@laioutr-core/core-types": "^0.52.0",
-    "@laioutr-core/devtools": "^0.52.0",
-    "@laioutr-core/frontend-core": "^0.52.0",
-    "@laioutr-core/kit": "^0.52.0",
-    "@laioutr-core/orchestr": "^0.52.0",
+    "@laioutr-core/core-types": "^0.56.0",
+    "@laioutr-core/devtools": "^0.56.0",
+    "@laioutr-core/frontend-core": "^0.56.0",
+    "@laioutr-core/kit": "^0.56.0",
+    "@laioutr-core/orchestr": "^0.56.0",
     "@laioutr/eslint-config": "^1.9.5",
     "@laioutr/prettier-config": "^1.1.0",
     "@nuxt/devtools": "^2.6.3",
@@ -79,10 +79,10 @@
   },
   "peerDependencies": {
     "@laioutr-core/canonical-types": ">=0.33.0",
-    "@laioutr-core/core-types": ">=0.52.0",
-    "@laioutr-core/frontend-core": ">=0.52.0",
-    "@laioutr-core/kit": ">=0.52.0",
-    "@laioutr-core/orchestr": ">=0.52.0"
+    "@laioutr-core/core-types": ">=0.56.0",
+    "@laioutr-core/frontend-core": ">=0.56.0",
+    "@laioutr-core/kit": ">=0.56.0",
+    "@laioutr-core/orchestr": ">=0.56.0"
   },
   "packageManager": "pnpm@10.15.0",
   "engines": {

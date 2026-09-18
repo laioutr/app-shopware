@@ -11,9 +11,21 @@ import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants'
 import { mapShopwareSortingToOrchestr } from '../../shopware-helper/sortingMapper';
 import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 
-export default defineShopwareQuery(
-  ProductsByCategorySlugQuery,
-  async ({ context, input, pagination, filter: selectedFilters, sorting, passthrough }) => {
+export default defineShopwareQuery({
+  implements: ProductsByCategorySlugQuery,
+  cache: {
+    ttl: '5 minutes',
+    // A transient upstream failure degrades to an empty listing, and caching that would serve an
+    // empty category for the whole TTL. Nothing distinguishes it from a category that is genuinely
+    // empty, so neither is cached — the cheaper mistake, since an empty listing is rare and costs
+    // one upstream call to re-derive.
+    validate: ({ value }) => (value && 'ids' in value ? value.ids.length > 0 : false),
+    // The product resolver reads its data source from `parentIdToDefaultVariantIdToken`, and a cache
+    // hit skips the handler that sets it. Replaying it keeps a hit resolving each tile's default
+    // variant rather than its parent, which carries different prices and media.
+    includePassthrough: true,
+  },
+  run: async ({ context, input, pagination, filter: selectedFilters, sorting, passthrough }) => {
     const { categorySlug } = input;
     const seoResolver = useSeoResolver(context.storefrontClient, context.settings.catalog.seoRouteNames);
     const seoEntry = await seoResolver.resolve('category', categorySlug);
@@ -69,5 +81,5 @@ export default defineShopwareQuery(
       availableSortings,
       availableFilters,
     };
-  }
-);
+  },
+});

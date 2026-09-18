@@ -8,6 +8,11 @@ export default defineShopwareComponentResolver({
   label: 'Shopware Product Review Connector',
   entityType: 'Review',
   provides: [ReviewBase],
+  cache: {
+    ttl: '1 day',
+    swr: true,
+    staleMaxAge: '1 hour',
+  },
   resolve: async ({ entityIds, $entity, context, passthrough }) => {
     const currentProductIds = passthrough.get(currentProductIdsToken);
 

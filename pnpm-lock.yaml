@@ -37,20 +37,20 @@ importers:
         specifier: ^0.33.0
         version: 0.33.1
       '@laioutr-core/core-types':
-        specifier: ^0.52.0
-        version: 0.52.0
+        specifier: ^0.56.0
+        version: 0.56.0
       '@laioutr-core/devtools':
-        specifier: ^0.52.0
-        version: 0.52.0(magicast@0.5.4)(vite@6.4.3(@types/node@26.1.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))(vue@3.5.41(typescript@5.9.2))
+        specifier: ^0.56.0
+        version: 0.56.0(magicast@0.5.4)(vite@6.4.3(@types/node@26.1.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))(vue@3.5.41(typescript@5.9.2))
       '@laioutr-core/frontend-core':
-        specifier: ^0.52.0
-        version: 0.52.0(@opentelemetry/api-logs@0.221.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.221.0(@opentelemetry/api@1.9.1))(@vue/compiler-dom@3.5.41)(db0@0.3.4)(eslint@9.39.5(jiti@2.7.0))(fuse.js@7.5.0)(ioredis@5.11.1)(magicast@0.5.4)(nuxt@3.16.2(@types/node@26.1.2)(cac@6.7.14)(db0@0.3.4)(eslint@9.39.5(jiti@2.7.0))(ioredis@5.11.1)(magicast@0.5.4)(optionator@0.9.4)(rollup@4.62.4)(srvx@0.11.22)(terser@5.49.2)(typescript@5.9.2)(vite@6.4.3(@types/node@26.1.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))(vue-tsc@2.2.10(typescript@5.9.2))(webpack@5.109.2(esbuild@0.28.1)(postcss@8.5.26))(yaml@2.9.0))(rollup@4.62.4)(srvx@0.11.22)(typescript@5.9.2)(vue-router@4.6.4(vue@3.5.41(typescript@5.9.2)))(vue@3.5.41(typescript@5.9.2))
+        specifier: ^0.56.0
+        version: 0.56.0(@opentelemetry/api-logs@0.221.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.221.0(@opentelemetry/api@1.9.1))(@vue/compiler-dom@3.5.41)(db0@0.3.4)(eslint@9.39.5(jiti@2.7.0))(fuse.js@7.5.0)(ioredis@5.11.1)(magicast@0.5.4)(nuxt@3.16.2(@types/node@26.1.2)(cac@6.7.14)(db0@0.3.4)(eslint@9.39.5(jiti@2.7.0))(ioredis@5.11.1)(magicast@0.5.4)(optionator@0.9.4)(rollup@4.62.4)(srvx@0.11.22)(terser@5.49.2)(typescript@5.9.2)(vite@6.4.3(@types/node@26.1.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))(vue-tsc@2.2.10(typescript@5.9.2))(webpack@5.109.2(esbuild@0.28.1)(postcss@8.5.26))(yaml@2.9.0))(rollup@4.62.4)(srvx@0.11.22)(typescript@5.9.2)(vue-router@4.6.4(vue@3.5.41(typescript@5.9.2)))(vue@3.5.41(typescript@5.9.2))
       '@laioutr-core/kit':
-        specifier: ^0.52.0
-        version: 0.52.0(magicast@0.5.4)
+        specifier: ^0.56.0
+        version: 0.56.0(magicast@0.5.4)
       '@laioutr-core/orchestr':
-        specifier: ^0.52.0
-        version: 0.52.0(db0@0.3.4)(ioredis@5.11.1)(magicast@0.5.4)(pinia@3.0.2(typescript@5.9.2)(vue@3.5.41(typescript@5.9.2)))(vue-router@4.6.4(vue@3.5.41(typescript@5.9.2)))
+        specifier: ^0.56.0
+        version: 0.56.0(db0@0.3.4)(ioredis@5.11.1)(magicast@0.5.4)(pinia@3.0.2(typescript@5.9.2)(vue@3.5.41(typescript@5.9.2)))(vue-router@4.6.4(vue@3.5.41(typescript@5.9.2)))
       '@laioutr/eslint-config':
         specifier: ^1.9.5
         version: 1.9.5(@typescript-eslint/eslint-plugin@8.66.0(@typescript-eslint/parser@8.66.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.2))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.2))(@typescript-eslint/utils@8.66.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.2))(eslint-import-resolver-node@0.3.10)(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.66.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.2))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.5(jiti@2.7.0)))(jiti@2.7.0)
@@ -1356,22 +1356,25 @@ packages:
   '@laioutr-core/core-types@0.52.0':
     resolution: {integrity: sha512-H25USYYO3QPP7fMyG43S6fD5FW/SDeUEI8aluBqAcGh8Vb8mT27bwwAHFwIeSboDVTxaZLgnPyyfXMQ4Ppj+4Q==}
 
-  '@laioutr-core/devtools@0.52.0':
-    resolution: {integrity: sha512-NoItksPQlEJQrEajZF/fsWYySIgKx5dmsTiZhOTakdhGiH0cUJvkBR4ZvDJQgzgMNJGRw/KNbBP54mRRWESAGg==}
+  '@laioutr-core/core-types@0.56.0':
+    resolution: {integrity: sha512-yBJaQcN6btVGIF3w6yIOVtipB4jPCv6hX8zqLs/uPWC8zbaJ6EPkGily13ApNZ2gAsbuIyOoBOF1m8Sh+m08ew==}
+
+  '@laioutr-core/devtools@0.56.0':
+    resolution: {integrity: sha512-+Mk9CW5O6Z6fTGoZZlS5vEZrw867r+0gTp7WirvK1QFNuyHEVNbAK6o27704C7lgrqs3af+S5eHStBIjSHwqEA==}
     peerDependencies:
       vite: ^4.0.0 || ^5.0.0 || ^6.0.0
 
   '@laioutr-core/frontend-core@0.40.3':
     resolution: {integrity: sha512-yIJtFAAJ/ye6otmlMU6puZdMEFZCIq4bL3/fz/1g4Nq8NdOi1QTYRSwLTNqfgnpr0EtxMU2PBmf0N6vdi3fRhg==}
 
-  '@laioutr-core/frontend-core@0.52.0':
-    resolution: {integrity: sha512-sM1OSThCCGmsPZpoApJvvm51vJr7SpqXAdYpnEDNBPKdE1EbuofQOpROAlfUyOUXAjQN9rhcsVqVrDWcLDOLNA==}
+  '@laioutr-core/frontend-core@0.56.0':
+    resolution: {integrity: sha512-7CqSkpGK+555nhxfConGiTAvOjxbhgGcAqluV+zeIeTBOemcvSjbPPpcKzsIoXm/FBqZa/PhAm8plDSfx5eOlA==}
 
   '@laioutr-core/kit@0.40.3':
     resolution: {integrity: sha512-5qepOqHy1DL504rZgRGlBKHLGrt4/S870/UadV3i5NfkuDGyFC7rBPJ9ajuSs6+Vov3jMERKIM5My++xIaxzFQ==}
 
-  '@laioutr-core/kit@0.52.0':
-    resolution: {integrity: sha512-QrQkVbxmXNrgPKkQswtwlMZyFFWgrvxgkpXSfbOSTVcaxtsvw0eEDbnuT1pwpMWfXmyfJggfJk+g/VRE4DJrOg==}
+  '@laioutr-core/kit@0.56.0':
+    resolution: {integrity: sha512-p3/vRKrUX3CY8KQ4lhXMCrCsZv3Ym6AvGIb4cVTlYeA9CXSEN391AOSBlaiTh0+TmptlbggXaQVPPwo2XNHffg==}
 
   '@laioutr-core/orchestr@0.40.3':
     resolution: {integrity: sha512-deTcYLPVm01EZn6L8uU82tOpqhra3/N3q8nvB8dB1DvdDHmM+GsXy+3zyCORmwl0zSnOeYbcK/K9ofQSekrsQg==}
@@ -1379,8 +1382,8 @@ packages:
       pinia: 3.0.2
       vue-router: ^4.5.0
 
-  '@laioutr-core/orchestr@0.52.0':
-    resolution: {integrity: sha512-DxVApCMXQnxF6akMSHgobcpNTnByU8KVofG4AcefRD5mqJMmJCZy+hccA6OckQ5W+zvCjHuFb08MAPaHwSezDQ==}
+  '@laioutr-core/orchestr@0.56.0':
+    resolution: {integrity: sha512-CjapRLZXuE5mq2w4J4zaCIf5zHaEQXkrWGMGxYGRZPIc6+rCVZ2oMMpsjJHrEcW/EDp/OZ0STbc3XWGy6nGqjA==}
     peerDependencies:
       pinia: 3.0.2
       vue-router: ^4.5.0
@@ -2860,8 +2863,8 @@ packages:
   '@types/node@26.1.2':
     resolution: {integrity: sha512-Vu4a5UFA9rIIFJ7rB/Vaafh9lrCQszopTCx6KjFboXTGQbPNasehVR5TEiithSDGyd1DEiUByggTZsg8jukeIg==}
 
-  '@types/node@26.5.0':
-    resolution: {integrity: sha512-dVSGpriSoCgz8WnDNTuSSuSv1PC/ALXihO4ulRZt7Md8k9mlbdin3lGOcDE8SnWOgf513ByWlXd7BK4azmyg/A==}
+  '@types/node@26.6.1':
+    resolution: {integrity: sha512-VqGJBMCtdhqkBUCcBLvywI0NJ+KLuVzgNnlBUNFOQjqVxzo2lxLUNg1DSey8+u2u6ktswSAxg+s68QLzWHNOuA==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -9201,7 +9204,14 @@ snapshots:
       type-fest: 5.8.0
       zod: 3.25.61
 
-  '@laioutr-core/devtools@0.52.0(magicast@0.5.4)(vite@6.4.3(@types/node@26.1.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))(vue@3.5.41(typescript@5.9.2))':
+  '@laioutr-core/core-types@0.56.0':
+    dependencies:
+      '@laioutr/expression': 1.0.0
+      ebec: 2.3.0
+      type-fest: 5.8.0
+      zod: 3.25.61
+
+  '@laioutr-core/devtools@0.56.0(magicast@0.5.4)(vite@6.4.3(@types/node@26.1.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))(vue@3.5.41(typescript@5.9.2))':
     dependencies:
       '@nuxt/devtools': 2.7.0(vite@6.4.3(@types/node@26.1.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))(vue@3.5.41(typescript@5.9.2))
       '@nuxt/devtools-kit': 2.5.0(magicast@0.5.4)(vite@6.4.3(@types/node@26.1.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))
@@ -9290,11 +9300,11 @@ snapshots:
       - vue
       - vue-router
 
-  '@laioutr-core/frontend-core@0.52.0(@opentelemetry/api-logs@0.221.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.221.0(@opentelemetry/api@1.9.1))(@vue/compiler-dom@3.5.41)(db0@0.3.4)(eslint@9.39.5(jiti@2.7.0))(fuse.js@7.5.0)(ioredis@5.11.1)(magicast@0.5.4)(nuxt@3.16.2(@types/node@26.1.2)(cac@6.7.14)(db0@0.3.4)(eslint@9.39.5(jiti@2.7.0))(ioredis@5.11.1)(magicast@0.5.4)(optionator@0.9.4)(rollup@4.62.4)(srvx@0.11.22)(terser@5.49.2)(typescript@5.9.2)(vite@6.4.3(@types/node@26.1.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))(vue-tsc@2.2.10(typescript@5.9.2))(webpack@5.109.2(esbuild@0.28.1)(postcss@8.5.26))(yaml@2.9.0))(rollup@4.62.4)(srvx@0.11.22)(typescript@5.9.2)(vue-router@4.6.4(vue@3.5.41(typescript@5.9.2)))(vue@3.5.41(typescript@5.9.2))':
+  '@laioutr-core/frontend-core@0.56.0(@opentelemetry/api-logs@0.221.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.221.0(@opentelemetry/api@1.9.1))(@vue/compiler-dom@3.5.41)(db0@0.3.4)(eslint@9.39.5(jiti@2.7.0))(fuse.js@7.5.0)(ioredis@5.11.1)(magicast@0.5.4)(nuxt@3.16.2(@types/node@26.1.2)(cac@6.7.14)(db0@0.3.4)(eslint@9.39.5(jiti@2.7.0))(ioredis@5.11.1)(magicast@0.5.4)(optionator@0.9.4)(rollup@4.62.4)(srvx@0.11.22)(terser@5.49.2)(typescript@5.9.2)(vite@6.4.3(@types/node@26.1.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))(vue-tsc@2.2.10(typescript@5.9.2))(webpack@5.109.2(esbuild@0.28.1)(postcss@8.5.26))(yaml@2.9.0))(rollup@4.62.4)(srvx@0.11.22)(typescript@5.9.2)(vue-router@4.6.4(vue@3.5.41(typescript@5.9.2)))(vue@3.5.41(typescript@5.9.2))':
     dependencies:
-      '@laioutr-core/core-types': 0.52.0
-      '@laioutr-core/kit': 0.52.0(magicast@0.5.4)
-      '@laioutr-core/orchestr': 0.52.0(db0@0.3.4)(ioredis@5.11.1)(magicast@0.5.4)(pinia@3.0.2(typescript@5.9.2)(vue@3.5.41(typescript@5.9.2)))(vue-router@4.6.4(vue@3.5.41(typescript@5.9.2)))
+      '@laioutr-core/core-types': 0.56.0
+      '@laioutr-core/kit': 0.56.0(magicast@0.5.4)
+      '@laioutr-core/orchestr': 0.56.0(db0@0.3.4)(ioredis@5.11.1)(magicast@0.5.4)(pinia@3.0.2(typescript@5.9.2)(vue@3.5.41(typescript@5.9.2)))(vue-router@4.6.4(vue@3.5.41(typescript@5.9.2)))
       '@nuxt/image': 1.9.0(db0@0.3.4)(ioredis@5.11.1)(magicast@0.5.4)(srvx@0.11.22)
       '@nuxt/kit': 3.16.2(magicast@0.5.4)
       '@nuxtjs/i18n': 9.5.2(@vue/compiler-dom@3.5.41)(eslint@9.39.5(jiti@2.7.0))(magicast@0.5.4)(rollup@4.62.4)(vue@3.5.41(typescript@5.9.2))
@@ -9386,9 +9396,9 @@ snapshots:
     transitivePeerDependencies:
       - magicast
 
-  '@laioutr-core/kit@0.52.0(magicast@0.5.4)':
+  '@laioutr-core/kit@0.56.0(magicast@0.5.4)':
     dependencies:
-      '@laioutr-core/core-types': 0.52.0
+      '@laioutr-core/core-types': 0.56.0
       '@nuxt/kit': 3.16.2(magicast@0.5.4)
       '@nuxt/schema': 3.16.2
       '@parcel/watcher': 2.5.0
@@ -9443,10 +9453,10 @@ snapshots:
       - magicast
       - uploadthing
 
-  '@laioutr-core/orchestr@0.52.0(db0@0.3.4)(ioredis@5.11.1)(magicast@0.5.4)(pinia@3.0.2(typescript@5.9.2)(vue@3.5.41(typescript@5.9.2)))(vue-router@4.6.4(vue@3.5.41(typescript@5.9.2)))':
+  '@laioutr-core/orchestr@0.56.0(db0@0.3.4)(ioredis@5.11.1)(magicast@0.5.4)(pinia@3.0.2(typescript@5.9.2)(vue@3.5.41(typescript@5.9.2)))(vue-router@4.6.4(vue@3.5.41(typescript@5.9.2)))':
     dependencies:
       '@ebec/http': 2.3.0
-      '@laioutr-core/core-types': 0.52.0
+      '@laioutr-core/core-types': 0.56.0
       '@nuxt/kit': 3.16.2(magicast@0.5.4)
       '@opentelemetry/api': 1.9.1
       '@pinia/colada': 0.17.1(pinia@3.0.2(typescript@5.9.2)(vue@3.5.41(typescript@5.9.2)))
@@ -11625,11 +11635,11 @@ snapshots:
 
   '@types/bunyan@1.8.11':
     dependencies:
-      '@types/node': 26.5.0
+      '@types/node': 26.6.1
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 26.5.0
+      '@types/node': 26.6.1
 
   '@types/estree@1.0.9': {}
 
@@ -11643,11 +11653,11 @@ snapshots:
 
   '@types/memcached@2.2.10':
     dependencies:
-      '@types/node': 26.5.0
+      '@types/node': 26.6.1
 
   '@types/mysql@2.15.27':
     dependencies:
-      '@types/node': 26.5.0
+      '@types/node': 26.6.1
 
   '@types/node@12.20.55': {}
 
@@ -11655,7 +11665,7 @@ snapshots:
     dependencies:
       undici-types: 8.3.0
 
-  '@types/node@26.5.0':
+  '@types/node@26.6.1':
     dependencies:
       undici-types: 8.9.0
 
@@ -11663,7 +11673,7 @@ snapshots:
 
   '@types/oracledb@6.5.2':
     dependencies:
-      '@types/node': 26.5.0
+      '@types/node': 26.6.1
 
   '@types/pg-pool@2.0.7':
     dependencies:
@@ -11671,7 +11681,7 @@ snapshots:
 
   '@types/pg@8.15.6':
     dependencies:
-      '@types/node': 26.5.0
+      '@types/node': 26.6.1
       pg-protocol: 1.16.0
       pg-types: 2.2.0
 
@@ -11685,7 +11695,7 @@ snapshots:
 
   '@types/tedious@4.0.14':
     dependencies:
-      '@types/node': 26.5.0
+      '@types/node': 26.6.1
 
   '@types/web-bluetooth@0.0.21': {}
 
@@ -14547,7 +14557,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 26.5.0
+      '@types/node': 26.6.1
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
@@ -16053,7 +16063,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.2
-      '@types/node': 26.5.0
+      '@types/node': 26.6.1
       long: 5.3.2
 
   pump@3.0.4:

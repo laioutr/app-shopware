@@ -31,6 +31,20 @@ export default defineShopwareComponentResolver({
     ProductVariantShipping,
     ProductVariantOptions,
   ],
+  cache: {
+    ttl: '1 day',
+    swr: true,
+    staleMaxAge: '1 hour',
+    components: {
+      // A price is what the visitor is asked to pay, so its stale window is a minute rather than the
+      // resolver's hour: an upstream outage must not keep quoting an old one all day.
+      prices: { ttl: '10 minutes', swr: true, staleMaxAge: '1 minute' },
+      quantityPrices: { ttl: '10 minutes', swr: true, staleMaxAge: '1 minute' },
+      // Stock, which a visitor acts on directly: a sold-out variant rendered as buyable costs an
+      // order that fails at checkout, so it is never served from an entry.
+      availability: { enabled: false },
+    },
+  },
   resolve: async ({ entityIds, context, clientEnv, $entity, passthrough }) => {
     const { currency } = clientEnv;
 
