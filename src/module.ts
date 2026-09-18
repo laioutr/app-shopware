@@ -36,6 +36,15 @@ export interface ModuleOptions {
    * external session too.
    */
   checkoutLogoutCallbackUrl?: string;
+  /**
+   * How a shopper reaches the Shopware checkout. `embedded` frames the storefront on a Laioutr
+   * checkout page; `redirect` navigates the browser to the storefront at top level, which is the
+   * only way redirect-based payment providers work without a break-out.
+   *
+   * Must match the plugin's embedded-mode setting: nothing enforces agreement, and a mismatch
+   * serves a chrome-less storefront loading a bridge with no parent frame.
+   */
+  checkoutMode?: 'embedded' | 'redirect';
 }
 
 /**
@@ -48,6 +57,8 @@ export interface RuntimeConfigModulePublic {
    * validate and pin `postMessage` traffic to the storefront frame. Empty when unset.
    */
   storefrontOrigin: string;
+  /** Mirrors {@link ModuleOptions.checkoutMode}; the checkout section reads it. */
+  checkoutMode: 'embedded' | 'redirect';
 }
 
 /**
@@ -60,6 +71,9 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     name,
     version,
     configKey: name,
+  },
+  defaults: {
+    checkoutMode: 'embedded',
   },
   async setup(options, nuxt) {
     const { resolve } = createResolver(import.meta.url);
@@ -74,6 +88,7 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     // embedded checkout section can validate/pin postMessage traffic to the storefront.
     nuxt.options.runtimeConfig.public[name] = defu(nuxt.options.runtimeConfig.public[name] as any, {
       storefrontOrigin: options.storefrontUrl ? new URL(options.storefrontUrl).origin : '',
+      checkoutMode: options.checkoutMode ?? 'embedded',
     });
 
     // Make app-assets publicly available
@@ -97,6 +112,15 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       route: ADOPT_SESSION_ENDPOINT_PATH,
       method: 'post',
       handler: resolveRuntimeModule('./server/routes/adopt-session.post'),
+    });
+
+    // GET counterpart for redirect checkout mode: the storefront bounces the browser here on a
+    // login or logout, and this redeems the code before sending it back
+    // (see server/routes/adopt-session.get.ts).
+    addServerHandler({
+      route: ADOPT_SESSION_ENDPOINT_PATH,
+      method: 'get',
+      handler: resolveRuntimeModule('./server/routes/adopt-session.get'),
     });
 
     // POST endpoint the embedded checkout section polls for the single-use code that lets the

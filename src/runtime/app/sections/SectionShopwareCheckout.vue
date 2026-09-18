@@ -41,6 +41,7 @@ import {
   ref,
   refreshNuxtData,
   useRoute,
+  useRuntimeConfig,
 } from '#imports';
 import type { AuthChangedPayload } from '../const/bridge';
 import { ADOPT_SESSION_ENDPOINT_PATH, RETRY_ORDER_QUERY_KEY } from '../../shared/const/checkout';
@@ -50,6 +51,12 @@ const props = defineProps(definitionToProps(definition));
 
 const route = useRoute();
 const frame = ref<InstanceType<typeof ShopwareEmbedFrame> | null>(null);
+
+if (import.meta.dev && useRuntimeConfig().public['@laioutr/app-shopware']?.checkoutMode === 'redirect') {
+  console.warn(
+    '[app-shopware] SectionShopwareCheckout does nothing in redirect checkout mode — the cart links straight to the storefront.'
+  );
+}
 
 /**
  * The storefront redirects to these from the top-level window, so they have to be absolute.
