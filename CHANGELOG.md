@@ -1,5 +1,11 @@
 # @laioutr/app-shopware
 
+## 0.19.2
+
+### Patch Changes
+
+- 85236df: The Shopware media library answers a list query with `'file'` in its `type` correctly: it ignores `'file'` next to media kinds, and returns no items for `['file']` alone. Newer core-types versions allow that value; before, it turned into an invalid Shopware filter.
+
 ## 0.19.1
 
 ### Patch Changes
