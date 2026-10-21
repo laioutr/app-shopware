@@ -90,6 +90,25 @@ describe('throwAsInvalidField', () => {
     expect(() => throwAsInvalidField(err, [], () => undefined)).toThrow(err);
   });
 
+  it('names the limit a violation carries, and none when Shopware sends its parameters as an empty PHP array', () => {
+    const thrownBy = (err: unknown): unknown => {
+      try {
+        return throwAsInvalidField(err);
+      } catch (thrown) {
+        return thrown;
+      }
+    };
+    const tooShort = (parameters: Record<string, string> | unknown[]) =>
+      apiError(400, [{ code: 'VIOLATION::TOO_SHORT_ERROR', source: { pointer: '/password' }, meta: { parameters } }]);
+
+    expect((thrownBy(tooShort({ '{{ limit }}': '8', '{{ value }}': '"abc"' })) as InvalidFieldError).data).toEqual({
+      reason: 'TOO_SHORT',
+      field: ['password'],
+      limit: 8,
+    });
+    expect((thrownBy(tooShort([])) as InvalidFieldError).data).toEqual({ reason: 'TOO_SHORT', field: ['password'] });
+  });
+
   it('rethrows anything that is not a validation failure', () => {
     const err = apiError(500, [{ code: 'FRAMEWORK__SOMETHING' }]);
     expect(() => throwAsInvalidField(err)).toThrow(err);

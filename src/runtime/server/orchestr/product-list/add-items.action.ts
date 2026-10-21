@@ -1,6 +1,7 @@
 import { ProductListAddItemsAction, ProductListNotFoundError, UnauthenticatedError } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareAction } from '../../middleware/defineShopware';
-import { isCustomerNotLoggedIn, readWishlist, wishlistProductId } from '../../shopware-helper/wishlist';
+import { isCustomerNotLoggedIn } from '../../shopware-helper/shopwareErrors';
+import { readWishlist, wishlistProductId } from '../../shopware-helper/wishlist';
 
 /**
  * Add products to the customer's wishlist through `/customer/wishlist/merge`, which creates the

@@ -1,3 +1,4 @@
+import { isCustomerNotLoggedIn, shopwareErrorCodes } from './shopwareErrors';
 import { UnauthenticatedError } from '@laioutr-core/canonical-types/ecommerce';
 import type { StorefrontClient } from '../types/shopware';
 import type { Schemas } from '../types/storeApiTypes';
@@ -8,18 +9,8 @@ export type WishlistEntry = { id: string; parentId?: string };
 /** A page of the current customer's wishlist. `id` is the customer's id: Shopware keeps one wishlist per customer. */
 export type WishlistPage = { id: string; entries: WishlistEntry[]; total: number };
 
-const errorCodes = (err: unknown): string[] =>
-  ((err as { details?: { errors?: { code?: string }[] } })?.details?.errors ?? []).map((entry) => entry.code ?? '');
-
-/**
- * A context without a customer; the wishlist routes answer it with 403, coded
- * `CHECKOUT__CUSTOMER_NOT_LOGGED_IN` before Shopware 6.7 and `FRAMEWORK__ROUTING_CUSTOMER_NOT_LOGGED_IN` since.
- */
-export const isCustomerNotLoggedIn = (err: unknown) =>
-  errorCodes(err).some((code) => code === 'CHECKOUT__CUSTOMER_NOT_LOGGED_IN' || code === 'FRAMEWORK__ROUTING_CUSTOMER_NOT_LOGGED_IN');
-
 /** A customer who has never added a product has no wishlist yet; Shopware creates it on the first add. */
-export const isWishlistNotFound = (err: unknown) => errorCodes(err).includes('CHECKOUT__WISHLIST_NOT_FOUND');
+export const isWishlistNotFound = (err: unknown) => shopwareErrorCodes(err).includes('CHECKOUT__WISHLIST_NOT_FOUND');
 
 type ReadOptions = { page: number; limit: number; filter?: Schemas['Criteria']['filter'] };
 
