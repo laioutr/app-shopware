@@ -15,12 +15,10 @@ export default defineShopwareQuery({
     // rather than the parent, which carries different prices and media.
     includePassthrough: true,
   },
-  run: async ({ context, input, passthrough }) => {
+  run: async ({ context, input, passthrough, notFound }) => {
     const seoResolver = useSeoResolver(context.storefrontClient, context.settings.catalog.seoRouteNames);
     const seoEntry = await seoResolver.resolve('product', input.slug);
-    if (!seoEntry) {
-      throw new Error(`No product found for slug: ${input.slug}`);
-    }
+    if (!seoEntry) return notFound();
 
     // We need to figure out the parent-id of the product, because the product-resolver expects the parent-id. SeoResolver might return a variant-id.
     const getProductParentId = useGetProductParentId(context.storefrontClient);

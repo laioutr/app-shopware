@@ -25,13 +25,11 @@ export default defineShopwareQuery({
     // variant rather than its parent, which carries different prices and media.
     includePassthrough: true,
   },
-  run: async ({ context, input, pagination, filter: selectedFilters, sorting, passthrough }) => {
+  run: async ({ context, input, pagination, filter: selectedFilters, sorting, passthrough, notFound }) => {
     const { categorySlug } = input;
     const seoResolver = useSeoResolver(context.storefrontClient, context.settings.catalog.seoRouteNames);
     const seoEntry = await seoResolver.resolve('category', categorySlug);
-    if (!seoEntry) {
-      throw new Error(`No seo url found for category slug: ${categorySlug}`);
-    }
+    if (!seoEntry) return notFound();
 
     const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters, context.swCurrency) : {};
 

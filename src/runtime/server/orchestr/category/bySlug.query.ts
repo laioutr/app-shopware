@@ -9,15 +9,13 @@ export default defineShopwareQuery({
     swr: true,
     staleMaxAge: '1 hour',
   },
-  run: async ({ context, input }) => {
+  run: async ({ context, input, notFound }) => {
     const { slug } = input;
 
     const seoResolver = useSeoResolver(context.storefrontClient, context.settings.catalog.seoRouteNames);
     const seoEntry = await seoResolver.resolve('category', slug);
 
-    if (!seoEntry) {
-      throw new Error(`No seo url found for category slug: ${slug}`);
-    }
+    if (!seoEntry) return notFound();
 
     return { id: seoEntry.id };
   },

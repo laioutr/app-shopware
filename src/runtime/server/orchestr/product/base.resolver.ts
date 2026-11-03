@@ -160,7 +160,10 @@ export default defineShopwareComponentResolver({
       });
     });
 
-    return { entities };
+    // Shopware leaves out a product it does not sell in this sales channel, such as one deactivated after its
+    // slug was cached. A failed request throws instead, so an outage never reads as not found.
+    const found = new Set(shopwareProducts.map((product) => product.entityId));
+    return { entities, notFound: entityIds.filter((entityId) => !found.has(entityId)) };
   },
   cache: {
     ttl: '1 day',
