@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { RuntimeConfigModulePrivate, RuntimeConfigModulePublic } from './module';
+import type { ProductFlag } from './runtime/server/shopware-helper/productFlags';
 import type { ShopwareCriteria, ShopwareCriteriaTarget } from './runtime/server/types/criteria';
 import type { ShopwareSettings } from './runtime/server/types/settings';
+import type { ShopwareProduct } from './runtime/server/types/shopware';
 import type { HookResult } from '@nuxt/schema';
 import type { H3Event } from 'h3';
 
@@ -40,6 +42,18 @@ declare module 'nitropack' {
       result: { criteria: ShopwareCriteria };
     }) => HookResult;
     'shopware:settings:resolve': (args: { event: H3Event; result: { settings: ShopwareSettings } }) => HookResult;
+    /**
+     * Filter: seeded with the flags derived from Shopware (`new`, `topseller`, `sale`), for a project to
+     * localise their labels, drop one or add its own. `product` is the parent row, `variant` the one
+     * the product's components are read from.
+     */
+    'shopware:product-flags:resolve': (args: {
+      event: H3Event;
+      locale: string;
+      product: ShopwareProduct;
+      variant: ShopwareProduct;
+      result: { flags: ProductFlag[] };
+    }) => HookResult;
   }
 }
 

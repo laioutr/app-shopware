@@ -1,5 +1,7 @@
 import { defineOrchestr, useNitroApp } from '#imports';
+import type { ProductFlag } from '../shopware-helper/productFlags';
 import type { ResolveCriteria } from '../types/criteria';
+import type { ShopwareProduct } from '../types/shopware';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
 import { shopwareClientFactory } from '../client/shopwareClientFactory';
 import { defaultShopwareSettings } from '../shopware-helper/shopwareSettings';
@@ -33,6 +35,18 @@ export const defineShopware = defineOrchestr
       return result.criteria;
     };
 
+    const resolveProductFlags = async (product: ShopwareProduct, variant: ShopwareProduct, flags: ProductFlag[]) => {
+      const result = { flags };
+      await nitro.hooks.callHook('shopware:product-flags:resolve', {
+        event: args.event,
+        locale: args.clientEnv.locale,
+        product,
+        variant,
+        result,
+      });
+      return result.flags;
+    };
+
     return {
       context: {
         storefrontClient,
@@ -43,6 +57,7 @@ export const defineShopware = defineOrchestr
         swCurrency: currentSystemEntities.currency.iso,
         settings: settings.settings,
         resolveCriteria,
+        resolveProductFlags,
       },
     };
   });
