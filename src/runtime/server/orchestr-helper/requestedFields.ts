@@ -37,6 +37,8 @@ export const resolveProductVariantFields = async (resolveCriteria: ResolveCriter
         'prices',
         'ratingAverage',
         'productReviews',
+        'isNew',
+        'markAsTopseller',
       ],
       product_media: ['id', 'mediaId', 'media'],
       media: MediaIncludes,
@@ -103,3 +105,19 @@ export const resolveProductFields = async (resolveCriteria: ResolveCriteria): Pr
     ),
   });
 };
+
+/**
+ * Properties are read on their own, for the detail page only: a listing that carried every product's
+ * properties would pay for rows no tile renders.
+ */
+export const resolveProductPropertyFields = async (resolveCriteria: ResolveCriteria): Promise<ShopwareCriteria> =>
+  resolveCriteria('product-properties', {
+    associations: {
+      properties: { associations: { group: {} } },
+    },
+    includes: {
+      product: ['id', 'properties'],
+      property_group_option: ['id', 'name', 'position', 'group', 'translated'],
+      property_group: ['id', 'name', 'position', 'sortingType', 'visibleOnProductDetailPage', 'translated'],
+    },
+  });

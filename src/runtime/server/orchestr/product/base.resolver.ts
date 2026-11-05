@@ -10,16 +10,21 @@ import {
   ProductPrices,
   ProductRating,
   ProductSeo,
+  ProductSpecifications,
 } from '@laioutr-core/canonical-types/entity/product';
 import { MediaImage } from '@laioutr-core/core-types/common';
 import type { ShopwareProduct } from '../../types/shopware';
 import { FALLBACK_IMAGE } from '../../const/fallbacks';
 import { parentIdToDefaultVariantIdToken, productVariantsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
+import { resolveProductPropertyFields } from '../../orchestr-helper/requestedFields';
+import { toRequestCriteria } from '../../shopware-helper/criteria';
 import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 import { mapProductOptionGroups } from '../../shopware-helper/optionGroupsMapper';
+import { deriveProductFlags } from '../../shopware-helper/productFlags';
+import { mapSpecifications } from '../../shopware-helper/specificationsMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';
 
 export default defineShopwareComponentResolver({
@@ -36,8 +41,9 @@ export default defineShopwareComponentResolver({
     ProductDefaultVariant,
     ProductOptionGroups,
     ProductRating,
+    ProductSpecifications,
   ],
-  resolve: async ({ entityIds, context, $entity, passthrough }) => {
+  resolve: async ({ entityIds, context, requestedComponents, $entity, passthrough }) => {
     // If the product has variants, we select the first variant as default data source. In that case the parent might not contain much information.
     // This case only happens if the resolver is called with a product-id that does not exist in parentIdToDefaultVariantId.
     // If you want to influence which variant is selected, passthrough a `parentIdToDefaultVariantIdToken`.
@@ -69,6 +75,31 @@ export default defineShopwareComponentResolver({
         };
       })
       .filter((product): product is NonNullable<typeof product> => !!product);
+
+    const flagsByEntityId = new Map(
+      requestedComponents.includes('flags') ?
+        await Promise.all(
+          shopwareProducts.map(
+            async ({ entityId, rawProduct, rawVariant }) =>
+              [entityId, await context.resolveProductFlags(rawProduct, rawVariant, deriveProductFlags(rawProduct, rawVariant))] as const
+          )
+        )
+      : []
+    );
+
+    // Read off the variant the rest of the projection uses, which inherits the parent's properties
+    // where it has none of its own.
+    const propertiesByVariantId = new Map<string, ShopwareProduct['properties']>();
+    if (requestedComponents.includes('specifications') && shopwareProducts.length > 0) {
+      const criteria = await resolveProductPropertyFields(context.resolveCriteria);
+      const response = await context.storefrontClient.invoke('readProduct post /product', {
+        body: {
+          ids: shopwareProducts.map(({ rawVariant }) => rawVariant.id),
+          ...toRequestCriteria(criteria),
+        },
+      });
+      for (const element of response.data.elements ?? []) propertiesByVariantId.set(element.id, element.properties);
+    }
 
     const entities = shopwareProducts.map(({ entityId, rawProduct, rawVariant }) => {
       const mappedCover = rawProduct.cover?.media ? mapMedia(rawVariant.cover?.media ?? rawProduct.cover.media) : FALLBACK_IMAGE;
@@ -151,7 +182,9 @@ export default defineShopwareComponentResolver({
           };
         },
 
-        flags: [] as any[],
+        flags: flagsByEntityId.get(entityId) ?? [],
+
+        specifications: () => ({ properties: mapSpecifications(propertiesByVariantId.get(rawVariant.id)) }),
 
         rating: {
           average: rawProduct.ratingAverage ?? rawVariant.ratingAverage ?? 0,
@@ -180,6 +213,12 @@ export default defineShopwareComponentResolver({
       // Half of it is stock-derived, so it decays like prices rather than living for
       // the resolver's full day. `optionGroups` needs no override: nothing in it is.
       defaultVariant: {
+        ttl: '15 minutes',
+        swr: true,
+        staleMaxAge: '1 minute',
+      },
+      // `sale` follows the price and `new` a release-date window, so neither may outlive the price.
+      flags: {
         ttl: '15 minutes',
         swr: true,
         staleMaxAge: '1 minute',

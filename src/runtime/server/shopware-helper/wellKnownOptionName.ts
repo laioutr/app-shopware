@@ -164,7 +164,7 @@ const OPTION_NAME_ALIASES: Record<'color' | 'size' | 'material' | 'style' | 'typ
  * Decomposing first is what makes the mark-stripping work — `ö` is one code
  * point until NFD splits it into `o` plus a combining diaeresis.
  */
-const normalizeOptionName = (name: string) => name.trim().toLowerCase().replace(/ß/g, 'ss').normalize('NFD').replace(/\p{M}/gu, '');
+export const normalizeOptionName = (name: string) => name.trim().toLowerCase().replace(/ß/g, 'ss').normalize('NFD').replace(/\p{M}/gu, '');
 
 const OPTION_NAME_LOOKUP = new Map<string, WellKnownOptionName>(
   Object.entries(OPTION_NAME_ALIASES).flatMap(([wellKnownName, aliases]) =>

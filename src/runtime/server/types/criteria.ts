@@ -1,6 +1,6 @@
 import type { ShopwareAssociationsQuery, ShopwareIncludesQuery } from './shopware';
 
-export type ShopwareCriteriaTarget = 'product' | 'product-variant' | 'category' | 'menu' | 'product-review';
+export type ShopwareCriteriaTarget = 'product' | 'product-variant' | 'product-properties' | 'category' | 'menu' | 'product-review';
 
 export interface ShopwareCriteria {
   includes: ShopwareIncludesQuery;

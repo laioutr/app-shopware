@@ -89,6 +89,28 @@ and for standalone Nuxt apps.
 }
 ```
 
+## Product specifications and flags
+
+`ProductSpecifications` is built from the Shopware properties of the variant the product's other
+components are read from, which inherits the parent's where it has none. Each property group becomes
+one row, its options joined in Shopware's own order; a group hidden from the detail page stays out,
+and English or German group names such as *Weight* / *Gewicht* get a `wellKnownName`.
+
+`ProductFlags` carries what Shopware marks on the product: `new` (Shopware's "mark as new" window),
+`topseller` and `sale` (a list price above the price paid, the same condition as `isOnSale`). Labels
+are English; localise, drop or add flags in a filter hook:
+
+```ts
+// server/plugins/shopware-flags.ts
+export default defineNitroPlugin((nitro) => {
+  nitro.hooks.hook('shopware:product-flags:resolve', ({ locale, result }) => {
+    if (!locale.startsWith('de')) return;
+    const labels: Record<string, string> = { new: 'Neu', topseller: 'Tipp', sale: 'Angebot' };
+    result.flags = result.flags.map((flag) => ({ ...flag, label: labels[flag.variant] ?? flag.label }));
+  });
+});
+```
+
 ## Tuning the Store API reads
 
 What the app asks Shopware for, and what those reads cost, is reachable through two Nitro hooks
@@ -120,6 +142,7 @@ export default defineNitroPlugin((nitro) => {
 | --- | --- |
 | `product` | A product read, composed — the variant branch nested under it has already been through `product-variant`. |
 | `product-variant` | A standalone variant read *and* the branch nested inside a product read, so widening variants widens them everywhere. |
+| `product-properties` | The detail-page read behind `ProductSpecifications`: the default variant's properties and their groups. It runs only when the component is requested, so listings never carry properties. |
 | `category` | The category component resolver's read. |
 | `menu` | The navigation read behind `MenuByAliasQuery`. |
 | `product-review` | The review component resolver's read. |
