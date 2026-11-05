@@ -1,21 +1,16 @@
 import { consola } from 'consola';
 import { useRuntimeConfig } from '#imports';
 import { SubscribeAction } from '@laioutr-core/canonical-types/newsletter';
-import { defineShopwareAction } from '../middleware/defineShopware';
+import { defineShopwareAction } from '../../middleware/defineShopware';
 
 const logger = consola.withTag('shopware/newsletter');
 
-/**
- * Subscribe through Shopware's `/newsletter/subscribe`. This handler lives outside the app's main
- * Orchestr directory so the module can leave it unregistered (`newsletter.enabled: false`) and let
- * another app own the token — Orchestr keeps the last registered handler for an action.
- */
 export default defineShopwareAction(SubscribeAction, async ({ context, input }) => {
   // Shopware builds the double-opt-in confirmation link from `storefrontUrl`, and requires it to
   // be a domain configured in the sales channel — so the app's configured storefront URL is the
   // only valid value. Without it the subscription cannot be completed, so fail via the action's
   // own `error` status rather than posting a bogus URL.
-  const { storefrontUrl, newsletter } = useRuntimeConfig()['@laioutr/app-shopware'];
+  const { storefrontUrl } = useRuntimeConfig()['@laioutr/app-shopware'];
   if (!storefrontUrl) {
     logger.error('Cannot subscribe to newsletter: storefrontUrl is not configured');
     return { status: 'error' as const };
@@ -25,7 +20,7 @@ export default defineShopwareAction(SubscribeAction, async ({ context, input }) 
   // https://developer.shopware.com/docs/guides/hosting/infrastructure/rate-limiter.html
   await context.storefrontClient.invoke('subscribeToNewsletter post /newsletter/subscribe', {
     body: {
-      option: newsletter?.option ?? 'subscribe',
+      option: 'subscribe',
       storefrontUrl,
       email: input.email,
       firstName: input.person?.firstName,
