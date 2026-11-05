@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { handleCartMutationErrors, takeDiscountCodeErrors } from './cartErrors';
+import { handleCartMutationErrors, ShopwareCartError, takeDiscountCodeErrors, toCartMessages } from './cartErrors';
 
 describe('handleCartMutationErrors', () => {
   it('throws on a blocking (level 20) error', () => {
@@ -46,9 +46,7 @@ describe('takeDiscountCodeErrors', () => {
   });
 
   it('leaves a lapsed automatic promotion blocking', () => {
-    const errors = [
-      { key: 'auto-promotion-not-found', level: 20, message: 'gone', messageKey: 'auto-promotion-not-found' },
-    ] as never;
+    const errors = [{ key: 'auto-promotion-not-found', level: 20, message: 'gone', messageKey: 'auto-promotion-not-found' }] as never;
     const { rejections, rest } = takeDiscountCodeErrors(errors);
 
     expect(rejections).toHaveLength(0);
@@ -75,5 +73,67 @@ describe('takeDiscountCodeErrors', () => {
 
   it('is a no-op when there are no errors', () => {
     expect(takeDiscountCodeErrors(undefined)).toEqual({ rejections: [], rest: [] });
+  });
+});
+
+describe('toCartMessages', () => {
+  it('maps a Shopware 6.5+ error with its parameters', () => {
+    expect(
+      toCartMessages({
+        'product-stock-reachedabc': {
+          key: 'product-stock-reachedabc',
+          messageKey: 'product-stock-reached',
+          level: 10,
+          message: 'The product Chair is only available 2 times',
+          parameters: { name: 'Chair', quantity: 2 },
+          block: true,
+        },
+      } as never)
+    ).toEqual([
+      {
+        key: 'product-stock-reached',
+        id: 'product-stock-reachedabc',
+        level: 'warning',
+        message: 'The product Chair is only available 2 times',
+        parameters: { name: 'Chair', quantity: 2 },
+        blocksOrder: true,
+      },
+    ]);
+  });
+
+  it('takes the parameters from the error itself on older Shopware versions', () => {
+    const [message] = toCartMessages([
+      { key: 'min-order-quantityabc', messageKey: 'min-order-quantity', level: 20, message: 'x', id: 'abc', name: 'Chair', quantity: 3 },
+    ] as never);
+
+    expect(message).toMatchObject({ level: 'error', parameters: { id: 'abc', name: 'Chair', quantity: 3 }, blocksOrder: true });
+  });
+
+  it('maps the levels to notice, warning and error', () => {
+    const levels = toCartMessages([
+      { messageKey: 'a', level: 0 },
+      { messageKey: 'b', level: 10 },
+      { messageKey: 'c', level: 20 },
+    ] as never).map((message) => message.level);
+    expect(levels).toEqual(['notice', 'warning', 'error']);
+  });
+});
+
+describe('ShopwareCartError', () => {
+  it('carries every blocking error as data and answers 422', () => {
+    let thrown: unknown;
+    try {
+      handleCartMutationErrors([
+        { key: 'product-out-of-stockp1', messageKey: 'product-out-of-stock', level: 20, message: 'gone', parameters: { name: 'Chair' } },
+        { key: 'note', messageKey: 'note', level: 0 },
+        { key: 'min-order-quantityp2', messageKey: 'min-order-quantity', level: 20, parameters: { quantity: 3 } },
+      ] as never);
+    } catch (err) {
+      thrown = err;
+    }
+
+    expect(thrown).toBeInstanceOf(ShopwareCartError);
+    expect((thrown as ShopwareCartError).statusCode).toBe(422);
+    expect((thrown as ShopwareCartError).data.errors.map((error) => error.key)).toEqual(['product-out-of-stock', 'min-order-quantity']);
   });
 });

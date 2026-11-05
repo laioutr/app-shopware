@@ -159,6 +159,29 @@ export default defineNitroPlugin((nitro) => {
 | `catalog.categoryPageIndex.activeOnly` | `true` | Restrict the index to active categories. |
 | `catalog.seoRouteNames` | `frontend.detail.page`; `frontend.navigation.page`, `frontend.landing.page` | `seo_url.routeName` values the slug resolver accepts, per entity type. Extend it when a plugin serves detail or listing pages under its own route name. |
 
+## Cart errors
+
+Shopware reports cart problems (stock, minimum quantities, blocked shipping or payment methods) as
+cart errors with a message key and parameters, the same keys Shopware's own storefront translates.
+The app passes them on in that form so a storefront can translate them:
+
+```ts
+type CartMessage = {
+  key: string; // Shopware's message key, e.g. 'product-stock-reached'
+  id?: string; // this occurrence: the key plus the line item or method it concerns
+  level: 'notice' | 'warning' | 'error';
+  message?: string; // Shopware's English message
+  parameters: Record<string, unknown>; // placeholders of the message, e.g. { name, quantity }
+  blocksOrder: boolean;
+};
+```
+
+- **On the cart**, every error the cart carries is in `CartBase.customFields.cartErrors`. The
+  canonical cart has no field for them.
+- **On a mutation** (add, update, remove items), blocking errors fail the action with a
+  `ShopwareCartError` (HTTP 422) whose `data.errors` lists them. Notices and warnings do not fail
+  it; read them from the cart.
+
 ## Checkout
 
 The app registers a `Checkout` page type. Tag one page with it in Studio and drop the

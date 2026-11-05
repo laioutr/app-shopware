@@ -39,6 +39,7 @@
     "> 0.5% and not dead"
   ],
   "dependencies": {
+    "@ebec/http": "^2.3.0",
     "@nuxt/kit": "3.16.2",
     "@screeny05/ts-money": "1.1.0",
     "@shopware/api-client": "1.2.1",
