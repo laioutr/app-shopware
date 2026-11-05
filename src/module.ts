@@ -1,11 +1,8 @@
 /* eslint-disable import-x/export, @typescript-eslint/no-empty-object-type */
 import { addPlugin, addServerHandler, createResolver, defineNuxtModule, installModule } from '@nuxt/kit';
 import { defu } from 'defu';
-import {
-  ADOPT_SESSION_ENDPOINT_PATH,
-  CHECKOUT_ENDPOINT_PATH,
-  ORDER_HANDOFF_ENDPOINT_PATH,
-} from './runtime/server/const/checkout';
+import { ADOPT_SESSION_ENDPOINT_PATH, CHECKOUT_ENDPOINT_PATH, ORDER_HANDOFF_ENDPOINT_PATH } from './runtime/server/const/checkout';
+import { orchestrDirsFor } from './runtime/server/const/orchestrDirs';
 import { registerLaioutrApp } from '@laioutr-core/kit';
 import type { NuxtModule } from '@nuxt/schema';
 import { name, version } from '../package.json';
@@ -36,6 +33,20 @@ export interface ModuleOptions {
    * external session too.
    */
   checkoutLogoutCallbackUrl?: string;
+  newsletter?: {
+    /**
+     * Register this app's `newsletter/subscribe` handler. Defaults to `true`. Turn it off when another
+     * app (Klaviyo, Brevo, …) owns newsletter sign-up — Orchestr keeps the last registered handler for
+     * an action, so with both on the install order decides.
+     */
+    enabled?: boolean;
+    /**
+     * The `option` sent to Shopware's subscribe route. Defaults to `'subscribe'`. Shopware core treats
+     * both alike and takes double opt-in from the sales channel's `core.newsletter.doubleOptIn`; the
+     * value matters to plugins that decorate the route.
+     */
+    option?: 'subscribe' | 'direct';
+  };
 }
 
 /**
@@ -110,7 +121,7 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     await registerLaioutrApp({
       name,
       version,
-      orchestrDirs: [resolveRuntimeModule('server/orchestr')],
+      orchestrDirs: orchestrDirsFor(options).map((dir) => resolveRuntimeModule(dir)),
       sections: [resolveRuntimeModule('app/sections/')],
       nuxtImageProviders: {
         shopware: {

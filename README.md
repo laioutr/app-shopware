@@ -67,6 +67,8 @@ export default defineNuxtConfig({
 | `storefrontUrl` | for checkout | Storefront base URL where `LaioutrConnector` is installed. Its origin is exposed publicly so the embedded checkout can pin `postMessage` traffic. |
 | `checkoutLoginCallbackUrl` | no | Absolute URL the storefront returns to after a login inside checkout. Defaults to the request origin; point it at the project's IdP login route for external-IdP projects. |
 | `checkoutLogoutCallbackUrl` | no | Absolute URL the storefront returns to after a logout inside checkout. Point it at the IdP's RP-logout route so a storefront logout ends the external session too. |
+| `newsletter.enabled` | no | Register the `newsletter/subscribe` handler. Defaults to `true`. Set it to `false` when another app owns newsletter sign-up. |
+| `newsletter.option` | no | `option` sent to Shopware's subscribe route, `'subscribe'` (default) or `'direct'`. Shopware core treats both alike, and the sales channel's `core.newsletter.doubleOptIn` decides on double opt-in. Only a plugin that decorates the route reads the value. |
 
 `accessToken`, `adminClientId` and `adminClientSecret` are secrets and stay server-side: they land
 in the private runtime config, and only `storefrontUrl`'s origin is exposed publicly. Read them
@@ -194,6 +196,21 @@ export default defineNitroPlugin((nitro) => {
     token ? mySessionStore.set(event, token) : mySessionStore.clear(event);
   });
 });
+```
+
+## Newsletter
+
+`SubscribeAction` posts to Shopware's `/newsletter/subscribe`. The input's `customFields` are
+forwarded, and Shopware stores the ones the shop lets the Store API write to a newsletter recipient
+(Shopware 6.6 and later). Shopware's subscribe route takes no tags.
+
+Orchestr keeps one handler per action, the one registered last. A project that runs its newsletter
+through another app that implements `SubscribeAction`, such as an ESP integration, switches this
+app's handler off, so the install order cannot decide:
+
+```jsonc
+// laioutrrc.json
+{ "name": "@laioutr/app-shopware", "config": { "newsletter": { "enabled": false } } }
 ```
 
 ## Development
