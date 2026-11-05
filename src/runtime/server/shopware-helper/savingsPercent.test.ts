@@ -17,8 +17,9 @@ describe('savingsPercentOf', () => {
   });
 
   it('keeps an exact percentage exact despite decimal amounts', () => {
+    expect(savingsPercentOf(eur(0.55), eur(1))).toBe(45);
+    expect(savingsPercentOf(eur(0.34), eur(1))).toBe(66);
     expect(savingsPercentOf(eur(11.9), eur(17))).toBe(30);
-    expect(savingsPercentOf(eur(0.7), eur(1))).toBe(30);
   });
 
   it('is undefined without a saving', () => {
