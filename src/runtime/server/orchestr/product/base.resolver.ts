@@ -20,6 +20,7 @@ import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants'
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 import { mapProductOptionGroups } from '../../shopware-helper/optionGroupsMapper';
+import { savingsPercentOf } from '../../shopware-helper/savingsPercent';
 import { swTranslated } from '../../shopware-helper/swTranslated';
 
 export default defineShopwareComponentResolver({
@@ -140,12 +141,10 @@ export default defineShopwareComponentResolver({
 
           const hasSavings = typeof listPrice === 'object' && listPrice.greaterThan(totalPrice);
 
-          const savingsPercent = hasSavings ? 100 - totalPrice.percentageOf(listPrice) : undefined;
-
           return {
             price: totalPrice,
             strikethroughPrice: hasSavings ? listPrice : undefined,
-            savingsPercent,
+            savingsPercent: savingsPercentOf(totalPrice, listPrice),
             isOnSale: hasSavings,
             isStartingFrom: rawProduct.calculatedCheapestPrice?.hasRange || rawProduct.calculatedPrice.hasRange,
           };
