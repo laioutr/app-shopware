@@ -1,10 +1,8 @@
 import { defineOrchestr, useNitroApp } from '#imports';
 import type { ResolveCriteria } from '../types/criteria';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
-import { shopwareClientFactory } from '../client/shopwareClientFactory';
+import { getShopwareContext } from '../context/getShopwareContext';
 import { defaultShopwareSettings } from '../shopware-helper/shopwareSettings';
-import { getCurrentSystemEntities } from '../shopware-helper/system/getCurrentSystemEntities';
-import { getCachedSystemEntities } from '../shopware-helper/system/getSystemEntities';
 
 export const defineShopware = defineOrchestr
   .meta({
@@ -13,16 +11,11 @@ export const defineShopware = defineOrchestr
     label: 'Shopware',
   })
   .extendRequest(async (args) => {
-    const storefrontClient = await shopwareClientFactory(args.event);
-    const adminClient = shopwareAdminClientFactory();
+    const { storefrontClient, adminClient, systemEntities, currentSystemEntities } = await getShopwareContext(
+      args.event,
+      args.clientEnv
+    );
     const nitro = useNitroApp();
-
-    const systemEntities = await getCachedSystemEntities(storefrontClient);
-    const currentSystemEntities = getCurrentSystemEntities(systemEntities, args.clientEnv);
-
-    // Set the currency and language headers for the storefront client.
-    storefrontClient.defaultHeaders['sw-currency-id'] = currentSystemEntities.currency.id;
-    storefrontClient.defaultHeaders['sw-language-id'] = currentSystemEntities.locale.languageId;
 
     const settings = { settings: defaultShopwareSettings() };
     await nitro.hooks.callHook('shopware:settings:resolve', { event: args.event, result: settings });
@@ -36,7 +29,9 @@ export const defineShopware = defineOrchestr
     return {
       context: {
         storefrontClient,
-        adminClient,
+        // Without an Admin API integration the client's calls fail with Shopware's auth error,
+        // which is what the media library reports on such a shop.
+        adminClient: adminClient ?? shopwareAdminClientFactory(),
         systemEntities,
         currentSystemEntities,
         /** The systems current currency iso code */

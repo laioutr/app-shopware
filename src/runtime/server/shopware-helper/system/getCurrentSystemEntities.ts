@@ -41,7 +41,7 @@ const findBestLocale = (swLocales: SwSystemLocale[], clientLocale: string): SwSy
   return swLocales[0];
 };
 
-export const getCurrentSystemEntities = (systemIds: SwSystemEntities, clientEnv: ClientEnv) => {
+export const getCurrentSystemEntities = (systemIds: SwSystemEntities, clientEnv: Pick<ClientEnv, 'locale' | 'currency'>) => {
   const clientLocale = new Intl.Locale(clientEnv.locale);
   const locale = findBestLocale(systemIds.locales, clientEnv.locale);
   const currency = systemIds.currencies.find((currency) => currency.iso === clientEnv.currency) ?? systemIds.currencies[0];
