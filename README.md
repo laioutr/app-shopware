@@ -29,6 +29,7 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
 - Shopware media as a Laioutr media library, plus a `@nuxt/image` provider that serves Shopware's
   own thumbnails
 - Newsletter subscription and review submission as Orchestr actions
+- The product's manufacturer as its canonical brand: name and website
 
 ## Requirements
 
