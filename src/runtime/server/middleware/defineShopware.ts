@@ -1,4 +1,4 @@
-import { defineOrchestr, useNitroApp } from '#imports';
+import { defineOrchestr, getRequestURL, useNitroApp } from '#imports';
 import type { ResolveCriteria } from '../types/criteria';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
 import { shopwareClientFactory } from '../client/shopwareClientFactory';
@@ -41,6 +41,8 @@ export const defineShopware = defineOrchestr
         currentSystemEntities,
         /** The systems current currency iso code */
         swCurrency: currentSystemEntities.currency.iso,
+        /** Origin this request arrived on, for links that have to leave the Vue app. */
+        origin: getRequestURL(args.event).origin,
         settings: settings.settings,
         resolveCriteria,
       },

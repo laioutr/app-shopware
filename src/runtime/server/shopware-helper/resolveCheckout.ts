@@ -1,6 +1,11 @@
 import { buildConnectSessionUrl } from './checkoutUrl';
 import type { MintSessionHandoffParams } from './sessionHandoff';
-import { CHECKOUT_REDIRECT_ROUTE, CHECKOUT_RETRY_ROUTE, RETRY_FRAME_MARKER_KEY } from '../const/checkout';
+import {
+  ADOPT_SESSION_ENDPOINT_PATH,
+  CHECKOUT_REDIRECT_ROUTE,
+  CHECKOUT_RETRY_ROUTE,
+  RETRY_FRAME_MARKER_KEY,
+} from '../const/checkout';
 
 /** Outcome of the checkout handoff decision: a redirect target, or a fail-closed error. */
 export type CheckoutPlan =
@@ -14,6 +19,7 @@ export interface ResolveCheckoutDeps {
     storefrontUrl?: string;
     checkoutLoginCallbackUrl?: string;
     checkoutLogoutCallbackUrl?: string;
+    checkoutMode?: 'embedded' | 'redirect';
   };
   /** Shopware context token from the request cookie (absent for a shopper with no cart yet). */
   contextToken: string | null | undefined;
@@ -50,13 +56,18 @@ export const resolveCheckout = async (deps: ResolveCheckoutDeps): Promise<Checko
     return { kind: 'error', statusCode: 500, statusMessage: 'Checkout is not configured' };
   }
 
+  // Redirecting, laioutr and the storefront no longer share a browsing context, so a storefront
+  // login has to bounce through the adopt route to reach this side at all.
+  const authCallback =
+    config.checkoutMode === 'redirect' ? `${origin}${ADOPT_SESSION_ENDPOINT_PATH}` : origin;
+
   try {
     const code = await mint({
       endpoint: config.endpoint,
       accessToken: config.accessToken,
       contextToken,
-      loginSuccessCallback: config.checkoutLoginCallbackUrl ?? origin,
-      logoutSuccessCallback: config.checkoutLogoutCallbackUrl ?? origin,
+      loginSuccessCallback: config.checkoutLoginCallbackUrl ?? authCallback,
+      logoutSuccessCallback: config.checkoutLogoutCallbackUrl ?? authCallback,
       redirectRoute: retryOrderId ? CHECKOUT_RETRY_ROUTE : CHECKOUT_REDIRECT_ROUTE,
       ...(retryOrderId ?
         { redirectRouteParams: { orderId: retryOrderId, [RETRY_FRAME_MARKER_KEY]: '1' } }
