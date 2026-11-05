@@ -1,7 +1,8 @@
-import { defineOrchestr, useNitroApp } from '#imports';
+import { defineOrchestr, useNitroApp, useRuntimeConfig } from '#imports';
 import type { ResolveCriteria } from '../types/criteria';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
 import { shopwareClientFactory } from '../client/shopwareClientFactory';
+import { withCustomFieldIncludes } from '../shopware-helper/customFields';
 import { defaultShopwareSettings } from '../shopware-helper/shopwareSettings';
 import { getCurrentSystemEntities } from '../shopware-helper/system/getCurrentSystemEntities';
 import { getCachedSystemEntities } from '../shopware-helper/system/getSystemEntities';
@@ -27,8 +28,10 @@ export const defineShopware = defineOrchestr
     const settings = { settings: defaultShopwareSettings() };
     await nitro.hooks.callHook('shopware:settings:resolve', { event: args.event, result: settings });
 
+    const { customFields } = useRuntimeConfig()['@laioutr/app-shopware'];
+
     const resolveCriteria: ResolveCriteria = async (target, criteria) => {
-      const result = { criteria };
+      const result = { criteria: withCustomFieldIncludes(target, criteria, customFields) };
       await nitro.hooks.callHook('shopware:criteria:resolve', { event: args.event, target, result });
       return result.criteria;
     };
@@ -43,6 +46,7 @@ export const defineShopware = defineOrchestr
         swCurrency: currentSystemEntities.currency.iso,
         settings: settings.settings,
         resolveCriteria,
+        customFields,
       },
     };
   });
