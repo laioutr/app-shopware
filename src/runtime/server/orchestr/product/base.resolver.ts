@@ -16,6 +16,7 @@ import type { ShopwareProduct } from '../../types/shopware';
 import { FALLBACK_IMAGE } from '../../const/fallbacks';
 import { parentIdToDefaultVariantIdToken, productVariantsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
+import { pickCustomFields } from '../../shopware-helper/customFields';
 import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
@@ -81,6 +82,7 @@ export default defineShopwareComponentResolver({
         base: {
           name: swTranslated(rawProduct, 'name'),
           slug: entitySlug(rawProduct),
+          customFields: pickCustomFields(rawProduct, context.customFields, 'product'),
         },
 
         defaultVariant: {

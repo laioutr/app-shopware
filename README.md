@@ -67,6 +67,7 @@ export default defineNuxtConfig({
 | `storefrontUrl` | for checkout | Storefront base URL where `LaioutrConnector` is installed. Its origin is exposed publicly so the embedded checkout can pin `postMessage` traffic. |
 | `checkoutLoginCallbackUrl` | no | Absolute URL the storefront returns to after a login inside checkout. Defaults to the request origin; point it at the project's IdP login route for external-IdP projects. |
 | `checkoutLogoutCallbackUrl` | no | Absolute URL the storefront returns to after a logout inside checkout. Point it at the IdP's RP-logout route so a storefront logout ends the external session too. |
+| `customFields` | no | Shopware custom fields to expose, per entity. See [Custom fields](#custom-fields). |
 
 `accessToken`, `adminClientId` and `adminClientSecret` are secrets and stay server-side: they land
 in the private runtime config, and only `storefrontUrl`'s origin is exposed publicly. Read them
@@ -88,6 +89,35 @@ and for standalone Nuxt apps.
   ]
 }
 ```
+
+## Custom fields
+
+Custom fields are Shopware's own extension mechanism, and a storefront often needs a few of them —
+an energy label, a delivery note, a data-sheet link. Name them per entity and the app reads them
+with the entity and maps them unchanged into the canonical `customFields` slot:
+
+```jsonc
+// laioutrrc.json → apps[@laioutr/app-shopware].config (or the module options in nuxt.config.ts)
+{
+  "customFields": {
+    "product": { "include": ["energyLabel", "gpsr_*"] },
+    "variant": { "include": ["datasheet"] }
+  }
+}
+```
+
+| Entity | Canonical slot |
+| --- | --- |
+| `product` | `ProductBase.customFields` — the parent product's fields |
+| `variant` | `ProductVariantBase.customFields` — the variant's own, inherited from the parent where it has none |
+
+`*` matches any run of characters: `gpsr_*` takes a whole set, `*` takes everything. Values come
+from `translated`, so a field without a value in the visitor's language falls back as it does in
+Shopware's storefront. Nothing is exposed by default — custom fields often carry purchasing or ERP
+data a storefront must not publish — and an entity without a whitelist leaves its slot unset.
+
+Unlike `includes`, which [stay in a hook](#tuning-the-store-api-reads), this is configuration: a
+wrong key yields a missing field rather than an emptied component.
 
 ## Tuning the Store API reads
 
