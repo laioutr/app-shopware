@@ -103,3 +103,63 @@ export const toShopwareAddressBody = (
 
   return Object.fromEntries(Object.entries(body).filter(([, value]) => value !== undefined));
 };
+
+/**
+ * Map a Shopware address onto the canonical one. Country and salutation resolve through the sales
+ * channel's system entities, so only the state needs the `countryState` association on the read.
+ */
+export const fromShopwareAddress = (address: Schemas['CustomerAddress'], systemEntities: SwSystemEntities): CanonicalAddress => {
+  const salutation = systemEntities.salutations.find((entry) => entry.id === address.salutationId)?.key;
+  const countryCode = address.country?.iso ?? systemEntities.countries.find((country) => country.id === address.countryId)?.iso ?? '';
+
+  return {
+    firstName: address.firstName,
+    lastName: address.lastName,
+    ...(salutation && salutation !== 'not_specified' ? { salutation } : {}),
+    ...(address.title ? { title: address.title } : {}),
+    ...(address.company ? { company: address.company } : {}),
+    ...(address.phoneNumber ? { phone: address.phoneNumber } : {}),
+    address1: address.street,
+    ...(address.additionalAddressLine1 ? { address2: address.additionalAddressLine1 } : {}),
+    city: address.city,
+    postalCode: address.zipcode ?? '',
+    countryCode,
+    ...(address.countryState?.shortCode ? { provinceCode: address.countryState.shortCode } : {}),
+  };
+};
+
+/** The writable fields of a stored Shopware address, as the base an update overlays. */
+export const toShopwareAddressBodyFromStored = (address: Schemas['CustomerAddress']): Partial<Schemas['CustomerAddressBody']> => {
+  const body: Partial<Schemas['CustomerAddressBody']> = {
+    firstName: address.firstName,
+    lastName: address.lastName,
+    salutationId: address.salutationId,
+    title: address.title,
+    company: address.company,
+    department: address.department,
+    street: address.street,
+    additionalAddressLine1: address.additionalAddressLine1,
+    additionalAddressLine2: address.additionalAddressLine2,
+    zipcode: address.zipcode,
+    city: address.city,
+    countryId: address.countryId,
+    countryStateId: address.countryStateId,
+    phoneNumber: address.phoneNumber,
+  };
+
+  return Object.fromEntries(Object.entries(body).filter(([, value]) => value !== undefined && value !== null));
+};
+
+/**
+ * Overlay a canonical partial address on a stored one. A changed country drops the stored state,
+ * which belongs to the old country, unless the update names a new one.
+ */
+export const mergeShopwareAddressBody = (
+  stored: Schemas['CustomerAddress'],
+  update: Partial<CanonicalAddress>,
+  ids: ShopwareAddressIds
+): Partial<Schemas['CustomerAddressBody']> => {
+  const base = toShopwareAddressBodyFromStored(stored);
+  if (ids.countryId && ids.countryId !== stored.countryId && !ids.countryStateId) delete base.countryStateId;
+  return { ...base, ...toShopwareAddressBody(update, ids) };
+};

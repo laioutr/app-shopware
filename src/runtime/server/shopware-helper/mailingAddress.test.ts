@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { findSalutationId, matchCountryState, resolveAddressIds, toShopwareAddressBody } from './mailingAddress';
+import {
+  findSalutationId,
+  fromShopwareAddress,
+  matchCountryState,
+  mergeShopwareAddressBody,
+  resolveAddressIds,
+  toShopwareAddressBody,
+} from './mailingAddress';
 import { InvalidFieldError } from '@laioutr-core/canonical-types/ecommerce';
 
 const systemEntities = {
@@ -124,5 +131,52 @@ describe('toShopwareAddressBody', () => {
 
   it('writes only the fields a partial address carries', () => {
     expect(toShopwareAddressBody({ city: 'Munich' }, {})).toEqual({ city: 'Munich' });
+  });
+});
+
+const storedAddress = {
+  id: 'addr-1',
+  firstName: 'Ada',
+  lastName: 'Lovelace',
+  salutationId: 'sal-mr',
+  street: 'Main St 1',
+  zipcode: '10115',
+  city: 'Berlin',
+  countryId: 'country-de',
+  countryStateId: 'state-be',
+  countryState: { shortCode: 'DE-BE' },
+  phoneNumber: '+49 30 1',
+} as never;
+
+describe('fromShopwareAddress', () => {
+  it('maps a stored address onto the canonical one', () => {
+    expect(fromShopwareAddress(storedAddress, systemEntities)).toEqual({
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      salutation: 'mr',
+      phone: '+49 30 1',
+      address1: 'Main St 1',
+      city: 'Berlin',
+      postalCode: '10115',
+      countryCode: 'DE',
+      provinceCode: 'DE-BE',
+    });
+  });
+});
+
+describe('mergeShopwareAddressBody', () => {
+  it('overlays an update on the stored address', () => {
+    expect(mergeShopwareAddressBody(storedAddress, { city: 'Potsdam' }, {})).toMatchObject({
+      street: 'Main St 1',
+      city: 'Potsdam',
+      countryId: 'country-de',
+      countryStateId: 'state-be',
+    });
+  });
+
+  it('drops the stored state when the country changes', () => {
+    const body = mergeShopwareAddressBody(storedAddress, { countryCode: 'AT' }, { countryId: 'country-at' });
+    expect(body.countryId).toBe('country-at');
+    expect(body).not.toHaveProperty('countryStateId');
   });
 });

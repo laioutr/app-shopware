@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { shopwareErrorCodes, shopwareErrorStatus, throwAsInvalidField, toCanonicalFieldPath, toInvalidFieldReason } from './shopwareErrors';
-import { InvalidFieldError } from '@laioutr-core/canonical-types/ecommerce';
+import {
+  shopwareErrorCodes,
+  shopwareErrorStatus,
+  throwAsAccountError,
+  throwAsInvalidField,
+  toCanonicalFieldPath,
+  toInvalidFieldReason,
+} from './shopwareErrors';
+import { AddressNotFoundError, InvalidFieldError, UnauthenticatedError } from '@laioutr-core/canonical-types/ecommerce';
 
 const apiError = (status: number, errors: unknown[]) => Object.assign(new Error('Failed request'), { status, details: { errors } });
 
@@ -64,5 +71,39 @@ describe('shopwareErrorStatus / shopwareErrorCodes', () => {
   it('answers nothing for another error', () => {
     expect(shopwareErrorStatus(new Error('x'))).toBeUndefined();
     expect(shopwareErrorCodes(new Error('x'))).toEqual([]);
+  });
+});
+
+describe('throwAsAccountError', () => {
+  const thrownBy = (fn: () => unknown) => {
+    try {
+      fn();
+    } catch (err) {
+      return err;
+    }
+    return undefined;
+  };
+
+  it('answers a guest context as unauthenticated', () => {
+    expect(thrownBy(() => throwAsAccountError(apiError(403, [{ code: 'CHECKOUT__CUSTOMER_NOT_LOGGED_IN' }])))).toBeInstanceOf(
+      UnauthenticatedError
+    );
+  });
+
+  it('answers an address the customer does not own as not found', () => {
+    const err = thrownBy(() =>
+      throwAsAccountError(apiError(400, [{ code: 'CHECKOUT__CUSTOMER_ADDRESS_NOT_FOUND' }]), { addressId: 'addr-1' })
+    );
+    expect(err).toBeInstanceOf(AddressNotFoundError);
+    expect((err as AddressNotFoundError).data).toEqual({ id: 'addr-1' });
+  });
+
+  it('places a violation under the given prefix', () => {
+    const err = thrownBy(() =>
+      throwAsAccountError(apiError(400, [{ code: 'VIOLATION::IS_BLANK_ERROR', source: { pointer: '/zipcode' } }]), {
+        fieldPrefix: ['address'],
+      })
+    );
+    expect((err as InvalidFieldError).data).toEqual({ reason: 'MISSING', field: ['address', 'postalCode'] });
   });
 });

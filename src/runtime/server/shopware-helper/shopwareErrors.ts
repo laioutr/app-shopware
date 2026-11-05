@@ -1,4 +1,9 @@
-import { InvalidFieldError, type InvalidFieldErrorReason } from '@laioutr-core/canonical-types/ecommerce';
+import {
+  AddressNotFoundError,
+  InvalidFieldError,
+  type InvalidFieldErrorReason,
+  UnauthenticatedError,
+} from '@laioutr-core/canonical-types/ecommerce';
 
 type ShopwareErrorEntry = { code?: string; status?: string; detail?: string; source?: { pointer?: string } };
 
@@ -74,4 +79,30 @@ export const throwAsInvalidField = (err: unknown, prefix: string[] = []): never 
     }
   }
   throw err;
+};
+
+/**
+ * Rethrow a failed account call in canonical terms: a context without a customer (401, 403) is
+ * {@link UnauthenticatedError}, an address the customer does not own is {@link AddressNotFoundError},
+ * and a validation failure is {@link InvalidFieldError}. Anything else is rethrown unchanged.
+ */
+export const throwAsAccountError = (
+  err: unknown,
+  { addressId, fieldPrefix = [] }: { addressId?: string; fieldPrefix?: string[] } = {}
+): never => {
+  const status = shopwareErrorStatus(err);
+  if (status === 401 || status === 403) throw new UnauthenticatedError();
+  if (addressId && (status === 404 || shopwareErrorCodes(err).includes('CHECKOUT__CUSTOMER_ADDRESS_NOT_FOUND'))) {
+    throw new AddressNotFoundError(addressId);
+  }
+  return throwAsInvalidField(err, fieldPrefix);
+};
+
+/** Run an account call, rethrowing its failure through {@link throwAsAccountError}. */
+export const accountCall = async <T>(call: () => Promise<T>, options?: Parameters<typeof throwAsAccountError>[1]): Promise<T> => {
+  try {
+    return await call();
+  } catch (err) {
+    return throwAsAccountError(err, options);
+  }
 };

@@ -30,6 +30,9 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   own thumbnails
 - Customer accounts: login, logout, registration and password recovery as the canonical auth
   actions, with the context token persisted and cleared the same way the embedded checkout does it
+- Customer profile and address book: the current customer with all addresses in one read, profile
+  updates, and creating, updating, deleting and defaulting addresses — Shopware's validation errors
+  arrive as `InvalidFieldError` with the canonical field path
 - Newsletter subscription and review submission as Orchestr actions
 
 ## Requirements
