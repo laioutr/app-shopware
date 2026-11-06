@@ -29,6 +29,8 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   entity behind it
 - Shopware media as a Laioutr media library, plus a `@nuxt/image` provider that serves Shopware's
   own thumbnails
+- Customer accounts: login, logout, registration and password recovery as the canonical auth
+  actions, with the context token persisted and cleared the same way the embedded checkout does it
 - Wishlist: the customer's Shopware wishlist as a canonical `ProductList`, with add and remove
   actions and links from each entry to its product and variant
 - Newsletter subscription and review submission as Orchestr actions
@@ -68,7 +70,7 @@ export default defineNuxtConfig({
 | `adminEndpoint` | yes | Admin API base URL, `https://<host>/api`. |
 | `adminClientId` | yes | Admin API integration ID. |
 | `adminClientSecret` | yes | Admin API integration secret. |
-| `storefrontUrl` | for checkout | Storefront base URL where `LaioutrConnector` is installed. Its origin is exposed publicly so the embedded checkout can pin `postMessage` traffic. |
+| `storefrontUrl` | for checkout, registration, password recovery | Storefront base URL where `LaioutrConnector` is installed. Its origin is exposed publicly so the embedded checkout can pin `postMessage` traffic. Shopware also builds the links in its registration, password-reset and newsletter mails from it, so it must be a domain of the sales channel. |
 | `checkoutLoginCallbackUrl` | no | Absolute URL the storefront returns to after a login inside checkout. Defaults to the request origin; point it at the project's IdP login route for external-IdP projects. |
 | `checkoutLogoutCallbackUrl` | no | Absolute URL the storefront returns to after a logout inside checkout. Point it at the IdP's RP-logout route so a storefront logout ends the external session too. |
 
