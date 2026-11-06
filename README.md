@@ -19,7 +19,8 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   onto the canonical entity model — so storefront components stay backend-agnostic
 - Cart as a first-class entity: add, update and remove items, redeem discount codes, and read back
   the shop's automatic cart discounts — with server-held Shopware context tokens that never reach
-  the browser
+  the browser; each product line links to its `ProductVariant`, so a cart row can render live
+  product data without a second cart read
 - Embedded checkout — the Shopware storefront's own checkout rendered in-page, with a same-origin
   session handoff so the visitor is never bounced to another domain
 - Auth bridge: a storefront login or logout inside the embedded checkout propagates back into the
