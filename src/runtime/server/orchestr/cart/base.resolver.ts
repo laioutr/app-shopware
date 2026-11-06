@@ -4,6 +4,7 @@ import { Link } from '@laioutr-core/core-types/common';
 import { Checkout } from '../../../shared/pageTypes/checkout.pagetype';
 import { cartFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
+import { toCartMessages } from '../../shopware-helper/cartErrors';
 import { mapCartCost } from '../../shopware-helper/cartMapper';
 import { getCart } from '../../shopware-helper/getCart';
 
@@ -32,7 +33,11 @@ export default defineShopwareComponentResolver({
       entities: [
         $entity({
           id: cart.token ?? '',
-          base: () => ({ totalQuantity, checkoutLink }),
+          base: () => {
+            // The canonical cart has no field for cart errors, so Shopware's travel as a custom field.
+            const cartErrors = toCartMessages(cart.errors);
+            return { totalQuantity, checkoutLink, ...(cartErrors.length > 0 ? { customFields: { cartErrors } } : {}) };
+          },
           cost: () => mapCartCost(cart, context.swCurrency),
         }),
       ],
