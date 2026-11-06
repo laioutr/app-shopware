@@ -29,6 +29,8 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   entity behind it
 - Shopware media as a Laioutr media library, plus a `@nuxt/image` provider that serves Shopware's
   own thumbnails
+- Wishlist: the customer's Shopware wishlist as a canonical `ProductList`, with add and remove
+  actions and links from each entry to its product and variant
 - Newsletter subscription and review submission as Orchestr actions
 - The product's manufacturer as its canonical brand: name and website
 
@@ -206,6 +208,24 @@ export default defineNitroPlugin((nitro) => {
   });
 });
 ```
+
+## Wishlist
+
+The app maps Shopware's customer wishlist onto the canonical product-list tokens:
+`ProductListGetWishlistQuery`, `ProductListItemsLink`, `ProductListItemProductLink`,
+`ProductListItemProductVariantLink`, `ProductListAddItemsAction` and `ProductListRemoveItemsAction`.
+The list's id is the customer's id, because Shopware keeps one wishlist per customer.
+
+- **Variants are kept as given.** An item that names a `variantId` is stored as that variant. A
+  bare `productId` is stored as the product. Removing a bare product also removes its variants'
+  entries, so a listing-page heart can toggle with the product id alone.
+- **Guests have no Shopware wishlist.** The query resolves nothing for them, and the actions throw
+  `UnauthenticatedError`. Keep a guest's list in the browser and send it with
+  `ProductListAddItemsAction` once the visitor has logged in. The action runs on
+  `/customer/wishlist/merge`, which skips products already on the list, so the merge is safe to
+  repeat.
+- Shopware wishlist entries carry no quantity, note or custom fields, so those inputs are not
+  kept. The shop must have the wishlist enabled (`core.cart.wishlistEnabled`).
 
 ## Development
 
