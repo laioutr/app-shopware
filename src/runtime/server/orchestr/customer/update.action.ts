@@ -1,0 +1,56 @@
+import { CustomerUpdateAction } from '@laioutr-core/canonical-types/ecommerce';
+import type { operations, Schemas } from '../../types/storeApiTypes';
+import { defineShopwareAction } from '../../middleware/defineShopware';
+import { listCustomerAddresses, readCustomer } from '../../shopware-helper/customerAddresses';
+import { findSalutationId, toShopwareAddressBodyFromStored } from '../../shopware-helper/mailingAddress';
+import { accountCall } from '../../shopware-helper/shopwareErrors';
+
+type ChangeProfileBody = operations['changeProfile post /account/change-profile']['body'] & { customFields?: Record<string, unknown> };
+
+/**
+ * Update the customer's profile through `/account/change-profile`.
+ *
+ * That route replaces the profile and requires name and salutation on every call, so the stored
+ * customer fills in whatever the input leaves out. Shopware keeps phone numbers on addresses, so a
+ * `phone` is written to the default billing address, which is where the customer read takes it from.
+ * `customFields` reach Shopware as given; it stores those the shop made writable through the Store
+ * API and drops the rest.
+ */
+export default defineShopwareAction(CustomerUpdateAction, async ({ context, input }) => {
+  const { storefrontClient, systemEntities } = context;
+
+  const customer = await accountCall(() => readCustomer(storefrontClient));
+
+  if (input.person || input.customFields) {
+    const person = input.person ?? {};
+    const salutationId =
+      person.salutation === undefined ? customer.salutationId : findSalutationId(systemEntities.salutations, person.salutation);
+
+    const body: ChangeProfileBody = {
+      firstName: person.firstName ?? customer.firstName,
+      lastName: person.lastName ?? customer.lastName,
+      // Required by the generated type; Shopware rejects a missing one with its own violation.
+      salutationId: salutationId as string,
+      title: person.title ?? customer.title,
+      company: customer.company,
+      ...(input.customFields ? { customFields: input.customFields } : {}),
+    };
+
+    await accountCall(() => storefrontClient.invoke('changeProfile post /account/change-profile', { body }), { fieldPrefix: ['person'] });
+  }
+
+  if (input.phone !== undefined) {
+    const addressId = customer.defaultBillingAddressId;
+    const [stored] = await accountCall(() => listCustomerAddresses(storefrontClient, addressId));
+    if (!stored) return;
+
+    // Shopware validates the whole address on every write, so the stored one travels along.
+    const body = { ...toShopwareAddressBodyFromStored(stored), phoneNumber: input.phone } as Schemas['CustomerAddressBody'];
+    await accountCall(
+      () => storefrontClient.invoke('updateCustomerAddress patch /account/address/{addressId}', { pathParams: { addressId }, body }),
+      {
+        fieldPrefix: [],
+      }
+    );
+  }
+});
