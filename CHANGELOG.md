@@ -1,5 +1,33 @@
 # @laioutr/app-shopware
 
+## 0.21.0
+
+### Minor Changes
+
+- 67dbab9: Customers can log out, register and recover their password through the canonical `AuthLogoutAction`, `AuthRegisterAction` and `AuthRecoverAction`.
+
+  - **Logout** ends the Shopware session and clears the context token, notifying `shopware:context-token:changed` with `null` as a logout inside the embedded checkout does.
+  - **Register** creates the customer with the given address as billing address and logs them in, persisting the new context token. Shopware's validation errors arrive as `InvalidFieldError` with the canonical field path (`['address', 'postalCode']`) and the violation as the reason — `MISSING`, `TOO_SHORT`, `INVALID_FORMAT`, or Shopware's own name such as `CUSTOMER_EMAIL_NOT_UNIQUE`. A sales channel with double opt-in registration creates the customer inactive and leaves them logged out until they confirm.
+  - **Recover** sends Shopware's password-reset mail. It answers the same for an address without an account, so it cannot be used to probe for accounts.
+
+  Register and recover need `storefrontUrl`, which Shopware builds the links in its mails from. Register sends `acceptedDataProtection: true`, since the canonical input has no consent field: collect consent in the registration form.
+
+- 5ccfffb: Cart line items link to their `ProductVariant` through `CartItemProductVariantLink`, so a cart row can render live variant data such as options, stock, media and the product link. The link is read from the cart the request already loaded, with no extra Store API call. Promotion lines have no variant and resolve no link.
+- 931eec3: Variant prices carry the Omnibus lowest prior price, and savings percentages read the same everywhere.
+
+  - `ProductVariantPrices.lowestPriorPrice` is Shopware's regulation price — the lowest price over the prior period the shop configures (30 days by default), which EU price-indication rules require next to an announced reduction. It is absent where the shop has none configured.
+  - `savingsPercent` on product, variant and quantity-tier prices is a whole percent, rounded down, so a badge never claims more than the actual discount. It used to round to the nearest percent, which read a 19.99 % saving as 20 %.
+  - Quantity-tier `savingsPercent` is now the saving against the single-unit price, as canonical-types defines it. It used to be the tier price as a share of that price, so a 10 % discount read as `90`.
+
+- d5371ff: Products carry their manufacturer as `ProductBrand`, with its name and website, and `ProductInfo.brandLink` links to the same site. A product without variants used to show no brand at all, because its manufacturer was never read; it now shows it like any other product. A website entered without a scheme (`www.example.com`) is taken as https, and anything that is not an http(s) URL is left out.
+- ca23522: The Shopware customer wishlist is available through the canonical product-list tokens: `ProductListGetWishlistQuery`, `ProductListItemsLink`, `ProductListItemProductLink`, `ProductListItemProductVariantLink`, `ProductListAddItemsAction` and `ProductListRemoveItemsAction`.
+
+  Variant ids are stored as given. Removing a bare product also removes the entries for its variants. Guests get `UnauthenticatedError` from the actions. A storefront that keeps a guest list locally can replay it with `ProductListAddItemsAction` after login: it runs on Shopware's `/customer/wishlist/merge` and skips products already on the list.
+
+### Patch Changes
+
+- 058b7dd: `SubscribeAction` forwards the input's `customFields` to Shopware's newsletter subscription. Shopware 6.6 and later stores the ones the shop lets the Store API write to a newsletter recipient and drops the rest.
+
 ## 0.20.0
 
 ### Minor Changes
