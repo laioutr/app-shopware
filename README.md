@@ -19,7 +19,8 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   onto the canonical entity model — so storefront components stay backend-agnostic
 - Cart as a first-class entity: add, update and remove items, redeem discount codes, and read back
   the shop's automatic cart discounts — with server-held Shopware context tokens that never reach
-  the browser
+  the browser; each product line links to its `ProductVariant`, so a cart row can render live
+  product data without a second cart read
 - Embedded checkout — the Shopware storefront's own checkout rendered in-page, with a same-origin
   session handoff so the visitor is never bounced to another domain
 - Auth bridge: a storefront login or logout inside the embedded checkout propagates back into the
@@ -30,7 +31,10 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   own thumbnails
 - Customer accounts: login, logout, registration and password recovery as the canonical auth
   actions, with the context token persisted and cleared the same way the embedded checkout does it
+- Wishlist: the customer's Shopware wishlist as a canonical `ProductList`, with add and remove
+  actions and links from each entry to its product and variant
 - Newsletter subscription and review submission as Orchestr actions
+- The product's manufacturer as its canonical brand: name and website
 
 ## Requirements
 
@@ -90,6 +94,15 @@ and for standalone Nuxt apps.
   ]
 }
 ```
+
+## Prices
+
+| Field | Source |
+| --- | --- |
+| `price` | `calculatedPrice` — for a product, its cheapest variant's where Shopware reports one |
+| `strikethroughPrice` | `calculatedPrice.listPrice`, only while it is above the price |
+| `savingsPercent` | Saving against the strikethrough price, as a **whole percent rounded down** — a badge never claims more than the actual discount, so 19.99 % reads as 19 %. Quantity tiers use the same rule against the single-unit price. |
+| `lowestPriorPrice` (variant) | `calculatedPrice.regulationPrice` — Shopware's lowest price over the prior period the shop configures, which EU price-indication rules require beside an announced reduction. Absent where the shop has none. |
 
 ## Tuning the Store API reads
 
@@ -197,6 +210,24 @@ export default defineNitroPlugin((nitro) => {
   });
 });
 ```
+
+## Wishlist
+
+The app maps Shopware's customer wishlist onto the canonical product-list tokens:
+`ProductListGetWishlistQuery`, `ProductListItemsLink`, `ProductListItemProductLink`,
+`ProductListItemProductVariantLink`, `ProductListAddItemsAction` and `ProductListRemoveItemsAction`.
+The list's id is the customer's id, because Shopware keeps one wishlist per customer.
+
+- **Variants are kept as given.** An item that names a `variantId` is stored as that variant. A
+  bare `productId` is stored as the product. Removing a bare product also removes its variants'
+  entries, so a listing-page heart can toggle with the product id alone.
+- **Guests have no Shopware wishlist.** The query resolves nothing for them, and the actions throw
+  `UnauthenticatedError`. Keep a guest's list in the browser and send it with
+  `ProductListAddItemsAction` once the visitor has logged in. The action runs on
+  `/customer/wishlist/merge`, which skips products already on the list, so the merge is safe to
+  repeat.
+- Shopware wishlist entries carry no quantity, note or custom fields, so those inputs are not
+  kept. The shop must have the wishlist enabled (`core.cart.wishlistEnabled`).
 
 ## Development
 
