@@ -28,8 +28,8 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   entity behind it
 - Shopware media as a Laioutr media library, plus a `@nuxt/image` provider that serves Shopware's
   own thumbnails
-- Newsletter subscription (with the input's custom fields forwarded) and review submission as
-  Orchestr actions
+- Newsletter subscription and review submission as Orchestr actions
+- The product's manufacturer as its canonical brand: name and website
 
 ## Requirements
 
@@ -89,6 +89,15 @@ and for standalone Nuxt apps.
   ]
 }
 ```
+
+## Prices
+
+| Field | Source |
+| --- | --- |
+| `price` | `calculatedPrice` — for a product, its cheapest variant's where Shopware reports one |
+| `strikethroughPrice` | `calculatedPrice.listPrice`, only while it is above the price |
+| `savingsPercent` | Saving against the strikethrough price, as a **whole percent rounded down** — a badge never claims more than the actual discount, so 19.99 % reads as 19 %. Quantity tiers use the same rule against the single-unit price. |
+| `lowestPriorPrice` (variant) | `calculatedPrice.regulationPrice` — Shopware's lowest price over the prior period the shop configures, which EU price-indication rules require beside an announced reduction. Absent where the shop has none. |
 
 ## Tuning the Store API reads
 
