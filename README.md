@@ -89,6 +89,15 @@ and for standalone Nuxt apps.
 }
 ```
 
+## Prices
+
+| Field | Source |
+| --- | --- |
+| `price` | `calculatedPrice` — for a product, its cheapest variant's where Shopware reports one |
+| `strikethroughPrice` | `calculatedPrice.listPrice`, only while it is above the price |
+| `savingsPercent` | Saving against the strikethrough price, as a **whole percent rounded down** — a badge never claims more than the actual discount, so 19.99 % reads as 19 %. Quantity tiers use the same rule against the single-unit price. |
+| `lowestPriorPrice` (variant) | `calculatedPrice.regulationPrice` — Shopware's lowest price over the prior period the shop configures, which EU price-indication rules require beside an announced reduction. Absent where the shop has none. |
+
 ## Tuning the Store API reads
 
 What the app asks Shopware for, and what those reads cost, is reachable through two Nitro hooks
