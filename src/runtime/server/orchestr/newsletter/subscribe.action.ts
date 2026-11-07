@@ -30,6 +30,9 @@ export default defineShopwareAction(SubscribeAction, async ({ context, input }) 
       zipCode: input.address?.postalCode,
       languageId: context.currentSystemEntities.locale.languageId,
       salutationId: context.systemEntities.salutations.find((salutation) => salutation.key === input.person?.salutation)?.id,
+      // Shopware keeps the custom fields the shop lets the Store API write to a newsletter recipient
+      // and drops the rest. The generated type has the field as a string; the route reads an object.
+      ...(input.customFields ? { customFields: input.customFields as unknown as string } : {}),
     },
   });
 
