@@ -36,11 +36,8 @@ export const mapCartCost = (cart: Schemas['Cart'], currency: string): EntityComp
 
   const shipping = deliveries.reduce((sum, d) => sum.add(money(d.shippingCosts?.totalPrice ?? 0)), zero);
 
-  const itemTax = (price?.calculatedTaxes ?? []).reduce((sum, t) => sum.add(money(t.tax ?? 0)), zero);
-  const shippingTax = deliveries.reduce(
-    (sum, d) => (d.shippingCosts?.calculatedTaxes ?? []).reduce((s, t) => s.add(money(t.tax ?? 0)), sum),
-    zero
-  );
+  // Shopware computes the cart's taxes over the line items and the shipping costs together.
+  const taxTotal = (price?.calculatedTaxes ?? []).reduce((sum, t) => sum.add(money(t.tax ?? 0)), zero);
 
   // Shopware runtime returns 'gross' | 'net' | 'tax-free'; the generated enum omits
   // 'gross'. 'gross' means product prices already include tax.
@@ -57,7 +54,7 @@ export const mapCartCost = (cart: Schemas['Cart'], currency: string): EntityComp
     total,
     totalIsEstimated: false,
     ...(deliveries.length > 0 ? { shipping: { total: shipping, isEstimated: false } } : {}),
-    tax: { total: itemTax.add(shippingTax), isEstimated: false, isIncluded: taxIncluded },
+    tax: { total: taxTotal, isEstimated: false, isIncluded: taxIncluded },
     ...(taxes.length > 0 ? { taxes } : {}),
   };
 };

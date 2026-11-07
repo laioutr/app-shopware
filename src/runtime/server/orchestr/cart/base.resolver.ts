@@ -38,7 +38,7 @@ export default defineShopwareComponentResolver({
             const cartErrors = toCartMessages(cart.errors);
             return { totalQuantity, checkoutLink, ...(cartErrors.length > 0 ? { customFields: { cartErrors } } : {}) };
           },
-          cost: () => mapCartCost(cart, context.swCurrency),
+          cost: () => mapCartCost(cart, context.currency),
         }),
       ],
     };

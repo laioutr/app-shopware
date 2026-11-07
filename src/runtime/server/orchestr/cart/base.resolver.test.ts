@@ -11,7 +11,7 @@ type Resolve = { resolve: (args: Record<string, unknown>) => Promise<{ entities:
 const resolveBase = async (cart: unknown) => {
   const store = new Map<string, unknown>([['cart', cart]]);
   const result = await (cartResolver as unknown as Resolve).resolve({
-    context: { swCurrency: 'EUR' },
+    context: { currency: 'EUR' },
     passthrough: { get: (key: string) => store.get(key), set: (key: string, value: unknown) => store.set(key, value) },
     $entity: (entity: unknown) => entity,
   });

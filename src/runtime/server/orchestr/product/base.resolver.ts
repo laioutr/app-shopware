@@ -1,6 +1,7 @@
 import { Money } from '@screeny05/ts-money';
 import {
   ProductBase,
+  ProductBrand,
   ProductDefaultVariant,
   ProductDescription,
   ProductFlags,
@@ -17,9 +18,11 @@ import { FALLBACK_IMAGE } from '../../const/fallbacks';
 import { parentIdToDefaultVariantIdToken, productVariantsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants';
+import { mapManufacturerBrand } from '../../shopware-helper/manufacturerMapper';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 import { mapProductOptionGroups } from '../../shopware-helper/optionGroupsMapper';
+import { savingsPercentOf } from '../../shopware-helper/savingsPercent';
 import { swTranslated } from '../../shopware-helper/swTranslated';
 
 export default defineShopwareComponentResolver({
@@ -27,6 +30,7 @@ export default defineShopwareComponentResolver({
   entityType: 'Product',
   provides: [
     ProductBase,
+    ProductBrand,
     ProductInfo,
     ProductPrices,
     ProductMedia,
@@ -72,6 +76,8 @@ export default defineShopwareComponentResolver({
 
     const entities = shopwareProducts.map(({ entityId, rawProduct, rawVariant }) => {
       const mappedCover = rawProduct.cover?.media ? mapMedia(rawVariant.cover?.media ?? rawProduct.cover.media) : FALLBACK_IMAGE;
+      // Shopware inherits the manufacturer, so a variant without its own reports the parent's.
+      const brand = mapManufacturerBrand(rawVariant.manufacturer ?? rawProduct.manufacturer);
 
       return $entity({
         // Answer under the id that was asked for: the queries hand over parent-ids, while the data
@@ -100,8 +106,11 @@ export default defineShopwareComponentResolver({
         info: {
           cover: mappedCover,
           shortDescription: swTranslated(rawProduct, 'description') || swTranslated(rawVariant, 'description'),
-          brand: swTranslated(rawProduct.manufacturer, 'name') || swTranslated(rawVariant.manufacturer, 'name') || '',
+          brand: brand.name ?? '',
+          brandLink: brand.link,
         },
+
+        brand,
 
         description: {
           html: swTranslated(rawProduct, 'description') || swTranslated(rawVariant, 'description') || '',
@@ -132,20 +141,18 @@ export default defineShopwareComponentResolver({
             rawProduct.calculatedPrice.listPrice?.price ??
             rawVariant.calculatedCheapestPrice?.listPrice?.price ??
             rawVariant.calculatedPrice.listPrice?.price;
-          const listPrice = rawListPrice ? Money.fromDecimal(rawListPrice, context.swCurrency) : undefined;
+          const listPrice = rawListPrice ? Money.fromDecimal(rawListPrice, context.currency) : undefined;
           const totalPrice = Money.fromDecimal(
             rawProduct.calculatedCheapestPrice?.totalPrice ?? rawProduct.calculatedPrice.totalPrice,
-            context.swCurrency
+            context.currency
           );
 
           const hasSavings = typeof listPrice === 'object' && listPrice.greaterThan(totalPrice);
 
-          const savingsPercent = hasSavings ? 100 - totalPrice.percentageOf(listPrice) : undefined;
-
           return {
             price: totalPrice,
             strikethroughPrice: hasSavings ? listPrice : undefined,
-            savingsPercent,
+            savingsPercent: savingsPercentOf(totalPrice, listPrice),
             isOnSale: hasSavings,
             isStartingFrom: rawProduct.calculatedCheapestPrice?.hasRange || rawProduct.calculatedPrice.hasRange,
           };

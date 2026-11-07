@@ -12,7 +12,10 @@ import { defineShopwareAction } from '../../middleware/defineShopware';
 export default defineShopwareAction(CustomerGetCurrentAction, async ({ context }) => {
   let customer;
   try {
-    customer = await context.storefrontClient.invoke('readCustomer post /account/customer', {});
+    const response = await context.storefrontClient.invoke('readCustomer post /account/customer', {
+      body: { associations: { salutation: {} } },
+    });
+    customer = response.data;
   } catch {
     throw new UnauthenticatedError();
   }
