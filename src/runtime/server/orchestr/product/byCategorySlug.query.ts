@@ -8,6 +8,7 @@ import {
   ShopwareAggregations,
 } from '../../shopware-helper/facetMapper';
 import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants';
+import { listingPageParams } from '../../shopware-helper/shopwareVersion';
 import { withSortingFallback } from '../../shopware-helper/sortingFallback';
 import { mapShopwareSortingToOrchestr } from '../../shopware-helper/sortingMapper';
 import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
@@ -38,7 +39,7 @@ export default defineShopwareQuery({
       context.storefrontClient.invoke('readProductListing post /product-listing/{categoryId}', {
         pathParams: { categoryId: seoEntry.id },
         body: {
-          p: pagination.page,
+          ...listingPageParams(context.shopwareVersion, pagination.page),
           limit: pagination.limit,
           filter: [...(swFilters ?? [])],
           order,

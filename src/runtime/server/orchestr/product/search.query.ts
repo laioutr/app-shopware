@@ -8,6 +8,7 @@ import {
   mapShopwareAggregationToAvailableFilters,
   ShopwareAggregations,
 } from '../../shopware-helper/facetMapper';
+import { listingPageParams, productSearchRoute, warnOnIgnoredLimit } from '../../shopware-helper/shopwareVersion';
 import { withSortingFallback } from '../../shopware-helper/sortingFallback';
 import { mapShopwareSortingToOrchestr } from '../../shopware-helper/sortingMapper';
 
@@ -18,25 +19,35 @@ export default defineShopwareQuery(
 
     const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters, context.swCurrency) : {};
 
-    const response = await withSortingFallback(sorting, (order) =>
-      context.storefrontClient.invoke('searchPage post /search', {
-        // Shopware API client exposes incorrect/incomplete types for this endpoint's body :<
-        body: {
-          search: query,
-          p: pagination.page,
-          limit: pagination.limit,
-          filter: [...(swFilters ?? [])],
-          order,
-          includes: {
-            product: ['id', 'parentId'],
-          },
-          'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
-          'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
-          manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
-          'shipping-free': swBuiltInFilters?.['shipping-free'] as boolean | undefined,
-        } as unknown as { search: string } & components['schemas']['ProductListingCriteria'] & components['schemas']['ProductListingFlags'],
-      })
-    );
+    const route = productSearchRoute(context.shopwareVersion);
+
+    const response = await withSortingFallback(sorting, (order) => {
+      // Shopware API client exposes incorrect/incomplete types for these endpoints' bodies :<
+      const body = {
+        search: query,
+        ...listingPageParams(context.shopwareVersion, pagination.page),
+        limit: pagination.limit,
+        filter: [...(swFilters ?? [])],
+        order,
+        includes: {
+          product: ['id', 'parentId'],
+        },
+        'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
+        'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
+        manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
+        'shipping-free': swBuiltInFilters?.['shipping-free'] as boolean | undefined,
+      } as unknown as { search: string } & components['schemas']['ProductListingCriteria'] & components['schemas']['ProductListingFlags'];
+
+      return route === 'suggest' ?
+          context.storefrontClient.invoke('searchSuggest post /search-suggest', { body })
+        : context.storefrontClient.invoke('searchPage post /search', { body });
+    });
+
+    warnOnIgnoredLimit(route, context.shopwareVersion, {
+      requested: pagination.limit,
+      effective: response.data.limit,
+      maxLimit: context.settings.maxLimit,
+    });
 
     // Shopware API client exposes incorrect types for aggregations :<
     const availableFilters = mapShopwareAggregationToAvailableFilters(

@@ -7,6 +7,7 @@ import {
   mapShopwareAggregationToAvailableFilters,
   ShopwareAggregations,
 } from '../../shopware-helper/facetMapper';
+import { listingPageParams } from '../../shopware-helper/shopwareVersion';
 import { withSortingFallback } from '../../shopware-helper/sortingFallback';
 import { mapShopwareSortingToOrchestr } from '../../shopware-helper/sortingMapper';
 
@@ -33,7 +34,7 @@ export default defineShopwareQuery({
       context.storefrontClient.invoke('readProductListing post /product-listing/{categoryId}', {
         pathParams: { categoryId },
         body: {
-          p: pagination.page,
+          ...listingPageParams(context.shopwareVersion, pagination.page),
           limit: pagination.limit,
           filter: [...(swFilters ?? [])],
           order,

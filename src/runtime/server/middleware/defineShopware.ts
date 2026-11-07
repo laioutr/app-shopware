@@ -4,6 +4,7 @@ import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory
 import { shopwareClientFactory } from '../client/shopwareClientFactory';
 import { defaultShopwareSettings } from '../shopware-helper/shopwareSettings';
 import { getCurrentSystemEntities } from '../shopware-helper/system/getCurrentSystemEntities';
+import { getCachedShopwareVersion } from '../shopware-helper/system/getShopwareVersion';
 import { getCachedSystemEntities } from '../shopware-helper/system/getSystemEntities';
 
 export const defineShopware = defineOrchestr
@@ -17,7 +18,10 @@ export const defineShopware = defineOrchestr
     const adminClient = shopwareAdminClientFactory();
     const nitro = useNitroApp();
 
-    const systemEntities = await getCachedSystemEntities(storefrontClient);
+    const [systemEntities, shopwareVersion] = await Promise.all([
+      getCachedSystemEntities(storefrontClient),
+      getCachedShopwareVersion(storefrontClient),
+    ]);
     const currentSystemEntities = getCurrentSystemEntities(systemEntities, args.clientEnv);
 
     // Set the currency and language headers for the storefront client.
@@ -39,6 +43,8 @@ export const defineShopware = defineOrchestr
         adminClient,
         systemEntities,
         currentSystemEntities,
+        /** The connected shop's release; `undefined` when it cannot be read, which the app treats as current. */
+        shopwareVersion,
         /** The systems current currency iso code */
         swCurrency: currentSystemEntities.currency.iso,
         settings: settings.settings,
