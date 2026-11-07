@@ -196,36 +196,44 @@ export default defineNitroPlugin((nitro) => {
 });
 ```
 
-## Calling the shop from another app
+## Exports
 
-An app that talks to the same Shopware instance — typically a plugin's own store-API route — runs in
-the visitor's session through `@laioutr/app-shopware/server`, rather than resolving the context
-token, language and currency a second time and drifting from the cart this app holds.
+### `@laioutr/app-shopware/runtime`
+
+Everything another app needs to call the same Shopware instance — typically a plugin's own store-API
+route — in the visitor's session, rather than resolving the context token, language and currency a
+second time and drifting from the cart this app holds.
+
+```ts
+import { clearContextToken, defineShopware, getShopwareContext, persistContextToken } from '@laioutr/app-shopware/runtime';
+import type { ShopwareAdminClient, ShopwareContext, ShopwareOrchestrContext, StorefrontClient } from '@laioutr/app-shopware/runtime';
+```
+
+| Export | Purpose |
+| --- | --- |
+| `defineShopware` | Pre-configured Orchestr builder with Shopware metadata and the request's Shopware context on `context`: everything `getShopwareContext` returns, plus the resolved `settings` and `resolveCriteria`. Chain `.queryHandler()`, `.componentResolver()`, etc. directly on it. |
+| `getShopwareContext(event, clientEnv)` | The same context outside an Orchestr handler: the store-API client, the Admin API client (absent without an integration), the store-API `endpoint`, the visitor's `contextToken`, the resolved `languageId`, `currencyId` and ISO `currency`, and `storeApiHeaders()` for routes the typed client does not know. |
+| `persistContextToken(event, token)` | Stores a token a store-API write returned and fires `shopware:context-token:changed`. Call it from an action — a read handler's response is already streaming and cannot set the cookie. |
+| `clearContextToken(event)` | Drops the token, so the next read starts a guest context. |
 
 ```ts
 // orchestr/product-variant/live-stock.resolver.ts in another app
-import { getShopwareContext } from '@laioutr/app-shopware/server';
+import { defineShopware } from '@laioutr/app-shopware/runtime';
 
-export default defineComponentResolver({
+export default defineShopware.componentResolver({
+  label: 'Live stock',
   entityType: 'ProductVariant',
   provides: [LiveStock],
-  resolve: async ({ entityIds, event, clientEnv }) => {
-    const shopware = await getShopwareContext(event, clientEnv);
-    const stock = await $fetch(`${shopware.endpoint}/my-plugin/live-stock`, {
+  resolve: async ({ entityIds, context }) => {
+    const stock = await $fetch(`${context.endpoint}/my-plugin/live-stock`, {
       method: 'POST',
-      headers: shopware.storeApiHeaders(),
+      headers: context.storeApiHeaders(),
       body: { ids: entityIds },
     });
     // …
   },
 });
 ```
-
-| Export | Purpose |
-| --- | --- |
-| `getShopwareContext(event, clientEnv)` | The store-API client, the Admin API client (absent without an integration), the store-API `endpoint`, the visitor's `contextToken`, the resolved `languageId`, `currencyId` and ISO `currency`, and `storeApiHeaders()` for routes the typed client does not know. |
-| `persistContextToken(event, token)` | Stores a token a store-API write returned and fires `shopware:context-token:changed`. Call it from an action — a read handler's response is already streaming and cannot set the cookie. |
-| `clearContextToken(event)` | Drops the token, so the next read starts a guest context. |
 
 The token is read exactly as this app reads it: `shopware:context-token:resolve` first, the cookie
 second.

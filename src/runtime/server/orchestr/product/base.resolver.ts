@@ -132,10 +132,10 @@ export default defineShopwareComponentResolver({
             rawProduct.calculatedPrice.listPrice?.price ??
             rawVariant.calculatedCheapestPrice?.listPrice?.price ??
             rawVariant.calculatedPrice.listPrice?.price;
-          const listPrice = rawListPrice ? Money.fromDecimal(rawListPrice, context.swCurrency) : undefined;
+          const listPrice = rawListPrice ? Money.fromDecimal(rawListPrice, context.currency) : undefined;
           const totalPrice = Money.fromDecimal(
             rawProduct.calculatedCheapestPrice?.totalPrice ?? rawProduct.calculatedPrice.totalPrice,
-            context.swCurrency
+            context.currency
           );
 
           const hasSavings = typeof listPrice === 'object' && listPrice.greaterThan(totalPrice);

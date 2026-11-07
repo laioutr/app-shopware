@@ -1,4 +1,5 @@
 import { useRuntimeConfig } from '#imports';
+import type { ShopwareAdminClient } from '../client/shopwareAdminClientFactory';
 import type { StorefrontClient } from '../types/shopware';
 import type { ClientEnv } from '@laioutr-core/orchestr/types';
 import type { H3Event } from 'h3';
@@ -12,10 +13,13 @@ export interface ShopwareContext {
   /** Store API client bound to the visitor's context token, language and currency. */
   storefrontClient: StorefrontClient;
   /** Admin API client; absent when the app has no Admin API integration configured. */
-  adminClient?: ReturnType<typeof shopwareAdminClientFactory>;
+  adminClient?: ShopwareAdminClient;
   /** Store API base URL, e.g. `https://shop.example.com/store-api`. */
   endpoint: string;
-  /** The visitor's Shopware context token, absent until a store-API write has minted one. */
+  /**
+   * The visitor's Shopware context token as the request arrived, absent until a store-API write has
+   * minted one. A write in the same request can rotate it; `storeApiHeaders()` carries the current one.
+   */
   contextToken?: string;
   /** Shopware `language.id` the request is served in, sent as `sw-language-id`. */
   languageId: string;
