@@ -13,6 +13,7 @@ interface SeoEntry {
 }
 
 const SEO_ENTRY_TTL = 60 * 60 * 24; // 1 day
+const entryOptions = { maxAge: SEO_ENTRY_TTL };
 
 export const useSeoResolver = (storefrontClient: StorefrontClient, routeNames: ShopwareCatalogSettings['seoRouteNames']) => {
   const cache = useUserlandCache<SeoEntry>('shopware/seo-urls');
@@ -24,9 +25,9 @@ export const useSeoResolver = (storefrontClient: StorefrontClient, routeNames: S
   const resolve = async (type: SeoUrlType, slug: string): Promise<SeoEntry | undefined> => {
     const languageId = storefrontClient.defaultHeaders['sw-language-id'] ?? 'default';
     const cacheKey = `${languageId}:${type}-${slug}`;
-    const cachedSlug = await cache.getItem(cacheKey);
-    if (cachedSlug) {
-      return cachedSlug;
+    const cached = await cache.readOne(cacheKey, entryOptions);
+    if (cached && !cached.absent) {
+      return cached.value;
     }
 
     const shopwareId = extractShopwareId(slug);
@@ -81,7 +82,7 @@ export const useSeoResolver = (storefrontClient: StorefrontClient, routeNames: S
       id: bestMatch.foreignKey,
       matchedPath: bestMatch.seoPathInfo,
     };
-    await cache.setItem(cacheKey, entry, { ttl: SEO_ENTRY_TTL });
+    cache.writeOne(cacheKey, entry, entryOptions);
     return entry;
   };
 

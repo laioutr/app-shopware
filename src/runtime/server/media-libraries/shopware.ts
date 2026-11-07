@@ -42,6 +42,16 @@ export const shopwareFolderFilter = (folderId: string | undefined) => ({
 /** Shopware `mediaType.name` discriminants for our media types. */
 const SHOPWARE_MEDIA_TYPE: Record<string, string> = { image: 'IMAGE', video: 'VIDEO', audio: 'AUDIO' };
 
+// A newer core-types adds `'file'` to `MediaQuery.type`: it asks for distribution files, and this library
+// lists media only. Compared as strings, so the check also compiles against a core-types without it.
+const isMediaKind = (type: string) => type !== 'file';
+
+/** A query for distribution files alone has no result here. */
+export const isFileOnlyQuery = (query: Pick<MediaQuery, 'type'>): boolean => {
+  const types: readonly string[] = query.type ?? [];
+  return types.length > 0 && !types.some(isMediaKind);
+};
+
 /**
  * Compiles a `MediaQuery` into Shopware Criteria filters. `scope: 'all'` searches
  * the whole library — no folder filter — because `folderId: undefined` means the
@@ -52,9 +62,10 @@ export const buildShopwareMediaFilters = (query: MediaQuery): unknown[] => {
   if (query.scope !== 'all') {
     filters.push(shopwareFolderFilter(query.folderId));
   }
-  if (query.type?.length) {
+  const kinds = (query.type ?? []).filter(isMediaKind);
+  if (kinds.length) {
     // Best-effort: mediaType.name is typed as GenericRecord in the admin API types.
-    filters.push({ type: 'equalsAny', field: 'mediaType.name', value: query.type.map((t) => SHOPWARE_MEDIA_TYPE[t]) });
+    filters.push({ type: 'equalsAny', field: 'mediaType.name', value: kinds.map((t) => SHOPWARE_MEDIA_TYPE[t]) });
   }
   if (query.tags?.length) {
     filters.push({ type: 'equalsAny', field: 'tags.name', value: query.tags });
@@ -88,6 +99,7 @@ export default defineShopware.mediaLibrary({
   capabilities: { search: true, tags: true, folders: true, sorts: SORTS },
 
   list: async (query: MediaQuery, ctx): Promise<MediaListResult> => {
+    if (isFileOnlyQuery(query)) return { items: [] };
     // The per-request context (design §4.6) already carries the admin client the initware built.
     const api = ctx.adminClient;
     const page = query.cursor ? Number(query.cursor) : 1;

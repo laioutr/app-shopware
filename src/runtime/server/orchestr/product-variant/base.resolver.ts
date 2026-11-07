@@ -15,7 +15,9 @@ import { defineShopwareComponentResolver } from '../../middleware/defineShopware
 import { resolveProductVariantFields } from '../../orchestr-helper/requestedFields';
 import { toRequestCriteria } from '../../shopware-helper/criteria';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
+import { savingsPercentOf } from '../../shopware-helper/savingsPercent';
 import { swTranslated } from '../../shopware-helper/swTranslated';
+import { guessWellKnownName } from '../../shopware-helper/wellKnownOptionName';
 
 export default defineShopwareComponentResolver({
   entityType: 'ProductVariant',
@@ -30,6 +32,20 @@ export default defineShopwareComponentResolver({
     ProductVariantShipping,
     ProductVariantOptions,
   ],
+  cache: {
+    ttl: '1 day',
+    swr: true,
+    staleMaxAge: '1 hour',
+    components: {
+      // A price is what the visitor is asked to pay, so its stale window is a minute rather than the
+      // resolver's hour: an upstream outage must not keep quoting an old one all day.
+      prices: { ttl: '10 minutes', swr: true, staleMaxAge: '1 minute' },
+      quantityPrices: { ttl: '10 minutes', swr: true, staleMaxAge: '1 minute' },
+      // Stock, which a visitor acts on directly: a sold-out variant rendered as buyable costs an
+      // order that fails at checkout, so it is never served from an entry.
+      availability: { enabled: false },
+    },
+  },
   resolve: async ({ entityIds, context, clientEnv, $entity, passthrough }) => {
     const { currency } = clientEnv;
 
@@ -86,11 +102,17 @@ export default defineShopwareComponentResolver({
               // Shopware: calculatedPrice.referencePrice { price, purchaseUnit, referenceUnit, unitName }
               const rp = entity.calculatedPrice?.referencePrice;
 
+              // Shopware's lowest price of the configured prior period (30 days by default), which EU
+              // price-indication rules require next to an announced reduction. Absent where the shop
+              // has no regulation price configured.
+              const regulationPrice = entity.calculatedPrice?.regulationPrice?.price;
+
               return {
                 price,
                 isOnSale: !!compareAtPrice,
                 strikethroughPrice: compareAtPrice,
-                savingsPercent: compareAtPrice ? 100 - price.percentageOf(compareAtPrice) : undefined,
+                savingsPercent: savingsPercentOf(price, compareAtPrice),
+                lowestPriorPrice: typeof regulationPrice === 'number' ? Money.fromDecimal(regulationPrice, currency) : undefined,
 
                 unitPrice:
                   rp ?
@@ -137,7 +159,7 @@ export default defineShopwareComponentResolver({
                 return {
                   quantity: qty,
                   price,
-                  savingsPercent: price.percentageOf(base),
+                  savingsPercent: savingsPercentOf(price, base) ?? 0,
                 };
               });
             },
@@ -157,10 +179,14 @@ export default defineShopwareComponentResolver({
 
             options: () => ({
               selected:
-                entity.options?.map((option) => ({
-                  name: swTranslated(option.group, 'name') ?? swTranslated(option, 'name') ?? 'Unknown Property',
-                  value: swTranslated(option, 'name') ?? swTranslated(option, 'option') ?? 'Unknown Value',
-                })) ?? [],
+                entity.options?.map((option) => {
+                  const name = swTranslated(option.group, 'name') ?? swTranslated(option, 'name') ?? 'Unknown Property';
+                  return {
+                    name,
+                    wellKnownName: guessWellKnownName(name),
+                    value: swTranslated(option, 'name') ?? swTranslated(option, 'option') ?? 'Unknown Value',
+                  };
+                }) ?? [],
             }),
           })
         ),

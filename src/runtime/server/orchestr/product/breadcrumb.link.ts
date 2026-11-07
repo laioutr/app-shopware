@@ -8,6 +8,11 @@ import { swTranslated } from '../../shopware-helper/swTranslated';
 export default defineShopwareLink({
   implements: ProductBreadcrumbLink,
   provides: [BreadcrumbItemBase],
+  cache: {
+    ttl: '1 hour',
+    swr: true,
+    staleMaxAge: '1 hour',
+  },
   run: async ({ context, entityIds, passthrough, $entity }) => {
     const loadProducts = async () => {
       const response = await context.storefrontClient.invoke('readProduct post /product', {

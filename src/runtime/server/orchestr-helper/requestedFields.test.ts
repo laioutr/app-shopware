@@ -70,3 +70,12 @@ describe('resolveProductFields', () => {
     expect(criteria.includes.product).toContain('customFields');
   });
 });
+
+describe('product manufacturer', () => {
+  it('is associated on the product read, which does not autoload it', async () => {
+    const criteria = await resolveProductFields(passthroughResolver);
+
+    expect(criteria.associations.manufacturer).toEqual({});
+    expect(criteria.includes.product).toContain('manufacturer');
+  });
+});

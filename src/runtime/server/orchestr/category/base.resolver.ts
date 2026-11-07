@@ -24,7 +24,8 @@ export default defineShopwareComponentResolver({
       return response.data.elements;
     };
 
-    const categories = passthrough.has(categoriesToken) ? passthrough.get(categoriesToken)! : await readCategories();
+    const fromPassthrough = passthrough.has(categoriesToken);
+    const categories = fromPassthrough ? passthrough.get(categoriesToken)! : await readCategories();
 
     if (!categories) {
       throw new Error(
@@ -32,7 +33,12 @@ export default defineShopwareComponentResolver({
       );
     }
 
+    // Only a read from Shopware tells what does not exist; a query hands over just the categories it loaded.
+    const returnedIds = new Set(categories.map((category) => category.id));
+    const notFound = fromPassthrough ? [] : entityIds.filter((entityId) => !returnedIds.has(entityId));
+
     return {
+      notFound,
       entities: categories
         .filter((category) => entityIds.includes(category.id))
         .map((category) =>
@@ -62,5 +68,7 @@ export default defineShopwareComponentResolver({
   },
   cache: {
     ttl: '10 minutes',
+    swr: true,
+    staleMaxAge: '10 minutes',
   },
 });

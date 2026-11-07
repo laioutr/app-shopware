@@ -15,7 +15,11 @@ vi.mock('../shopware-helper/mediaMapper', () => ({
   mapMedia: vi.fn(),
 }));
 
-import { buildShopwareMediaFilters, shopwareFolderFilter, shopwareSortCriteria } from './shopware';
+import { buildShopwareMediaFilters, isFileOnlyQuery, shopwareFolderFilter, shopwareSortCriteria } from './shopware';
+import type { MediaQuery } from '@laioutr-core/core-types/media-library';
+
+// `'file'` is a type value of newer core-types versions; cast so the test compiles against either.
+const types = (...values: string[]) => values as unknown as MediaQuery['type'];
 
 describe('shopwareFolderFilter', () => {
   it('scopes root browsing to unfiled assets (mediaFolderId = null)', () => {
@@ -56,9 +60,28 @@ describe('buildShopwareMediaFilters (design §4.3/§4.4)', () => {
     ]);
   });
 
+  it('ignores the file kind in a mixed type constraint', () => {
+    expect(buildShopwareMediaFilters({ limit: 10, scope: 'all', type: types('image', 'file') })).toEqual([
+      { type: 'equalsAny', field: 'mediaType.name', value: ['IMAGE'] },
+    ]);
+  });
+
+  it('adds no type filter when the constraint names files only', () => {
+    expect(buildShopwareMediaFilters({ limit: 10, scope: 'all', type: types('file') })).toEqual([]);
+  });
+
   it('adds a tags filter when tags are queried', () => {
     expect(buildShopwareMediaFilters({ limit: 10, scope: 'all', tags: ['hero'] })).toEqual([
       { type: 'equalsAny', field: 'tags.name', value: ['hero'] },
     ]);
+  });
+});
+
+describe('isFileOnlyQuery', () => {
+  it('is true only when the constraint names files and nothing else', () => {
+    expect(isFileOnlyQuery({ type: types('file') })).toBe(true);
+    expect(isFileOnlyQuery({ type: types('image', 'file') })).toBe(false);
+    expect(isFileOnlyQuery({ type: [] })).toBe(false);
+    expect(isFileOnlyQuery({})).toBe(false);
   });
 });

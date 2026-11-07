@@ -1,5 +1,179 @@
 # @laioutr/app-shopware
 
+## 0.20.0
+
+### Minor Changes
+
+- 0155baf: Catalogue reads are cached, and a cached answer is served while it refreshes behind the response.
+  Every query, link and component resolver the app exposes for categories, menus, products and reviews
+  now carries a window sized to how fast the data behind it moves: a day for product and review copy,
+  an hour for category structure and breadcrumbs, ten minutes for menus and for the variants a product
+  sells, five minutes for a category listing. Prices and the default variant a product tile renders
+  carry fifteen minutes and go stale after one, so an upstream outage cannot keep quoting yesterday's
+  price for the rest of the day. Variant availability is never served from a cache, because stock is
+  what a visitor acts on directly.
+
+  Where a handler serves stale, a window closing costs no visitor a slow request: the entry answers
+  immediately and the refresh runs behind the response. A refresh that fails keeps the last good value
+  until the stale window closes, rather than falling through to an upstream that is already failing.
+
+  Nothing personal or live is cached — the cart, customer lookups, product search and search
+  suggestions reach Shopware on every request as before.
+
+  Two correctness fixes come with it. The menu query replays its passthrough on a cache hit: the menu
+  component resolver requires the categories the query collects, and a hit that skipped the handler
+  threw once the resolver's own entry had expired. The product queries replay theirs for the same
+  reason — the product resolver reads a product's default variant from it, and without the replay a
+  cache hit resolved the parent, whose prices and media differ.
+
+  A category listing that comes back empty is no longer written to the cache. Nothing distinguishes a
+  transient upstream failure from a category that is genuinely empty, and caching the first would serve
+  an empty category for the whole window.
+
+  **Breaking:** the app now requires `@laioutr-core/orchestr`, `@laioutr-core/frontend-core`,
+  `@laioutr-core/core-types` and `@laioutr-core/kit` at 0.56.0 or newer. A project still on an older
+  platform release cannot install this version.
+
+  ```jsonc
+  // before
+  "@laioutr-core/orchestr": ">=0.52.0"
+  // after
+  "@laioutr-core/orchestr": ">=0.56.0"
+  ```
+
+  Platform 0.54 reshaped a query and link cache config, and 0.55 changed how a link cache is keyed, so
+  this release cannot run on an older one. Link entries a previous version wrote are keyed differently
+  and are never read again; they expire on their own schedule, and the first requests after the upgrade
+  miss.
+
+- f39745b: A product, category or category listing slug that Shopware does not know answers `notFound()`, so its page answers 404 instead of 200 with empty sections, and no error is logged for it. The product and category resolvers report the ids Shopware no longer returns, so a product deactivated after its slug was cached answers 404 too.
+
+  **Breaking:** needs `@laioutr-core/orchestr`, `frontend-core`, `core-types` and `kit` 0.79.0 and `@laioutr-core/canonical-types` 0.40.0 or later, which bring `notFound()` and the page subject 404. A project that also runs an older `@laioutr-app/ui` loads a second, older `canonical-types` and can lose the 404, so update it to 2.35.1 or later too.
+
+## 0.19.2
+
+### Patch Changes
+
+- 85236df: The Shopware media library answers a list query with `'file'` in its `type` correctly: it ignores `'file'` next to media kinds, and returns no items for `['file']` alone. Newer core-types versions allow that value; before, it turned into an invalid Shopware filter.
+
+## 0.19.1
+
+### Patch Changes
+
+- dd4daa5: A product detail page for a top-level product no longer asks Shopware for a parent id on every
+  request. The app looks up a variant's parent to resolve the product behind a slug, and a product that
+  has no parent — most of a catalogue — produced an answer the cache had no way to hold, so the lookup
+  repeated on every hit that did not arrive by way of a listing.
+
+  The cache now records "this product has no parent" as a first-class answer, kept for the same seven
+  days as a parent id, and both the single-product lookup and the bulk write behind listing and search
+  results store it the same way. A lookup that fails against Shopware still caches nothing, so an
+  outage cannot pin a wrong answer.
+
+  Entries written by earlier versions stay correct while they age out.
+
+## 0.19.0
+
+### Minor Changes
+
+- dbada21: Cart discounts reach the storefront. Shopware carries a promotion as a cart line item, and the app kept only line items
+  of type `product` — so a shop's automatic cart discount, or a code redeemed inside the embedded checkout, vanished on the
+  way out. The totals were never wrong (Shopware prices the cart with the discount already applied), but the items added up
+  to more than the subtotal with nothing on the page to account for the difference.
+
+  A promotion now resolves as a `CartItem` of type `discount-code`, carrying the promotion's translated name as its title
+  and its discount as a negative amount. `code` is set for a promotion the customer redeemed and left unset for one the
+  shop applies on its own, which has no code to show.
+
+  `CartAddItemsAction` accepts `{ type: 'discount-code', code }` and redeems it against Shopware. A code that Shopware
+  turns down comes back as a rejected item — carrying Shopware's own reason and message — rather than as a thrown error,
+  and every result is reported in input order. Codes were previously dropped without a request, a result row, or an error.
+
+  Items the app cannot add (`sku`, `custom`) are now reported as rejected instead of being left out of the result entirely.
+
+- 73fc672: **Breaking:** the app now requires `@laioutr-core/orchestr`, `@laioutr-core/frontend-core`, `@laioutr-core/core-types` and
+  `@laioutr-core/kit` at 0.52.0 or newer, and `@laioutr-core/canonical-types` at 0.33.0 or newer. A project still on an
+  older platform release cannot install this version.
+
+  ```jsonc
+  // before
+  "@laioutr-core/orchestr": ">=0.40.3"
+  // after
+  "@laioutr-core/orchestr": ">=0.52.0"
+  ```
+
+  Platform 0.52 reshaped the cache store an app writes through, and the app's own caches — product parent ids, SEO url
+  lookups and Shopware's system entities — move with it. Entries go stale on exactly the same schedule as before.
+
+  One behavioural difference reaches the storefront: a cache write no longer holds up the response. The store schedules it
+  behind the request, so a slow or failing write costs a request nothing where it previously either delayed it or surfaced
+  as an error.
+
+## 0.18.0
+
+### Minor Changes
+
+- faadc76: The storefront can tell a signed-in shopper from an anonymous one, and send them somewhere to sign in.
+
+  `CustomerGetCurrentAction` answers the customer behind the request's Shopware context token — id, email, display name
+  and person details — and raises `UnauthenticatedError` when the context belongs to a guest, so a caller can branch on
+  session state without reading cookies of its own.
+
+  `AuthLoginOauthAction` answers the `account` arm of its result: a link to the Shopware instance's own login page, built
+  from the configured `storefrontUrl`. Shopware authenticates with credentials rather than an OAuth handshake, so there is
+  no handshake to run and no login UI to build on the Laioutr side — the product reviews section already navigates this
+  arm. `storefrontUrl` must be configured; without it the action throws.
+
+  `customer.addresses` comes back empty for now — each Shopware address needs its `countryId` resolved to the ISO country
+  code `MailingAddress` requires.
+
+### Patch Changes
+
+- faadc76: Product review sorting and the star filter take effect. The reviews link declared both inputs and read neither, so
+  moving a control changed the URL and returned the identical list.
+
+  Four sortings map onto the field Shopware orders by: `newest` and `oldest` on the review date, `rating-high` and
+  `rating-low` on its score. An unrecognised name falls back to Shopware's own order rather than failing the listing. The
+  `points` filter narrows the list to a single star rating.
+
+## 0.17.0
+
+### Minor Changes
+
+- 31d316c: Products resolve their option axes — the colours, sizes and other choices a product offers, with a swatch per value, in the order the merchant authored the configurator. A listing can render them without loading a single variant.
+
+  A product's default variant carries its SKU, its option values, and whether it can be bought. Only the id was set before, so anything needing an item identifier or an add-to-cart decision had to load the product's variants first.
+
+  Each variant option reports a well-known name alongside the merchant's own wording, so a consumer can find the colour or size axis without matching on free text.
+
+## 0.16.0
+
+### Minor Changes
+
+- ea48a50: Submit the embedded checkout's order from the top-level window, so redirect-based payment
+  providers work — and return the shopper to Laioutr afterwards.
+
+  PayPal, Klarna and other providers that redirect out of checkout refuse to render inside an
+  iframe, and once framed they cannot navigate back out — the shopper reached a dead end with the
+  order already created. The confirm form now submits into the top-level window instead, and both
+  outcomes come back: a completed order lands on the configured Order Confirmation Page, and a
+  failed or cancelled payment returns to the checkout page with the retry rendered in the frame.
+
+  The retry itself leaves the frame the same way, so a shopper who picks another redirect
+  provider is not sent straight back into the dead end they just escaped.
+
+  The section gains a **Checkout Page** link, which it uses to bring shoppers back for a retry.
+  Requires a `LaioutrConnector` build that exposes `POST /laioutr/checkout-order` and the return
+  trip.
+
+### Patch Changes
+
+- 63f34db: Stop offering variants a shop cannot sell. Variants were read through the `children` association,
+  which returns every child a product has regardless of whether this sales channel carries it, so a
+  product page could show colours and sizes that were switched off — picking one and adding it to the
+  cart failed with a product-not-found. They now come from a `/product` read filtered by parent, which
+  applies Shopware's own visibility rules, and unsellable variants no longer appear at all.
+
 ## 0.15.4
 
 ### Patch Changes
