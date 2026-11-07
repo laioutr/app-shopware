@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import login from './login.action';
 import logout from './logout.action';
 import recover from './recover.action';
 import register from './register.action';
-import { InvalidFieldError } from '@laioutr-core/canonical-types/ecommerce';
+import { CustomerNotConfirmedError, EmailAlreadyInUseError, InvalidFieldError } from '@laioutr-core/canonical-types/ecommerce';
 import { clearContextToken, persistContextToken } from '../../shopware-helper/persistContextToken';
 
 const runtimeConfig = { '@laioutr/app-shopware': { storefrontUrl: 'https://shop.example.com' as string | undefined } };
@@ -90,8 +91,9 @@ describe('register', () => {
       return { data: {} };
     });
 
-    await (register as unknown as Run)({ context, input: registerInput, event });
+    const result = await (register as unknown as Run)({ context, input: registerInput, event });
 
+    expect(result).toEqual({ status: 'signed-in' });
     expect(context.storefrontClient.invoke).toHaveBeenCalledWith('register post /account/register', {
       body: expect.objectContaining({
         email: 'ada@example.com',
@@ -109,15 +111,54 @@ describe('register', () => {
     expect(persistContextToken).toHaveBeenCalledWith(event, 'customer-token');
   });
 
+  it('answers pending-confirmation when the sales channel requires double opt-in', async () => {
+    context.storefrontClient.invoke.mockResolvedValue({ data: { doubleOptInRegistration: true } });
+
+    const result = await (register as unknown as Run)({ context, input: registerInput, event });
+
+    expect(result).toEqual({ status: 'pending-confirmation' });
+    expect(persistContextToken).not.toHaveBeenCalled();
+  });
+
+  it("sends the customer's privacy policy choice", async () => {
+    context.storefrontClient.invoke.mockResolvedValue({ data: {} });
+
+    await (register as unknown as Run)({ context, input: { ...registerInput, consents: { privacyPolicy: false } }, event });
+
+    expect(context.storefrontClient.invoke).toHaveBeenCalledWith('register post /account/register', {
+      body: expect.objectContaining({ acceptedDataProtection: false }),
+    });
+  });
+
   it('turns a Shopware violation into an InvalidFieldError', async () => {
     context.storefrontClient.invoke.mockRejectedValue(
-      apiError(400, [{ code: 'VIOLATION::CUSTOMER_EMAIL_NOT_UNIQUE', source: { pointer: '/email' } }])
+      apiError(400, [{ code: 'VIOLATION::IS_BLANK_ERROR', source: { pointer: '/billingAddress/zipcode' } }])
     );
 
     const result = (register as unknown as Run)({ context, input: registerInput, event });
 
     await expect(result).rejects.toBeInstanceOf(InvalidFieldError);
-    await expect(result).rejects.toMatchObject({ data: { reason: 'CUSTOMER_EMAIL_NOT_UNIQUE', field: ['email'] } });
+    await expect(result).rejects.toMatchObject({ data: { reason: 'MISSING', field: ['address', 'postalCode'] } });
+  });
+
+  it('reports a missing data protection consent on the canonical consent', async () => {
+    context.storefrontClient.invoke.mockRejectedValue(
+      apiError(400, [{ code: 'VIOLATION::IS_BLANK_ERROR', source: { pointer: '/acceptedDataProtection' } }])
+    );
+
+    await expect((register as unknown as Run)({ context, input: registerInput, event })).rejects.toMatchObject({
+      data: { reason: 'MISSING', field: ['consents', 'privacyPolicy'] },
+    });
+  });
+
+  it('throws EmailAlreadyInUseError when an account has the address', async () => {
+    context.storefrontClient.invoke.mockRejectedValue(
+      apiError(400, [{ code: 'VIOLATION::CUSTOMER_EMAIL_NOT_UNIQUE', source: { pointer: '/email' } }])
+    );
+
+    await expect((register as unknown as Run)({ context, input: registerInput, event })).rejects.toBeInstanceOf(
+      EmailAlreadyInUseError
+    );
   });
 
   it('refuses to register without a storefront URL', async () => {
@@ -125,6 +166,24 @@ describe('register', () => {
 
     await expect((register as unknown as Run)({ context, input: registerInput, event })).rejects.toThrow(/storefrontUrl/);
     expect(context.storefrontClient.invoke).not.toHaveBeenCalled();
+  });
+});
+
+describe('login', () => {
+  const credentials = { email: 'ada@example.com', password: 'secret-password' };
+
+  it('throws CustomerNotConfirmedError for a customer who has not confirmed the opt-in mail', async () => {
+    context.storefrontClient.invoke.mockRejectedValue(apiError(401, [{ code: 'CHECKOUT__CUSTOMER_OPTIN_NOT_COMPLETED' }]));
+
+    await expect((login as unknown as Run)({ context, input: credentials, event })).rejects.toBeInstanceOf(
+      CustomerNotConfirmedError
+    );
+  });
+
+  it('answers unsuccessfully for wrong credentials', async () => {
+    context.storefrontClient.invoke.mockRejectedValue(apiError(401, [{ code: 'CHECKOUT__CUSTOMER_AUTH_BAD_CREDENTIALS' }]));
+
+    await expect((login as unknown as Run)({ context, input: credentials, event })).resolves.toMatchObject({ success: false });
   });
 });
 
