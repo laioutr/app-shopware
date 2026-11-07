@@ -229,6 +229,48 @@ The list's id is the customer's id, because Shopware keeps one wishlist per cust
 - Shopware wishlist entries carry no quantity, note or custom fields, so those inputs are not
   kept. The shop must have the wishlist enabled (`core.cart.wishlistEnabled`).
 
+## Exports
+
+### `@laioutr/app-shopware/runtime`
+
+Everything another app needs to call the same Shopware instance — typically a plugin's own store-API
+route — in the visitor's session, rather than resolving the context token, language and currency a
+second time and drifting from the cart this app holds.
+
+```ts
+import { clearContextToken, defineShopware, getShopwareContext, persistContextToken } from '@laioutr/app-shopware/runtime';
+import type { ShopwareAdminClient, ShopwareContext, ShopwareOrchestrContext, StorefrontClient } from '@laioutr/app-shopware/runtime';
+```
+
+| Export | Purpose |
+| --- | --- |
+| `defineShopware` | Pre-configured Orchestr builder with Shopware metadata and the request's Shopware context on `context`: everything `getShopwareContext` returns, plus the resolved `settings` and `resolveCriteria`. Chain `.queryHandler()`, `.componentResolver()`, etc. directly on it. |
+| `getShopwareContext(event, clientEnv)` | The same context outside an Orchestr handler: the store-API client, the Admin API client (absent without an integration), the store-API `endpoint`, the visitor's `contextToken`, the resolved `languageId`, `currencyId` and ISO `currency`, and `storeApiHeaders()` for routes the typed client does not know. |
+| `persistContextToken(event, token)` | Stores a token a store-API write returned and fires `shopware:context-token:changed`. Call it from an action — a read handler's response is already streaming and cannot set the cookie. |
+| `clearContextToken(event)` | Drops the token, so the next read starts a guest context. |
+
+```ts
+// orchestr/product-variant/live-stock.resolver.ts in another app
+import { defineShopware } from '@laioutr/app-shopware/runtime';
+
+export default defineShopware.componentResolver({
+  label: 'Live stock',
+  entityType: 'ProductVariant',
+  provides: [LiveStock],
+  resolve: async ({ entityIds, context }) => {
+    const stock = await $fetch(`${context.endpoint}/my-plugin/live-stock`, {
+      method: 'POST',
+      headers: context.storeApiHeaders(),
+      body: { ids: entityIds },
+    });
+    // …
+  },
+});
+```
+
+The token is read exactly as this app reads it: `shopware:context-token:resolve` first, the cookie
+second.
+
 ## Development
 
 ```bash
