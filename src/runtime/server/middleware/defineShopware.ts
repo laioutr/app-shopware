@@ -1,12 +1,14 @@
 import { defineOrchestr, useNitroApp } from '#imports';
 import type { ShopwareAdminClient } from '../client/shopwareAdminClientFactory';
 import type { ShopwareContext } from '../context/getShopwareContext';
+import type { ShopwareVersion } from '../shopware-helper/shopwareVersion';
 import type { ResolveCriteria } from '../types/criteria';
 import type { ShopwareSettings } from '../types/settings';
 import type { defineOrchestrMock } from '@laioutr-core/orchestr/types';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
 import { getShopwareContext } from '../context/getShopwareContext';
 import { defaultShopwareSettings } from '../shopware-helper/shopwareSettings';
+import { getCachedShopwareVersion } from '../shopware-helper/system/getShopwareVersion';
 
 /**
  * The `context` every handler built from `defineShopware` receives. Named so the published builder
@@ -14,6 +16,8 @@ import { defaultShopwareSettings } from '../shopware-helper/shopwareSettings';
  */
 export type ShopwareOrchestrContext = Omit<ShopwareContext, 'adminClient'> & {
   adminClient: ShopwareAdminClient;
+  /** The connected shop's release; `undefined` when it cannot be read, which the app treats as current. */
+  shopwareVersion: ShopwareVersion | undefined;
   settings: ShopwareSettings;
   resolveCriteria: ResolveCriteria;
 };
@@ -28,6 +32,7 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
   })
   .extendRequest(async (args): Promise<{ context: ShopwareOrchestrContext }> => {
     const shopware = await getShopwareContext(args.event, args.clientEnv);
+    const shopwareVersion = await getCachedShopwareVersion(shopware.storefrontClient);
     const nitro = useNitroApp();
 
     const settings = { settings: defaultShopwareSettings() };
@@ -45,6 +50,7 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
         // Without an Admin API integration the client's calls fail with Shopware's auth error,
         // which is what the media library reports on such a shop.
         adminClient: shopware.adminClient ?? shopwareAdminClientFactory(),
+        shopwareVersion,
         settings: settings.settings,
         resolveCriteria,
       },

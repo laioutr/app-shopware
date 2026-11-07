@@ -7,6 +7,8 @@ import {
   mapShopwareAggregationToAvailableFilters,
   ShopwareAggregations,
 } from '../../shopware-helper/facetMapper';
+import { listingPageParams } from '../../shopware-helper/shopwareVersion';
+import { withSortingFallback } from '../../shopware-helper/sortingFallback';
 import { mapShopwareSortingToOrchestr } from '../../shopware-helper/sortingMapper';
 
 export default defineShopwareQuery({
@@ -28,26 +30,31 @@ export default defineShopwareQuery({
 
     const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters, context.currency) : {};
 
-    const response = await context.storefrontClient.invoke('readProductListing post /product-listing/{categoryId}', {
-      pathParams: { categoryId },
-      body: {
-        page: pagination.page,
-        limit: pagination.limit,
-        filter: [...(swFilters ?? [])],
-        order: sorting,
-        includes: {
-          product: ['id', 'parentId'],
+    const response = await withSortingFallback(sorting, (order) =>
+      context.storefrontClient.invoke('readProductListing post /product-listing/{categoryId}', {
+        pathParams: { categoryId },
+        body: {
+          ...listingPageParams(context.shopwareVersion, pagination.page),
+          limit: pagination.limit,
+          filter: [...(swFilters ?? [])],
+          order,
+          includes: {
+            product: ['id', 'parentId'],
+          },
+          'total-count-mode': context.settings.totalCountMode,
+          'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
+          'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
+          manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
+          'shipping-free': swBuiltInFilters?.['shipping-free'] as boolean | undefined,
         },
-        'total-count-mode': context.settings.totalCountMode,
-        'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
-        'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
-        manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
-        'shipping-free': swBuiltInFilters?.['shipping-free'] as boolean | undefined,
-      },
-    });
+      })
+    );
 
     // Shopware API client exposes incorrect types for aggregations :<
-    const availableFilters = mapShopwareAggregationToAvailableFilters(response.data.aggregations as unknown as ShopwareAggregations, context.currency);
+    const availableFilters = mapShopwareAggregationToAvailableFilters(
+      response.data.aggregations as unknown as ShopwareAggregations,
+      context.currency
+    );
     const availableSortings = mapShopwareSortingToOrchestr(response.data.availableSortings);
 
     // Tell the product-resolver which variants to use.

@@ -8,6 +8,8 @@ import {
   ShopwareAggregations,
 } from '../../shopware-helper/facetMapper';
 import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants';
+import { listingPageParams } from '../../shopware-helper/shopwareVersion';
+import { withSortingFallback } from '../../shopware-helper/sortingFallback';
 import { mapShopwareSortingToOrchestr } from '../../shopware-helper/sortingMapper';
 import { useSeoResolver } from '../../shopware-helper/useSeoResolver';
 
@@ -33,26 +35,31 @@ export default defineShopwareQuery({
 
     const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters, context.currency) : {};
 
-    const response = await context.storefrontClient.invoke('readProductListing post /product-listing/{categoryId}', {
-      pathParams: { categoryId: seoEntry.id },
-      body: {
-        p: pagination.page,
-        limit: pagination.limit,
-        filter: [...(swFilters ?? [])],
-        order: sorting,
-        includes: {
-          product: ['id', 'parentId'],
+    const response = await withSortingFallback(sorting, (order) =>
+      context.storefrontClient.invoke('readProductListing post /product-listing/{categoryId}', {
+        pathParams: { categoryId: seoEntry.id },
+        body: {
+          ...listingPageParams(context.shopwareVersion, pagination.page),
+          limit: pagination.limit,
+          filter: [...(swFilters ?? [])],
+          order,
+          includes: {
+            product: ['id', 'parentId'],
+          },
+          'total-count-mode': context.settings.totalCountMode,
+          'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
+          'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
+          manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
+          'shipping-free': swBuiltInFilters?.['shipping-free'] as boolean | undefined,
         },
-        'total-count-mode': context.settings.totalCountMode,
-        'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
-        'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
-        manufacturer: swBuiltInFilters?.manufacturer as string | undefined,
-        'shipping-free': swBuiltInFilters?.['shipping-free'] as boolean | undefined,
-      },
-    });
+      })
+    );
 
     // Shopware API client exposes incorrect types for aggregations :<
-    const availableFilters = mapShopwareAggregationToAvailableFilters(response.data.aggregations as unknown as ShopwareAggregations, context.currency);
+    const availableFilters = mapShopwareAggregationToAvailableFilters(
+      response.data.aggregations as unknown as ShopwareAggregations,
+      context.currency
+    );
     const availableSortings = mapShopwareSortingToOrchestr(response.data.availableSortings);
 
     // Tell the product-resolver which variants to use.
@@ -68,6 +75,7 @@ export default defineShopwareQuery({
         productIds: Object.keys(parentIdToDefaultVariantId),
         loadVariants: true,
         resolveCriteria: context.resolveCriteria,
+        maxLimit: context.settings.maxLimit,
       });
       passthrough.set(productVariantsToken, allVariants);
     }

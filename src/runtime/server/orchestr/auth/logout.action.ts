@@ -10,10 +10,15 @@ import { shopwareErrorStatus } from '../../shopware-helper/shopwareErrors';
  * Shopware may answer the logout with a new guest token, but persisting it would hand a host that
  * mirrors the token per identity a guest token for a session it is ending; clearing notifies it with
  * `null` instead.
+ *
+ * `replace-token` makes Shopware before 6.7 detach the customer from the old token too, which the
+ * embedded checkout's storefront session also holds; without it that token stays logged in. 6.7
+ * always detaches it and ignores the field.
  */
 export default defineShopwareAction(AuthLogoutAction, async ({ context, event }) => {
   try {
-    await context.storefrontClient.invoke('logoutCustomer post /account/logout');
+    // The generated operation type declares no body.
+    await context.storefrontClient.invoke('logoutCustomer post /account/logout', { body: { 'replace-token': true } } as never);
   } catch (err) {
     // A context with no customer answers 403; it is logged out already.
     if (shopwareErrorStatus(err) !== 403) throw err;

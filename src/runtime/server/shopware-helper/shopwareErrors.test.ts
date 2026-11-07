@@ -45,6 +45,33 @@ describe('throwAsInvalidField', () => {
     expect((thrown as InvalidFieldError).data).toEqual({ reason: 'CUSTOMER_EMAIL_NOT_UNIQUE', field: ['email'] });
   });
 
+  it('throws an overflowed column as a TOO_LONG InvalidFieldError at the pointer the caller places it', () => {
+    const err = apiError(500, [
+      {
+        code: '1406',
+        detail:
+          "An exception occurred while executing a query: SQLSTATE[22001]: String data, right truncated: 1406 Data too long for column 'phone_number' at row 1",
+      },
+    ]);
+
+    let thrown: unknown;
+    try {
+      throwAsInvalidField(err, [], (column) => `/billingAddress/${column}`);
+    } catch (e) {
+      thrown = e;
+    }
+
+    expect(thrown).toBeInstanceOf(InvalidFieldError);
+    expect((thrown as InvalidFieldError).data).toEqual({ reason: 'TOO_LONG', field: ['address', 'phone'] });
+  });
+
+  it('rethrows an overflowed column the caller cannot place, or when no caller places columns', () => {
+    const err = apiError(500, [{ code: '1406', detail: "Data too long for column 'zipcode' at row 1" }]);
+
+    expect(() => throwAsInvalidField(err)).toThrow(err);
+    expect(() => throwAsInvalidField(err, [], () => undefined)).toThrow(err);
+  });
+
   it('rethrows anything that is not a validation failure', () => {
     const err = apiError(500, [{ code: 'FRAMEWORK__SOMETHING' }]);
     expect(() => throwAsInvalidField(err)).toThrow(err);
