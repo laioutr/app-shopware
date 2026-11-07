@@ -26,7 +26,7 @@ export default defineShopwareQuery({
   run: async ({ context, input, pagination, filter: selectedFilters, sorting, passthrough }) => {
     const { categoryId } = input;
 
-    const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters, context.swCurrency) : {};
+    const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters, context.currency) : {};
 
     const response = await context.storefrontClient.invoke('readProductListing post /product-listing/{categoryId}', {
       pathParams: { categoryId },
@@ -47,7 +47,7 @@ export default defineShopwareQuery({
     });
 
     // Shopware API client exposes incorrect types for aggregations :<
-    const availableFilters = mapShopwareAggregationToAvailableFilters(response.data.aggregations as unknown as ShopwareAggregations, context.swCurrency);
+    const availableFilters = mapShopwareAggregationToAvailableFilters(response.data.aggregations as unknown as ShopwareAggregations, context.currency);
     const availableSortings = mapShopwareSortingToOrchestr(response.data.availableSortings);
 
     // Tell the product-resolver which variants to use.

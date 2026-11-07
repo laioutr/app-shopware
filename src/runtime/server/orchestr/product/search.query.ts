@@ -13,7 +13,7 @@ import { mapShopwareSortingToOrchestr } from '../../shopware-helper/sortingMappe
 export default defineShopwareQuery(ProductSearchQuery, async ({ context, input, pagination, filter: selectedFilters, passthrough }) => {
   const { query } = input;
 
-  const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters, context.swCurrency) : {};
+  const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters, context.currency) : {};
 
   const response = await context.storefrontClient.invoke('searchSuggest post /search-suggest', {
     // Shopware API client exposes incorrect/incomplete types for this endpoint's body :<
@@ -33,7 +33,7 @@ export default defineShopwareQuery(ProductSearchQuery, async ({ context, input, 
   });
 
   // Shopware API client exposes incorrect types for aggregations :<
-  const availableFilters = mapShopwareAggregationToAvailableFilters(response.data.aggregations as unknown as ShopwareAggregations, context.swCurrency);
+  const availableFilters = mapShopwareAggregationToAvailableFilters(response.data.aggregations as unknown as ShopwareAggregations, context.currency);
   const availableSortings = mapShopwareSortingToOrchestr(response.data.availableSortings ?? []);
 
   // Tell the product-resolver which variants to use.
