@@ -1,7 +1,7 @@
 import { createAdminAPIClient } from '@shopware/api-client';
 import { useRuntimeConfig } from '#imports';
 
-type ShopwareAdminClient = ReturnType<typeof createAdminAPIClient>;
+export type ShopwareAdminClient =ReturnType<typeof createAdminAPIClient>;
 
 // Shopware client type is not exported
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment

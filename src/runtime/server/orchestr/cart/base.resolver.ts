@@ -33,7 +33,7 @@ export default defineShopwareComponentResolver({
         $entity({
           id: cart.token ?? '',
           base: () => ({ totalQuantity, checkoutLink }),
-          cost: () => mapCartCost(cart, context.swCurrency),
+          cost: () => mapCartCost(cart, context.currency),
         }),
       ],
     };

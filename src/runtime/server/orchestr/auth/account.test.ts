@@ -64,7 +64,9 @@ describe('logout', () => {
 
     await (logout as unknown as Run)({ context, event });
 
-    expect(context.storefrontClient.invoke).toHaveBeenCalledWith('logoutCustomer post /account/logout');
+    expect(context.storefrontClient.invoke).toHaveBeenCalledWith('logoutCustomer post /account/logout', {
+      body: { 'replace-token': true },
+    });
     expect(clearContextToken).toHaveBeenCalledWith(event);
   });
 

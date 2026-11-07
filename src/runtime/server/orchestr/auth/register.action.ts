@@ -60,6 +60,8 @@ export default defineShopwareAction(AuthRegisterAction, async ({ context, input,
     return { status: customer.doubleOptInRegistration && !customer.doubleOptInConfirmDate ? 'pending-confirmation' : 'signed-in' };
   } catch (err) {
     if (shopwareErrorCodes(err).includes('VIOLATION::CUSTOMER_EMAIL_NOT_UNIQUE')) throw new EmailAlreadyInUseError();
-    return throwAsInvalidField(err);
+    // Apart from `email`, every column registration writes also exists on the billing address, and is
+    // no wider there, so an overflow is reported against the address field.
+    return throwAsInvalidField(err, [], (column) => (column === 'email' ? '/email' : `/billingAddress/${column}`));
   }
 });
