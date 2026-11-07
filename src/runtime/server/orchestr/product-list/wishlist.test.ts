@@ -63,6 +63,11 @@ describe('get-wishlist', () => {
     respond({ 'readCustomerWishlist post /customer/wishlist': noWishlist() });
     await expect((getWishlist as unknown as Run)({ context, notFound: () => NOT_FOUND })).resolves.toBe(NOT_FOUND);
   });
+
+  it('recognises a guest by the routing code Shopware 6.7 answers with', async () => {
+    respond({ 'readCustomerWishlist post /customer/wishlist': apiError(403, 'FRAMEWORK__ROUTING_CUSTOMER_NOT_LOGGED_IN') });
+    await expect((getWishlist as unknown as Run)({ context, notFound: () => NOT_FOUND })).resolves.toBe(NOT_FOUND);
+  });
 });
 
 describe('the wishlist entity', () => {

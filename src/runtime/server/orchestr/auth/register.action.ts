@@ -56,6 +56,8 @@ export default defineShopwareAction(AuthRegisterAction, async ({ context, input,
       },
     });
   } catch (err) {
-    throwAsInvalidField(err);
+    // Apart from `email`, every column registration writes also exists on the billing address, and is
+    // no wider there, so an overflow is reported against the address field.
+    throwAsInvalidField(err, [], (column) => (column === 'email' ? '/email' : `/billingAddress/${column}`));
   }
 });
