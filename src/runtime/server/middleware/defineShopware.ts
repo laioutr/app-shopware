@@ -1,29 +1,42 @@
 import { defineOrchestr, useNitroApp, useRuntimeConfig } from '#imports';
+import type { ShopwareAdminClient } from '../client/shopwareAdminClientFactory';
+import type { ShopwareContext } from '../context/getShopwareContext';
+import type { ShopwareVersion } from '../shopware-helper/shopwareVersion';
 import type { ResolveCriteria } from '../types/criteria';
+import type { CustomFieldsConfig } from '../types/customFields';
+import type { ShopwareSettings } from '../types/settings';
+import type { defineOrchestrMock } from '@laioutr-core/orchestr/types';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
-import { shopwareClientFactory } from '../client/shopwareClientFactory';
+import { getShopwareContext } from '../context/getShopwareContext';
 import { withCustomFieldIncludes } from '../shopware-helper/customFields';
 import { defaultShopwareSettings } from '../shopware-helper/shopwareSettings';
-import { getCurrentSystemEntities } from '../shopware-helper/system/getCurrentSystemEntities';
-import { getCachedSystemEntities } from '../shopware-helper/system/getSystemEntities';
+import { getCachedShopwareVersion } from '../shopware-helper/system/getShopwareVersion';
 
-export const defineShopware = defineOrchestr
+/**
+ * The `context` every handler built from `defineShopware` receives. Named so the published builder
+ * type refers to it instead of expanding the Shopware clients into types this package cannot name.
+ */
+export type ShopwareOrchestrContext = Omit<ShopwareContext, 'adminClient'> & {
+  adminClient: ShopwareAdminClient;
+  /** The connected shop's release; `undefined` when it cannot be read, which the app treats as current. */
+  shopwareVersion: ShopwareVersion | undefined;
+  settings: ShopwareSettings;
+  resolveCriteria: ResolveCriteria;
+  customFields: CustomFieldsConfig | undefined;
+};
+
+// `defineOrchestr` reaches the module only as a Nuxt auto-import, which has no type outside a Nuxt
+// project; the mock carries its real type into the published declaration.
+export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
   .meta({
     app: '@laioutr-core/shopware',
     logoUrl: '/app-shopware/shopware-logo.svg',
     label: 'Shopware',
   })
-  .extendRequest(async (args) => {
-    const storefrontClient = await shopwareClientFactory(args.event);
-    const adminClient = shopwareAdminClientFactory();
+  .extendRequest(async (args): Promise<{ context: ShopwareOrchestrContext }> => {
+    const shopware = await getShopwareContext(args.event, args.clientEnv);
+    const shopwareVersion = await getCachedShopwareVersion(shopware.storefrontClient);
     const nitro = useNitroApp();
-
-    const systemEntities = await getCachedSystemEntities(storefrontClient);
-    const currentSystemEntities = getCurrentSystemEntities(systemEntities, args.clientEnv);
-
-    // Set the currency and language headers for the storefront client.
-    storefrontClient.defaultHeaders['sw-currency-id'] = currentSystemEntities.currency.id;
-    storefrontClient.defaultHeaders['sw-language-id'] = currentSystemEntities.locale.languageId;
 
     const settings = { settings: defaultShopwareSettings() };
     await nitro.hooks.callHook('shopware:settings:resolve', { event: args.event, result: settings });
@@ -38,12 +51,11 @@ export const defineShopware = defineOrchestr
 
     return {
       context: {
-        storefrontClient,
-        adminClient,
-        systemEntities,
-        currentSystemEntities,
-        /** The systems current currency iso code */
-        swCurrency: currentSystemEntities.currency.iso,
+        ...shopware,
+        // Without an Admin API integration the client's calls fail with Shopware's auth error,
+        // which is what the media library reports on such a shop.
+        adminClient: shopware.adminClient ?? shopwareAdminClientFactory(),
+        shopwareVersion,
         settings: settings.settings,
         resolveCriteria,
         customFields,
@@ -55,5 +67,6 @@ export const defineShopwareAction = defineShopware.actionHandler;
 export const defineShopwareQuery = defineShopware.queryHandler;
 export const defineShopwareLink = defineShopware.linkHandler;
 export const defineShopwareComponentResolver = defineShopware.componentResolver;
-export const defineShopwareQueryTemplateProvider = defineShopware.queryTemplateProvider;
+// Orchestr's public types omit the template-provider type, so the inferred one cannot be named.
+export const defineShopwareQueryTemplateProvider: typeof defineShopware.queryTemplateProvider = defineShopware.queryTemplateProvider;
 export const defineShopwarePageIndex = defineShopware.pageIndex;

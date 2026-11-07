@@ -16,6 +16,7 @@ import { resolveProductVariantFields } from '../../orchestr-helper/requestedFiel
 import { toRequestCriteria } from '../../shopware-helper/criteria';
 import { pickCustomFields } from '../../shopware-helper/customFields';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
+import { savingsPercentOf } from '../../shopware-helper/savingsPercent';
 import { swTranslated } from '../../shopware-helper/swTranslated';
 import { guessWellKnownName } from '../../shopware-helper/wellKnownOptionName';
 
@@ -103,11 +104,17 @@ export default defineShopwareComponentResolver({
               // Shopware: calculatedPrice.referencePrice { price, purchaseUnit, referenceUnit, unitName }
               const rp = entity.calculatedPrice?.referencePrice;
 
+              // Shopware's lowest price of the configured prior period (30 days by default), which EU
+              // price-indication rules require next to an announced reduction. Absent where the shop
+              // has no regulation price configured.
+              const regulationPrice = entity.calculatedPrice?.regulationPrice?.price;
+
               return {
                 price,
                 isOnSale: !!compareAtPrice,
                 strikethroughPrice: compareAtPrice,
-                savingsPercent: compareAtPrice ? 100 - price.percentageOf(compareAtPrice) : undefined,
+                savingsPercent: savingsPercentOf(price, compareAtPrice),
+                lowestPriorPrice: typeof regulationPrice === 'number' ? Money.fromDecimal(regulationPrice, currency) : undefined,
 
                 unitPrice:
                   rp ?
@@ -154,7 +161,7 @@ export default defineShopwareComponentResolver({
                 return {
                   quantity: qty,
                   price,
-                  savingsPercent: price.percentageOf(base),
+                  savingsPercent: savingsPercentOf(price, base) ?? 0,
                 };
               });
             },

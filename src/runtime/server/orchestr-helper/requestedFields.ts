@@ -64,6 +64,9 @@ export const resolveProductFields = async (resolveCriteria: ResolveCriteria): Pr
       // associations, so the selected options need associating here too or the
       // default variant reports none.
       options: { associations: { group: {} } },
+      // Not autoloaded on a product read, so without it a product that has no variants
+      // has no brand.
+      manufacturer: {},
     },
     includes: mergeIncludes(
       {

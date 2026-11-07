@@ -19,7 +19,8 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   onto the canonical entity model — so storefront components stay backend-agnostic
 - Cart as a first-class entity: add, update and remove items, redeem discount codes, and read back
   the shop's automatic cart discounts — with server-held Shopware context tokens that never reach
-  the browser
+  the browser; each product line links to its `ProductVariant`, so a cart row can render live
+  product data without a second cart read
 - Embedded checkout — the Shopware storefront's own checkout rendered in-page, with a same-origin
   session handoff so the visitor is never bounced to another domain
 - Auth bridge: a storefront login or logout inside the embedded checkout propagates back into the
@@ -28,7 +29,12 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   entity behind it
 - Shopware media as a Laioutr media library, plus a `@nuxt/image` provider that serves Shopware's
   own thumbnails
+- Customer accounts: login, logout, registration and password recovery as the canonical auth
+  actions, with the context token persisted and cleared the same way the embedded checkout does it
+- Wishlist: the customer's Shopware wishlist as a canonical `ProductList`, with add and remove
+  actions and links from each entry to its product and variant
 - Newsletter subscription and review submission as Orchestr actions
+- The product's manufacturer as its canonical brand: name and website
 
 ## Requirements
 
@@ -64,7 +70,7 @@ export default defineNuxtConfig({
 | `adminEndpoint` | yes | Admin API base URL, `https://<host>/api`. |
 | `adminClientId` | yes | Admin API integration ID. |
 | `adminClientSecret` | yes | Admin API integration secret. |
-| `storefrontUrl` | for checkout | Storefront base URL where `LaioutrConnector` is installed. Its origin is exposed publicly so the embedded checkout can pin `postMessage` traffic. |
+| `storefrontUrl` | for checkout, registration, password recovery | Storefront base URL where `LaioutrConnector` is installed. Its origin is exposed publicly so the embedded checkout can pin `postMessage` traffic. Shopware also builds the links in its registration, password-reset and newsletter mails from it, so it must be a domain of the sales channel. |
 | `checkoutLoginCallbackUrl` | no | Absolute URL the storefront returns to after a login inside checkout. Defaults to the request origin; point it at the project's IdP login route for external-IdP projects. |
 | `checkoutLogoutCallbackUrl` | no | Absolute URL the storefront returns to after a logout inside checkout. Point it at the IdP's RP-logout route so a storefront logout ends the external session too. |
 | `customFields` | no | Shopware custom fields to expose, per entity. See [Custom fields](#custom-fields). |
@@ -89,6 +95,15 @@ and for standalone Nuxt apps.
   ]
 }
 ```
+
+## Prices
+
+| Field | Source |
+| --- | --- |
+| `price` | `calculatedPrice` — for a product, its cheapest variant's where Shopware reports one |
+| `strikethroughPrice` | `calculatedPrice.listPrice`, only while it is above the price |
+| `savingsPercent` | Saving against the strikethrough price, as a **whole percent rounded down** — a badge never claims more than the actual discount, so 19.99 % reads as 19 %. Quantity tiers use the same rule against the single-unit price. |
+| `lowestPriorPrice` (variant) | `calculatedPrice.regulationPrice` — Shopware's lowest price over the prior period the shop configures, which EU price-indication rules require beside an announced reduction. Absent where the shop has none. |
 
 ## Custom fields
 
@@ -225,6 +240,66 @@ export default defineNitroPlugin((nitro) => {
   });
 });
 ```
+
+## Wishlist
+
+The app maps Shopware's customer wishlist onto the canonical product-list tokens:
+`ProductListGetWishlistQuery`, `ProductListItemsLink`, `ProductListItemProductLink`,
+`ProductListItemProductVariantLink`, `ProductListAddItemsAction` and `ProductListRemoveItemsAction`.
+The list's id is the customer's id, because Shopware keeps one wishlist per customer.
+
+- **Variants are kept as given.** An item that names a `variantId` is stored as that variant. A
+  bare `productId` is stored as the product. Removing a bare product also removes its variants'
+  entries, so a listing-page heart can toggle with the product id alone.
+- **Guests have no Shopware wishlist.** The query resolves nothing for them, and the actions throw
+  `UnauthenticatedError`. Keep a guest's list in the browser and send it with
+  `ProductListAddItemsAction` once the visitor has logged in. The action runs on
+  `/customer/wishlist/merge`, which skips products already on the list, so the merge is safe to
+  repeat.
+- Shopware wishlist entries carry no quantity, note or custom fields, so those inputs are not
+  kept. The shop must have the wishlist enabled (`core.cart.wishlistEnabled`).
+
+## Exports
+
+### `@laioutr/app-shopware/runtime`
+
+Everything another app needs to call the same Shopware instance — typically a plugin's own store-API
+route — in the visitor's session, rather than resolving the context token, language and currency a
+second time and drifting from the cart this app holds.
+
+```ts
+import { clearContextToken, defineShopware, getShopwareContext, persistContextToken } from '@laioutr/app-shopware/runtime';
+import type { ShopwareAdminClient, ShopwareContext, ShopwareOrchestrContext, StorefrontClient } from '@laioutr/app-shopware/runtime';
+```
+
+| Export | Purpose |
+| --- | --- |
+| `defineShopware` | Pre-configured Orchestr builder with Shopware metadata and the request's Shopware context on `context`: everything `getShopwareContext` returns, plus the resolved `settings` and `resolveCriteria`. Chain `.queryHandler()`, `.componentResolver()`, etc. directly on it. |
+| `getShopwareContext(event, clientEnv)` | The same context outside an Orchestr handler: the store-API client, the Admin API client (absent without an integration), the store-API `endpoint`, the visitor's `contextToken`, the resolved `languageId`, `currencyId` and ISO `currency`, and `storeApiHeaders()` for routes the typed client does not know. |
+| `persistContextToken(event, token)` | Stores a token a store-API write returned and fires `shopware:context-token:changed`. Call it from an action — a read handler's response is already streaming and cannot set the cookie. |
+| `clearContextToken(event)` | Drops the token, so the next read starts a guest context. |
+
+```ts
+// orchestr/product-variant/live-stock.resolver.ts in another app
+import { defineShopware } from '@laioutr/app-shopware/runtime';
+
+export default defineShopware.componentResolver({
+  label: 'Live stock',
+  entityType: 'ProductVariant',
+  provides: [LiveStock],
+  resolve: async ({ entityIds, context }) => {
+    const stock = await $fetch(`${context.endpoint}/my-plugin/live-stock`, {
+      method: 'POST',
+      headers: context.storeApiHeaders(),
+      body: { ids: entityIds },
+    });
+    // …
+  },
+});
+```
+
+The token is read exactly as this app reads it: `shopware:context-token:resolve` first, the cookie
+second.
 
 ## Development
 
