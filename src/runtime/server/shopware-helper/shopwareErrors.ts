@@ -67,19 +67,45 @@ export const toCanonicalFieldPath = (pointer: string, prefix: string[] = []): st
 ];
 
 /**
+ * The camel-cased column a write overflowed. Shopware before 6.7 validates no maximum lengths on
+ * customer and address writes, so an over-long value reaches the database and comes back as a 500
+ * carrying MySQL's error 1406, which names the column but not the field that fed it.
+ */
+const overflowedColumn = (entry: ShopwareErrorEntry): string | undefined => {
+  if (entry.code !== '1406') return undefined;
+  const column = /Data too long for column '(\w+)'/.exec(entry.detail ?? '')?.[1];
+  return column?.replace(/_([a-z0-9])/g, (_, char: string) => char.toUpperCase());
+};
+
+/**
  * Rethrow a Store API validation failure as the canonical {@link InvalidFieldError} for its first
  * violation; any other error is rethrown unchanged. The canonical error names one field, and the
  * first is the one Shopware's own storefront highlights first.
+ *
+ * `columnPointer` places an overflowed database column in the request body, as the JSON pointer a
+ * violation would have carried; without it, or when it answers `undefined`, the error is rethrown.
  */
-export const throwAsInvalidField = (err: unknown, prefix: string[] = []): never => {
+export const throwAsInvalidField = (err: unknown, prefix: string[] = [], columnPointer?: (column: string) => string | undefined): never => {
+  const errors = isShopwareApiError(err) ? (err.details?.errors ?? []) : [];
+
   if (shopwareErrorStatus(err) === 400) {
-    const violation = (err as ShopwareApiError).details?.errors?.find((entry) => entry.code && entry.source?.pointer);
+    const violation = errors.find((entry) => entry.code && entry.source?.pointer);
     if (violation) {
       throw new InvalidFieldError(toInvalidFieldReason(violation.code!), toCanonicalFieldPath(violation.source!.pointer!, prefix));
     }
   }
+
+  if (columnPointer) {
+    const column = errors.map(overflowedColumn).find(Boolean);
+    const pointer = column ? columnPointer(column) : undefined;
+    if (pointer) throw new InvalidFieldError('TOO_LONG', toCanonicalFieldPath(pointer, prefix));
+  }
+
   throw err;
 };
+
+/** `columnPointer` for an address or profile body, whose fields are named after the columns they fill. */
+export const bodyFieldOfColumn = (column: string) => `/${column}`;
 
 /**
  * Rethrow a failed account call in canonical terms: a context without a customer (401, 403) is
@@ -88,14 +114,18 @@ export const throwAsInvalidField = (err: unknown, prefix: string[] = []): never 
  */
 export const throwAsAccountError = (
   err: unknown,
-  { addressId, fieldPrefix = [] }: { addressId?: string; fieldPrefix?: string[] } = {}
+  {
+    addressId,
+    fieldPrefix = [],
+    columnPointer,
+  }: { addressId?: string; fieldPrefix?: string[]; columnPointer?: (column: string) => string | undefined } = {}
 ): never => {
   const status = shopwareErrorStatus(err);
   if (status === 401 || status === 403) throw new UnauthenticatedError();
   if (addressId && (status === 404 || shopwareErrorCodes(err).includes('CHECKOUT__CUSTOMER_ADDRESS_NOT_FOUND'))) {
     throw new AddressNotFoundError(addressId);
   }
-  return throwAsInvalidField(err, fieldPrefix);
+  return throwAsInvalidField(err, fieldPrefix, columnPointer);
 };
 
 /** Run an account call, rethrowing its failure through {@link throwAsAccountError}. */

@@ -3,7 +3,7 @@ import type { operations, Schemas } from '../../types/storeApiTypes';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 import { listCustomerAddresses, readCustomer } from '../../shopware-helper/customerAddresses';
 import { findSalutationId, toShopwareAddressBodyFromStored } from '../../shopware-helper/mailingAddress';
-import { accountCall } from '../../shopware-helper/shopwareErrors';
+import { accountCall, bodyFieldOfColumn } from '../../shopware-helper/shopwareErrors';
 
 type ChangeProfileBody = operations['changeProfile post /account/change-profile']['body'] & { customFields?: Record<string, unknown> };
 
@@ -36,7 +36,10 @@ export default defineShopwareAction(CustomerUpdateAction, async ({ context, inpu
       ...(input.customFields ? { customFields: input.customFields } : {}),
     };
 
-    await accountCall(() => storefrontClient.invoke('changeProfile post /account/change-profile', { body }), { fieldPrefix: ['person'] });
+    await accountCall(() => storefrontClient.invoke('changeProfile post /account/change-profile', { body }), {
+      fieldPrefix: ['person'],
+      columnPointer: bodyFieldOfColumn,
+    });
   }
 
   if (input.phone !== undefined) {
@@ -50,6 +53,7 @@ export default defineShopwareAction(CustomerUpdateAction, async ({ context, inpu
       () => storefrontClient.invoke('updateCustomerAddress patch /account/address/{addressId}', { pathParams: { addressId }, body }),
       {
         fieldPrefix: [],
+        columnPointer: bodyFieldOfColumn,
       }
     );
   }

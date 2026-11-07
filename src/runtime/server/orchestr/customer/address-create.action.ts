@@ -2,7 +2,7 @@ import { CustomerAddressCreateAction } from '@laioutr-core/canonical-types/ecomm
 import type { Schemas } from '../../types/storeApiTypes';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 import { resolveAddressIds, toShopwareAddressBody } from '../../shopware-helper/mailingAddress';
-import { accountCall } from '../../shopware-helper/shopwareErrors';
+import { accountCall, bodyFieldOfColumn } from '../../shopware-helper/shopwareErrors';
 
 export default defineShopwareAction(CustomerAddressCreateAction, async ({ context, input }) => {
   const ids = await resolveAddressIds(context.storefrontClient, context.systemEntities, input.address, {
@@ -13,5 +13,6 @@ export default defineShopwareAction(CustomerAddressCreateAction, async ({ contex
 
   await accountCall(() => context.storefrontClient.invoke('createCustomerAddress post /account/address', { body }), {
     fieldPrefix: ['address'],
+    columnPointer: bodyFieldOfColumn,
   });
 });

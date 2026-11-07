@@ -21,7 +21,7 @@ export default defineShopwareComponentResolver({
     let entities = [] as ShopwareProductReview[];
 
     const criteria = await context.resolveCriteria('product-review', {
-      includes: { product_review: ['id', 'title', 'content', 'points', 'externalUser'] },
+      includes: { product_review: ['id', 'title', 'content', 'points', 'externalUser', 'createdAt'] },
       associations: {},
     });
 

@@ -24,7 +24,7 @@ export default defineShopwareComponentResolver({
       .map((id) => lineItemsById.get(id))
       .filter((li): li is NonNullable<typeof li> => !!li && isSupportedCartLineItem(li))
       .map((li) => {
-        const mapped = li.type === 'promotion' ? mapDiscountItem(li, context.swCurrency) : mapCartItem(li, context.swCurrency);
+        const mapped = li.type === 'promotion' ? mapDiscountItem(li, context.currency) : mapCartItem(li, context.currency);
         return $entity({
           id: li.id,
           base: () => mapped.base,

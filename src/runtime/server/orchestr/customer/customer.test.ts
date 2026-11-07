@@ -17,6 +17,9 @@ const run = (handler: unknown, args: Record<string, unknown>) => (handler as Run
 
 const apiError = (status: number, errors: unknown[] = []) => Object.assign(new Error('Failed request'), { status, details: { errors } });
 
+/** Shopware before 6.7 lets an over-long value reach the database, which answers MySQL's error 1406. */
+const overflow = (column: string) => apiError(500, [{ code: '1406', detail: `Data too long for column '${column}' at row 1` }]);
+
 const billing = {
   id: 'addr-billing',
   firstName: 'Ada',
@@ -137,6 +140,29 @@ describe('update', () => {
       data: { reason: 'TOO_LONG', field: ['person', 'lastName'] },
     });
   });
+
+  it('places an overflowed profile column under person', async () => {
+    respond({
+      'readCustomer post /account/customer': customer,
+      'changeProfile post /account/change-profile': overflow('last_name'),
+    });
+
+    await expect(run(update, { input: { person: { lastName: 'x'.repeat(300) } } })).rejects.toMatchObject({
+      data: { reason: 'TOO_LONG', field: ['person', 'lastName'] },
+    });
+  });
+
+  it('places an overflowed phone number on phone', async () => {
+    respond({
+      'readCustomer post /account/customer': customer,
+      'listAddress post /account/list-address': { elements: [billing] },
+      'updateCustomerAddress patch /account/address/{addressId}': overflow('phone_number'),
+    });
+
+    await expect(run(update, { input: { phone: '1'.repeat(100) } })).rejects.toMatchObject({
+      data: { reason: 'TOO_LONG', field: ['phone'] },
+    });
+  });
 });
 
 describe('address-get-all', () => {
@@ -175,6 +201,16 @@ describe('address-create', () => {
     ).rejects.toBeInstanceOf(InvalidFieldError);
     expect(context.storefrontClient.invoke).not.toHaveBeenCalled();
   });
+
+  it('places an overflowed column on its address field', async () => {
+    respond({ 'createCustomerAddress post /account/address': overflow('zipcode') });
+
+    await expect(
+      run(addressCreate, {
+        input: { address: { firstName: 'A', lastName: 'B', address1: 'C', postalCode: '1'.repeat(100), city: 'E', countryCode: 'AT' } },
+      })
+    ).rejects.toMatchObject({ data: { reason: 'TOO_LONG', field: ['address', 'postalCode'] } });
+  });
 });
 
 describe('address-update', () => {
@@ -202,6 +238,17 @@ describe('address-update', () => {
     respond({ 'listAddress post /account/list-address': { elements: [] } });
 
     await expect(run(addressUpdate, { input: { id: 'addr-other', address: { city: 'X' } } })).rejects.toBeInstanceOf(AddressNotFoundError);
+  });
+
+  it('places an overflowed column on its address field', async () => {
+    respond({
+      'listAddress post /account/list-address': { elements: [billing] },
+      'updateCustomerAddress patch /account/address/{addressId}': overflow('additional_address_line1'),
+    });
+
+    await expect(
+      run(addressUpdate, { input: { id: 'addr-billing', address: { address2: 'x'.repeat(300) } } })
+    ).rejects.toMatchObject({ data: { reason: 'TOO_LONG', field: ['address', 'address2'] } });
   });
 });
 

@@ -3,7 +3,7 @@ import type { Schemas } from '../../types/storeApiTypes';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 import { listCustomerAddresses } from '../../shopware-helper/customerAddresses';
 import { mergeShopwareAddressBody, resolveAddressIds } from '../../shopware-helper/mailingAddress';
-import { accountCall } from '../../shopware-helper/shopwareErrors';
+import { accountCall, bodyFieldOfColumn } from '../../shopware-helper/shopwareErrors';
 
 /**
  * Update an address. Shopware validates the whole address on every write, so the input is overlaid
@@ -35,6 +35,7 @@ export default defineShopwareAction(CustomerAddressUpdateAction, async ({ contex
     {
       addressId,
       fieldPrefix: ['address'],
+      columnPointer: bodyFieldOfColumn,
     }
   );
 });
