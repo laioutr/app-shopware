@@ -27,3 +27,5 @@ export type ShopwareExtensions = {
     };
   };
 };
+
+export type ClientHeaders = StorefrontClient['defaultHeaders'];

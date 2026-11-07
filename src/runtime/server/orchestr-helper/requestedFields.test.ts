@@ -71,6 +71,15 @@ describe('resolveProductFields', () => {
   });
 });
 
+describe('product manufacturer', () => {
+  it('is associated on the product read, which does not autoload it', async () => {
+    const criteria = await resolveProductFields(passthroughResolver);
+
+    expect(criteria.associations.manufacturer).toEqual({});
+    expect(criteria.includes.product).toContain('manufacturer');
+  });
+});
+
 describe('resolveProductPropertyFields', () => {
   it('offers its criteria under the product-properties target with the group associated', async () => {
     const resolve = vi.fn(passthroughResolver);

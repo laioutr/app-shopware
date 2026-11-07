@@ -34,3 +34,8 @@ export const suggestionResultsFragmentToken = createPassthroughToken<{
 }>('@laioutr/app-shopware/completionResults');
 
 export const cartFragmentToken = createPassthroughToken<Schemas['Cart']>('@laioutr/app-shopware/cartFragment');
+
+/** Product id → parent id for the entries of the wishlist page a request read, so the item links need no lookup. */
+export const wishlistEntryParentsToken = createPassthroughToken<Record<string, string | undefined>>(
+  '@laioutr/app-shopware/wishlistEntryParents'
+);

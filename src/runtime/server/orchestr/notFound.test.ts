@@ -44,7 +44,7 @@ const context = {
   storefrontClient: { invoke: vi.fn() },
   settings: { catalog: { seoRouteNames: {} }, maxLimit: 100 },
   resolveCriteria: async (_entity: string, criteria: unknown) => criteria,
-  swCurrency: 'EUR',
+  currency: 'EUR',
 };
 
 type Run = (args: Record<string, unknown>) => Promise<unknown>;
