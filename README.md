@@ -136,9 +136,14 @@ Shopware's storefront; a customer's, which Shopware does not translate, come as 
 exposed by default — custom fields often carry purchasing or ERP data a storefront must not
 publish — and an entity without a whitelist leaves its slot unset. On Shopware 6.6.10 and later, a
 field whose **Visible in Store API** switch is off never reaches the app, whatever the whitelist.
+The app reads a customer's custom fields; it does not write them yet.
 
 Unlike `includes`, which [stay in a hook](#tuning-the-store-api-reads), this is configuration: a
-wrong key yields a missing field rather than an emptied component.
+wrong key yields a missing field rather than an emptied component. The app adds the `customFields`
+column to a read's `includes` after [`shopware:criteria:resolve`](#shopwarecriteriaresolve) has
+run, so a handler that narrows them neither sees the column nor drops it. A handler that narrows a
+product, variant or category read and leaves out `translated` gets each field in the visitor's
+language only, without Shopware's fallback to the default language.
 
 ## Tuning the Store API reads
 
@@ -153,7 +158,8 @@ handler and every read behaves exactly as it shipped.
 ### `shopware:criteria:resolve`
 
 Fires once per store-API read that hydrates a canonical entity, carrying the projection and
-relations for that read.
+relations for that read. The [custom fields](#custom-fields) the app is configured to expose are
+projected after the hook, so a handler does not see them in `includes`.
 
 ```ts
 // server/plugins/shopware-criteria.ts
@@ -161,7 +167,7 @@ export default defineNitroPlugin((nitro) => {
   nitro.hooks.hook('shopware:criteria:resolve', ({ target, result }) => {
     if (target !== 'product') return;
 
-    result.criteria.includes.product.push('customFields');
+    result.criteria.includes.product.push('properties');
     result.criteria.associations.properties = { associations: { group: {} } };
   });
 });

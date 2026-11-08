@@ -4,14 +4,25 @@ import type { CustomFieldsConfig, CustomFieldsEntity } from '../types/customFiel
 
 const escapeRegExp = (value: string) => value.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
 
+type CustomFieldMatcher = (key: string) => boolean;
+
+// Keyed by the array itself: it is the runtime config's, frozen and shared by every request, so its
+// globs compile once rather than per product of a listing.
+const matchers = new WeakMap<string[], CustomFieldMatcher>();
+
 /** `*` matches any run of characters, so `gpsr_*` takes a whole custom-field set. */
-export const customFieldMatcher = (include: string[]): ((key: string) => boolean) => {
+export const customFieldMatcher = (include: string[]): CustomFieldMatcher => {
+  const known = matchers.get(include);
+  if (known) return known;
+
   const exact = new Set(include.filter((pattern) => !pattern.includes('*')));
   const globs = include
     .filter((pattern) => pattern.includes('*'))
     .map((pattern) => new RegExp(`^${pattern.split('*').map(escapeRegExp).join('.*')}$`));
 
-  return (key) => exact.has(key) || globs.some((glob) => glob.test(key));
+  const matcher: CustomFieldMatcher = (key) => exact.has(key) || globs.some((glob) => glob.test(key));
+  matchers.set(include, matcher);
+  return matcher;
 };
 
 const includeFor = (config: CustomFieldsConfig | undefined, entity: CustomFieldsEntity) => config?.[entity]?.include ?? [];
@@ -42,14 +53,13 @@ const PROJECTION_BY_TARGET: Partial<Record<ShopwareCriteriaTarget, { entity: str
   product: { entity: 'product', whitelists: ['product', 'variant'] },
   'product-variant': { entity: 'product', whitelists: ['variant'] },
   category: { entity: 'category', whitelists: ['category'] },
-  // The navigation read's categories reach the category resolver through the passthrough.
-  menu: { entity: 'category', whitelists: ['category'] },
 };
 
 /**
  * Shopware returns `customFields` as one JSON column, so the projection names the column and the
  * whitelist is applied when mapping. A read that projects nothing returns whole rows and is left as
- * it is. Runs ahead of `shopware:criteria:resolve`, so a handler sees the column already projected.
+ * it is. Applied after `shopware:criteria:resolve`: the whitelist is configuration, so a handler that
+ * narrows `includes` cannot drop the column, and never sees it.
  */
 export const withCustomFieldIncludes = (
   target: ShopwareCriteriaTarget,

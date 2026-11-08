@@ -26,6 +26,12 @@ describe('customFieldMatcher', () => {
   it('takes every key for a bare `*`', () => {
     expect(customFieldMatcher(['*'])('anything')).toBe(true);
   });
+
+  it('compiles an include array once', () => {
+    const include = ['gpsr_*'];
+
+    expect(customFieldMatcher(include)).toBe(customFieldMatcher(include));
+  });
 });
 
 describe('pickCustomFields', () => {
@@ -100,16 +106,14 @@ describe('withCustomFieldIncludes', () => {
     ]);
   });
 
-  it('projects the column on a category or navigation read only for the category whitelist', () => {
+  it('projects the column on a category read only for the category whitelist', () => {
     const categoryCriteria = (category: string[]): ShopwareCriteria => ({ includes: { category }, associations: {} });
 
-    for (const target of ['category', 'menu'] as const) {
-      expect(withCustomFieldIncludes(target, categoryCriteria(['id']), { product: { include: ['*'] } }).includes.category).toEqual(['id']);
-      expect(withCustomFieldIncludes(target, categoryCriteria(['id']), { category: { include: ['a'] } }).includes.category).toEqual([
-        'id',
-        'customFields',
-      ]);
-    }
+    expect(withCustomFieldIncludes('category', categoryCriteria(['id']), { product: { include: ['*'] } }).includes.category).toEqual(['id']);
+    expect(withCustomFieldIncludes('category', categoryCriteria(['id']), { category: { include: ['a'] } }).includes.category).toEqual([
+      'id',
+      'customFields',
+    ]);
   });
 
   it('keeps the category and customer whitelists off product reads', () => {
@@ -121,12 +125,15 @@ describe('withCustomFieldIncludes', () => {
   it('never touches a read that projects nothing', () => {
     const seed: ShopwareCriteria = { includes: {}, associations: {} };
     expect(withCustomFieldIncludes('category', seed, { category: { include: ['*'] } })).toBe(seed);
-    expect(withCustomFieldIncludes('menu', seed, { category: { include: ['*'] } })).toBe(seed);
   });
 
   it('never touches a read no whitelist maps', () => {
+    const all = { product: { include: ['*'] }, variant: { include: ['*'] }, category: { include: ['*'] } };
     const seed = criteria(['id']);
-    expect(withCustomFieldIncludes('product-review', seed, { product: { include: ['*'] }, category: { include: ['*'] } })).toBe(seed);
+    const navigation: ShopwareCriteria = { includes: { category: ['id'] }, associations: {} };
+
+    expect(withCustomFieldIncludes('product-review', seed, all)).toBe(seed);
+    expect(withCustomFieldIncludes('menu', navigation, all)).toBe(navigation);
   });
 
   it('does not project the column twice', () => {

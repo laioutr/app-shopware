@@ -44,9 +44,9 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
     const { customFields } = useRuntimeConfig()['@laioutr/app-shopware'];
 
     const resolveCriteria: ResolveCriteria = async (target, criteria) => {
-      const result = { criteria: withCustomFieldIncludes(target, criteria, customFields) };
+      const result = { criteria };
       await nitro.hooks.callHook('shopware:criteria:resolve', { event: args.event, target, result });
-      return result.criteria;
+      return withCustomFieldIncludes(target, result.criteria, customFields);
     };
 
     return {
