@@ -1,6 +1,7 @@
 import { defineOrchestr, useNitroApp, useRuntimeConfig } from '#imports';
 import type { ShopwareAdminClient } from '../client/shopwareAdminClientFactory';
 import type { ShopwareContext } from '../context/getShopwareContext';
+import type { DimensionUnit } from '../shopware-helper/dimensionsMapper';
 import type { ShopwareVersion } from '../shopware-helper/shopwareVersion';
 import type { ResolveCriteria } from '../types/criteria';
 import type { CustomFieldsConfig } from '../types/customFields';
@@ -23,6 +24,8 @@ export type ShopwareOrchestrContext = Omit<ShopwareContext, 'adminClient'> & {
   settings: ShopwareSettings;
   resolveCriteria: ResolveCriteria;
   customFields: CustomFieldsConfig | undefined;
+  /** The unit of the shop's product width, height and length. */
+  dimensionUnit: DimensionUnit;
 };
 
 // `defineOrchestr` reaches the module only as a Nuxt auto-import, which has no type outside a Nuxt
@@ -41,7 +44,7 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
     const settings = { settings: defaultShopwareSettings() };
     await nitro.hooks.callHook('shopware:settings:resolve', { event: args.event, result: settings });
 
-    const { customFields } = useRuntimeConfig()['@laioutr/app-shopware'];
+    const { customFields, dimensionUnit } = useRuntimeConfig()['@laioutr/app-shopware'];
 
     const resolveCriteria: ResolveCriteria = async (target, criteria) => {
       const result = { criteria };
@@ -59,6 +62,7 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
         settings: settings.settings,
         resolveCriteria,
         customFields,
+        dimensionUnit: dimensionUnit === 'cm' ? 'cm' : 'mm',
       },
     };
   });

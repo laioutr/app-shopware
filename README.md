@@ -80,6 +80,7 @@ export default defineNuxtConfig({
 | `checkoutLoginCallbackUrl` | no | Absolute URL the storefront returns to after a login inside checkout. Defaults to the request origin; point it at the project's IdP login route for external-IdP projects. |
 | `checkoutLogoutCallbackUrl` | no | Absolute URL the storefront returns to after a logout inside checkout. Point it at the IdP's RP-logout route so a storefront logout ends the external session too. |
 | `customFields` | no | Shopware custom fields to expose, per entity: `product`, `variant`, `category` and `customer`. See [Custom fields](#custom-fields). |
+| `dimensionUnit` | no | The unit the shop enters product width, height and length in: `mm` (default, as Shopware's admin labels them) or `cm`. See [Product specifications and flags](#product-specifications-and-flags). |
 
 `accessToken`, `adminClientId` and `adminClientSecret` are secrets and stay server-side: they land
 in the private runtime config, and only `storefrontUrl`'s origin is exposed publicly. Read them
@@ -117,6 +118,12 @@ and for standalone Nuxt apps.
 components are read from, which inherits the parent's where it has none. Each property group becomes
 one row, its options joined in Shopware's own order; a group hidden from the detail page stays out,
 and English or German group names such as *Weight* / *Gewicht* get a `wellKnownName`.
+
+Shopware's native weight, width, height and length come first, as Shopware's storefront lists them:
+one row each with its `wellKnownName` (`weight`, `width`, `height`, `length`) and a `Measurement`
+value — weight in `kg`, the measures in `dimensionUnit`. Their `name` is German for a German request
+and English otherwise. A field that is unset or zero makes no row, and a property group that already
+carries the same `wellKnownName` wins over the native field, so a dimension is never listed twice.
 
 `ProductFlags` carries the two marks Shopware keeps on a product, as well-known codes:
 
