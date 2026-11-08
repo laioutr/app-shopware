@@ -2,6 +2,7 @@ import { CategoryBase, CategoryContent, CategoryMedia, CategorySeo } from '@laio
 import { categoriesToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { toRequestCriteria } from '../../shopware-helper/criteria';
+import { pickCustomFields } from '../../shopware-helper/customFields';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';
@@ -48,6 +49,7 @@ export default defineShopwareComponentResolver({
             base: () => ({
               slug: entitySlug(category),
               title: swTranslated(category, 'name') ?? category.name,
+              customFields: pickCustomFields(category, context.customFields, 'category'),
             }),
 
             content: () => ({

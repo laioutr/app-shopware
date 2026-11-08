@@ -14,6 +14,7 @@ import { productVariantsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { resolveProductVariantFields } from '../../orchestr-helper/requestedFields';
 import { toRequestCriteria } from '../../shopware-helper/criteria';
+import { pickCustomFields } from '../../shopware-helper/customFields';
 import { mapMedia } from '../../shopware-helper/mediaMapper';
 import { savingsPercentOf } from '../../shopware-helper/savingsPercent';
 import { swTranslated } from '../../shopware-helper/swTranslated';
@@ -79,6 +80,7 @@ export default defineShopwareComponentResolver({
               name: entity.name,
               // Shopware stores GTIN/EAN in `ean`
               gtin: entity.ean ?? undefined,
+              customFields: pickCustomFields(entity, context.customFields, 'variant'),
             }),
 
             availability: () => ({

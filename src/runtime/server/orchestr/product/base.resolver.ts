@@ -20,6 +20,7 @@ import { parentIdToDefaultVariantIdToken, productVariantsToken } from '../../con
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { resolveProductPropertyFields } from '../../orchestr-helper/requestedFields';
 import { toRequestCriteria } from '../../shopware-helper/criteria';
+import { pickCustomFields } from '../../shopware-helper/customFields';
 import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants';
 import { mapManufacturerBrand } from '../../shopware-helper/manufacturerMapper';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
@@ -107,6 +108,7 @@ export default defineShopwareComponentResolver({
         base: {
           name: swTranslated(rawProduct, 'name'),
           slug: entitySlug(rawProduct),
+          customFields: pickCustomFields(rawProduct, context.customFields, 'product'),
         },
 
         defaultVariant: {

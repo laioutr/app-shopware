@@ -1,12 +1,14 @@
-import { defineOrchestr, useNitroApp } from '#imports';
+import { defineOrchestr, useNitroApp, useRuntimeConfig } from '#imports';
 import type { ShopwareAdminClient } from '../client/shopwareAdminClientFactory';
 import type { ShopwareContext } from '../context/getShopwareContext';
 import type { ShopwareVersion } from '../shopware-helper/shopwareVersion';
 import type { ResolveCriteria } from '../types/criteria';
+import type { CustomFieldsConfig } from '../types/customFields';
 import type { ShopwareSettings } from '../types/settings';
 import type { defineOrchestrMock } from '@laioutr-core/orchestr/types';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
 import { getShopwareContext } from '../context/getShopwareContext';
+import { withCustomFieldIncludes } from '../shopware-helper/customFields';
 import { defaultShopwareSettings } from '../shopware-helper/shopwareSettings';
 import { getCachedShopwareVersion } from '../shopware-helper/system/getShopwareVersion';
 
@@ -20,6 +22,7 @@ export type ShopwareOrchestrContext = Omit<ShopwareContext, 'adminClient'> & {
   shopwareVersion: ShopwareVersion | undefined;
   settings: ShopwareSettings;
   resolveCriteria: ResolveCriteria;
+  customFields: CustomFieldsConfig | undefined;
 };
 
 // `defineOrchestr` reaches the module only as a Nuxt auto-import, which has no type outside a Nuxt
@@ -38,10 +41,12 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
     const settings = { settings: defaultShopwareSettings() };
     await nitro.hooks.callHook('shopware:settings:resolve', { event: args.event, result: settings });
 
+    const { customFields } = useRuntimeConfig()['@laioutr/app-shopware'];
+
     const resolveCriteria: ResolveCriteria = async (target, criteria) => {
       const result = { criteria };
       await nitro.hooks.callHook('shopware:criteria:resolve', { event: args.event, target, result });
-      return result.criteria;
+      return withCustomFieldIncludes(target, result.criteria, customFields);
     };
 
     return {
@@ -53,6 +58,7 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
         shopwareVersion,
         settings: settings.settings,
         resolveCriteria,
+        customFields,
       },
     };
   });

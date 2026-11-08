@@ -1,6 +1,7 @@
 import { CustomerGetCurrentAction, UnauthenticatedError } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 import { readCustomerWithAddresses, toAddressBookEntries } from '../../shopware-helper/customerAddresses';
+import { pickCustomFields } from '../../shopware-helper/customFields';
 import { salutationKeyOf } from '../../shopware-helper/mailingAddress';
 import { accountCall } from '../../shopware-helper/shopwareErrors';
 
@@ -26,6 +27,7 @@ export default defineShopwareAction(CustomerGetCurrentAction, async ({ context }
   return {
     customer: {
       id: customer.id,
+      customFields: pickCustomFields(customer, context.customFields, 'customer'),
       email: customer.email,
       ...(phone ? { phone } : {}),
       displayName: displayName || (customer.email ?? ''),

@@ -7,6 +7,7 @@ import {
   ORDER_HANDOFF_ENDPOINT_PATH,
 } from './runtime/server/const/checkout';
 import { registerLaioutrApp } from '@laioutr-core/kit';
+import type { CustomFieldsConfig } from './runtime/server/types/customFields';
 import type { NuxtModule } from '@nuxt/schema';
 import { name, version } from '../package.json';
 
@@ -36,6 +37,13 @@ export interface ModuleOptions {
    * external session too.
    */
   checkoutLogoutCallbackUrl?: string;
+  /**
+   * Shopware custom fields to expose in the canonical `customFields` slots — `product` on
+   * `ProductBase`, `variant` on `ProductVariantBase`, `category` on `CategoryBase` and `customer` on
+   * the `Customer` that `CustomerGetCurrentAction` answers. Nothing is exposed by default: custom
+   * fields often carry data a storefront must not publish.
+   */
+  customFields?: CustomFieldsConfig;
 }
 
 /**
