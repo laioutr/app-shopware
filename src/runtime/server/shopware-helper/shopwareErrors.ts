@@ -36,8 +36,12 @@ export const toInvalidFieldReason = (code: string): InvalidFieldErrorReason => {
   return VIOLATION_REASONS[name] ?? name;
 };
 
-/** Shopware's address and customer field names, keyed to the canonical `MailingAddress` / `PersonName` ones. */
-const CANONICAL_FIELD_NAMES: Record<string, string> = {
+/**
+ * Shopware's address, customer and registration field names, keyed to the canonical
+ * `MailingAddress` / `PersonName` / `RegistrationConsents` paths.
+ */
+const CANONICAL_FIELD_NAMES: Record<string, string | string[]> = {
+  acceptedDataProtection: ['consents', 'privacyPolicy'],
   billingAddress: 'address',
   street: 'address1',
   additionalAddressLine1: 'address2',
@@ -58,7 +62,7 @@ export const toCanonicalFieldPath = (pointer: string, prefix: string[] = []): st
   ...pointer
     .split('/')
     .filter(Boolean)
-    .map((segment) => CANONICAL_FIELD_NAMES[segment] ?? segment),
+    .flatMap((segment) => CANONICAL_FIELD_NAMES[segment] ?? segment),
 ];
 
 /**

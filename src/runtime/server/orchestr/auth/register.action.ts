@@ -1,21 +1,22 @@
 import { useRuntimeConfig } from '#imports';
-import { AuthRegisterAction } from '@laioutr-core/canonical-types/ecommerce';
+import { AuthRegisterAction, EmailAlreadyInUseError } from '@laioutr-core/canonical-types/ecommerce';
 import type { Schemas } from '../../types/storeApiTypes';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 import { findSalutationId, resolveAddressIds, toShopwareAddressBody } from '../../shopware-helper/mailingAddress';
 import { persistContextToken } from '../../shopware-helper/persistContextToken';
-import { throwAsInvalidField } from '../../shopware-helper/shopwareErrors';
+import { shopwareErrorCodes, throwAsInvalidField } from '../../shopware-helper/shopwareErrors';
 
 /**
  * Register a customer through Shopware's `/account/register`. The address becomes the billing
  * address, which Shopware also uses for shipping.
  *
  * Shopware logs the new customer in and answers with a customer-bound context token, persisted the
- * way a login persists it. A sales channel with double opt-in registration answers without one; the
- * customer is created inactive and logs in after confirming the mail.
+ * way a login persists it. A sales channel with double opt-in registration answers without one: the
+ * customer confirms the mail before they can log in, and the action answers `pending-confirmation`.
  *
- * The canonical input carries no consent flag, so `acceptedDataProtection` is sent as `true`: a
- * storefront calling register has collected that consent in its own form.
+ * `acceptedDataProtection` is the customer's `consents.privacyPolicy`. A form that does not ask
+ * sends no choice, and then it is `true`: a storefront calling register has collected that consent
+ * in its own form.
  */
 export default defineShopwareAction(AuthRegisterAction, async ({ context, input, event }) => {
   const { storefrontUrl } = useRuntimeConfig()['@laioutr/app-shopware'];
@@ -39,7 +40,7 @@ export default defineShopwareAction(AuthRegisterAction, async ({ context, input,
   });
 
   try {
-    await storefrontClient.invoke('register post /account/register', {
+    const { data: customer } = await storefrontClient.invoke('register post /account/register', {
       body: {
         email: input.email,
         password: input.password,
@@ -50,14 +51,17 @@ export default defineShopwareAction(AuthRegisterAction, async ({ context, input,
         // Shopware reject the request with its own violation.
         salutationId: findSalutationId(systemEntities.salutations, input.salutation) as string,
         storefrontUrl,
-        acceptedDataProtection: true,
+        acceptedDataProtection: input.consents?.privacyPolicy ?? true,
         // `id`, `customerId` and `createdAt` are read-side fields the generated type requires here.
         billingAddress: toShopwareAddressBody(address, addressIds) as Schemas['CustomerAddress'],
       },
     });
+
+    return { status: customer.doubleOptInRegistration && !customer.doubleOptInConfirmDate ? 'pending-confirmation' : 'signed-in' } as const;
   } catch (err) {
+    if (shopwareErrorCodes(err).includes('VIOLATION::CUSTOMER_EMAIL_NOT_UNIQUE')) throw new EmailAlreadyInUseError();
     // Apart from `email`, every column registration writes also exists on the billing address, and is
     // no wider there, so an overflow is reported against the address field.
-    throwAsInvalidField(err, [], (column) => (column === 'email' ? '/email' : `/billingAddress/${column}`));
+    return throwAsInvalidField(err, [], (column) => (column === 'email' ? '/email' : `/billingAddress/${column}`));
   }
 });
