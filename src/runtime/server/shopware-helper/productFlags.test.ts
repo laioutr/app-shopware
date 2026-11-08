@@ -15,12 +15,12 @@ describe('deriveProductFlags', () => {
   it('flags new and topseller products with their well-known codes', () => {
     expect(deriveProductFlags(row(), row({ isNew: true, markAsTopseller: true }))).toEqual([
       { wellKnownName: 'new', name: 'New' },
-      { wellKnownName: 'bestseller', name: 'Bestseller' },
+      { wellKnownName: 'recommended', name: 'Tip' },
     ]);
   });
 
   it('lets the parent decide where the variant inherits', () => {
-    expect(codes(deriveProductFlags(row({ markAsTopseller: true }), row({ markAsTopseller: null })))).toEqual(['bestseller']);
+    expect(codes(deriveProductFlags(row({ markAsTopseller: true }), row({ markAsTopseller: null })))).toEqual(['recommended']);
     expect(codes(deriveProductFlags(row({ markAsTopseller: true }), row({ markAsTopseller: false })))).toEqual([]);
   });
 

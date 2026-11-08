@@ -116,10 +116,10 @@ and English or German group names such as *Weight* / *Gewicht* get a `wellKnownN
 | `wellKnownName` | Source |
 | --- | --- |
 | `new` | `isNew`, which Shopware computes on every read: the release date lies within the shop's *Mark products as "new", for ? days*. A product without a release date is never new. |
-| `bestseller` | `markAsTopseller`; a variant without its own takes the parent's. |
+| `recommended` | `markAsTopseller`, which the admin calls *Highlight product* and Shopware's own storefront shows as *Tip*; a variant without its own takes the parent's. |
 
 A frontend translates and styles a known code, so there are no labels to localise: each flag's
-`name` (*New*, *Bestseller*) is only the English text shown where a frontend does not know the code.
+`name` (*New*, *Tip*) is only the English text shown where a frontend does not know the code.
 A discount is not a flag — the "Sale" badge comes from `ProductPrices` (`isOnSale`,
 `strikethroughPrice`). Flags are cached with the product's other catalogue data for up to a day, so
 `new` can stay up to a day after the shop's window ends.

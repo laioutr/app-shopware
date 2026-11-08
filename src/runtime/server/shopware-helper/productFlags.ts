@@ -14,7 +14,7 @@ export const deriveProductFlags = (rawProduct: ShopwareProduct, rawVariant: Shop
   const flags: ProductFlag[] = [];
 
   if (rawVariant.isNew ?? rawProduct.isNew) flags.push({ wellKnownName: 'new', name: 'New' });
-  if (rawVariant.markAsTopseller ?? rawProduct.markAsTopseller) flags.push({ wellKnownName: 'bestseller', name: 'Bestseller' });
+  if (rawVariant.markAsTopseller ?? rawProduct.markAsTopseller) flags.push({ wellKnownName: 'recommended', name: 'Tip' });
 
   return flags;
 };
