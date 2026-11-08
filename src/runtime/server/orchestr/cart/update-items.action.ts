@@ -1,6 +1,6 @@
 import { CartUpdateItemsAction } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareAction } from '../../middleware/defineShopware';
-import { handleCartMutationErrors } from '../../shopware-helper/cartErrors';
+import { mutationMessages, toCartMessages } from '../../shopware-helper/cartErrors';
 import { persistContextToken } from '../../shopware-helper/persistContextToken';
 import { Schemas } from '../../types/storeApiTypes';
 
@@ -12,7 +12,7 @@ export default defineShopwareAction(CartUpdateItemsAction, async ({ event, conte
   // action (CartRemoveItemsAction), so we don't reinterpret 0 as a delete here.
   const items = input.filter((item) => item.quantity !== undefined).map((item) => ({ id: item.itemId, quantity: item.quantity }));
 
-  if (items.length === 0) return;
+  if (items.length === 0) return undefined;
 
   const cart = await storefrontClient.invoke('updateLineItem patch /checkout/cart/line-item', {
     // Shopware only needs id + quantity to update a line item; the generated LineItem
@@ -21,5 +21,5 @@ export default defineShopwareAction(CartUpdateItemsAction, async ({ event, conte
   });
 
   await persistContextToken(event, cart.data.token);
-  handleCartMutationErrors(cart.data.errors);
+  return mutationMessages(toCartMessages(cart.data.errors));
 });

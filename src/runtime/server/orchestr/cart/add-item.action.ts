@@ -1,7 +1,7 @@
 import { CartAddItemsAction } from '@laioutr-core/canonical-types/ecommerce';
-import type { CartBatchResultItem } from '@laioutr-core/canonical-types';
+import type { CartBatchResultItem, CartMessage } from '@laioutr-core/canonical-types';
 import { defineShopwareAction } from '../../middleware/defineShopware';
-import { handleCartMutationErrors, takeDiscountCodeErrors } from '../../shopware-helper/cartErrors';
+import { addedProductsOutcome, discountCodeOutcome, mutationMessages, productLineIdOf } from '../../shopware-helper/cartErrors';
 import { persistContextToken } from '../../shopware-helper/persistContextToken';
 
 export default defineShopwareAction(CartAddItemsAction, async ({ event, context, input }) => {
@@ -22,7 +22,11 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
     await persistContextToken(event, token);
   };
 
+  // What Shopware reported beyond each item's outcome, across every request of this action.
+  const messages: CartMessage[] = [];
+
   const products = input.filter((i) => i.type === 'product');
+  let productItems: CartBatchResultItem[] = [];
 
   if (products.length > 0) {
     const cart = await storefrontClient.invoke('addLineItem post /checkout/cart/line-item', {
@@ -30,10 +34,10 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
         items: products.map((product) => ({
           children: {},
           deliveryInformation: { apiAlias: 'cart_delivery_information' },
-          id: product.variantId ?? product.productId,
+          id: productLineIdOf(product),
           payload: {
             type: product.type,
-            id: product.variantId ?? product.productId,
+            id: productLineIdOf(product),
           },
           quantity: product.quantity,
           states: ['is-physical'],
@@ -43,7 +47,10 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
     });
 
     await persistToken(cart.data.token);
-    handleCartMutationErrors(cart.data.errors);
+
+    const outcome = addedProductsOutcome(products, cart.data.errors);
+    productItems = outcome.items;
+    messages.push(...outcome.messages);
   }
 
   /**
@@ -59,24 +66,9 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
 
     await persistToken(cart.data.token);
 
-    const { rejections, rest } = takeDiscountCodeErrors(cart.data.errors);
-    handleCartMutationErrors(rest);
-
-    // Shopware removes the placeholder line item again when a code does not resolve, so an
-    // applied promotion is the signal. Codes are matched verbatim — Shopware never folds case.
-    const applied = (cart.data.lineItems ?? []).some((li) => li.type === 'promotion' && li.referencedId === code);
-    if (applied) return { status: 'added' as const, quantity: 1 };
-
-    // An unknown code is the canonical `not-found`; the rest of Shopware's promotion errors —
-    // ineligible, excluded, already redeemed — have no well-known counterpart, so its own key
-    // travels as the reason and its message as the label.
-    const [rejection] = rejections;
-    const key = rejection?.messageKey ?? rejection?.key;
-    return {
-      status: 'rejected' as const,
-      reason: key === 'promotion-not-found' || key === undefined ? 'not-found' : key,
-      reasonLabel: rejection?.message,
-    };
+    const outcome = discountCodeOutcome(code, cart.data);
+    messages.push(...outcome.messages);
+    return outcome.item;
   };
 
   // Built in input order, which is the order the canonical batch result is read back in.
@@ -84,12 +76,7 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
 
   for (const item of input) {
     if (item.type === 'product') {
-      items.push({
-        status: 'added' as const,
-        productId: item.productId,
-        variantId: item.variantId,
-        quantity: item.quantity,
-      });
+      items.push(productItems[products.indexOf(item)]!);
     } else if (item.type === 'discount-code') {
       items.push(await redeemDiscountCode(item.code));
     } else {
@@ -103,5 +90,5 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
     }
   }
 
-  return { items };
+  return { items, ...mutationMessages(messages) };
 });

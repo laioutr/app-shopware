@@ -176,26 +176,55 @@ export default defineNitroPlugin((nitro) => {
 
 ## Cart errors
 
-Shopware reports cart problems (stock, minimum quantities, blocked shipping or payment methods) as
-cart errors with a message key and parameters, the same keys Shopware's own storefront translates.
-The app passes them on in that form so a storefront can translate them:
+Shopware reports cart problems — stock, quantity rules, a code that does not apply, a blocked
+shipping or payment method — as cart errors. The app passes each one on as a canonical
+`CartMessage` (`@laioutr-core/canonical-types`), `{ code, level, message?, blocksCheckout? }`:
 
-```ts
-type CartMessage = {
-  key: string; // Shopware's message key, e.g. 'product-stock-reached'
-  id?: string; // this occurrence: the key plus the line item or method it concerns
-  level: 'notice' | 'warning' | 'error';
-  message?: string; // Shopware's English message
-  parameters: Record<string, unknown>; // placeholders of the message, e.g. { name, quantity }
-  blocksOrder: boolean;
-};
-```
+- `code` is the well-known code for Shopware's message key, or the key itself where there is none
+  (`auto-promotion-not-found`, a plugin's own key).
 
-- **On the cart**, every error the cart carries is in `CartBase.customFields.cartErrors`. The
-  canonical cart has no field for them.
-- **On a mutation** (add, update, remove items), blocking errors fail the action with a
-  `ShopwareCartError` (HTTP 422) whose `data.errors` lists them. Notices and warnings do not fail
-  it; read them from the cart.
+  | Shopware message key | `code` |
+  | --- | --- |
+  | `product-stock-reached`, warning — Shopware lowered the quantity | `quantity-adjusted` |
+  | `product-stock-reached`, error — the lines of one product ask for more than is in stock | `not-enough-stock` |
+  | `product-out-of-stock` | `sold-out` |
+  | `product-not-found` | `not-found` |
+  | `min-order-quantity` | `below-minimum-quantity` |
+  | `purchase-steps-quantity` | `invalid-quantity-increment` |
+  | `promotion-not-eligible`, with or without its reason suffix, and `promotion-excluded` | `discount-not-applicable` |
+  | `promotion-not-found` | `discount-not-found` |
+  | `shipping-method-blocked` | `shipping-method-unavailable` |
+  | `payment-method-blocked` | `payment-method-unavailable` |
+
+- `level` is Shopware's level 0, 10 or 20 as `info`, `warning` or `error`.
+- `message` is Shopware's own text.
+- `blocksCheckout` is Shopware's block flag. Shopware 6.5 does not send one, so there a message
+  at `error` level blocks.
+
+A message carries no numbers. What it refers to is on the line: the quantity Shopware sells in
+`CartItemAvailability.quantity`, the limits in `CartItemQuantityRule`.
+
+**On the cart**, `CartMessages` holds the messages that are not about one of its lines — a blocked
+shipping method, a code that does not apply — and each line's `CartItemMessages` holds those about
+it. Shopware names the line by the product it references. Its promotion errors name no line, so
+they are always cart messages, never on a discount line.
+
+**On a mutation**, a cart error never fails the action: Shopware applies the write and reports
+what it changed. Add, update and remove items answer `messages` with what that write reported;
+update and remove answer nothing when it reported nothing. Shopware keeps no error with the cart,
+so an error about a change it made — a quantity lowered, a line removed — arrives only there,
+while one it raises on every calculation, such as a line over the stock, also stands on the cart
+until it is resolved.
+
+**Adding items** reports each item's outcome:
+
+- A product whose line carries an error — sold out, not found, more than is in stock — is
+  `rejected` with the message's `code` as `reason` and its text as `reasonLabel`. A warning, such
+  as a quantity lowered to the stock, leaves it `added` and arrives in `messages`.
+- A discount code Shopware does not know is `rejected` with `reason: 'not-found'`; any other
+  refusal with `reason: 'discount-not-applicable'` and Shopware's message as `reasonLabel`.
+- A refusal reported on its item is not repeated in `messages`, and a message several requests
+  of one action report arrives once.
 
 ## Checkout
 
