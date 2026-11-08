@@ -104,6 +104,26 @@ and for standalone Nuxt apps.
 | `savingsPercent` | Saving against the strikethrough price, as a **whole percent rounded down** — a badge never claims more than the actual discount, so 19.99 % reads as 19 %. Quantity tiers use the same rule against the single-unit price. |
 | `lowestPriorPrice` (variant) | `calculatedPrice.regulationPrice` — Shopware's lowest price over the prior period the shop configures, which EU price-indication rules require beside an announced reduction. Absent where the shop has none. |
 
+## Product specifications and flags
+
+`ProductSpecifications` is built from the Shopware properties of the variant the product's other
+components are read from, which inherits the parent's where it has none. Each property group becomes
+one row, its options joined in Shopware's own order; a group hidden from the detail page stays out,
+and English or German group names such as *Weight* / *Gewicht* get a `wellKnownName`.
+
+`ProductFlags` carries the two marks Shopware keeps on a product, as well-known codes:
+
+| `wellKnownName` | Source |
+| --- | --- |
+| `new` | `isNew`, which Shopware computes on every read: the release date lies within the shop's *Mark products as "new", for ? days*. A product without a release date is never new. |
+| `recommended` | `markAsTopseller`, which the admin calls *Highlight product* and Shopware's own storefront shows as *Tip*; a variant without its own takes the parent's. |
+
+A frontend translates and styles a known code, so there are no labels to localise: each flag's
+`name` (*New*, *Tip*) is only the English text shown where a frontend does not know the code.
+A discount is not a flag — the "Sale" badge comes from `ProductPrices` (`isOnSale`,
+`strikethroughPrice`). Flags are cached with the product's other catalogue data for up to a day, so
+`new` can stay up to a day after the shop's window ends.
+
 ## Tuning the Store API reads
 
 What the app asks Shopware for, and what those reads cost, is reachable through two Nitro hooks
@@ -135,6 +155,7 @@ export default defineNitroPlugin((nitro) => {
 | --- | --- |
 | `product` | A product read, composed — the variant branch nested under it has already been through `product-variant`. |
 | `product-variant` | A standalone variant read *and* the branch nested inside a product read, so widening variants widens them everywhere. |
+| `product-properties` | The detail-page read behind `ProductSpecifications`: the default variant's properties and their groups. It runs only when the component is requested, so listings never carry properties. |
 | `category` | The category component resolver's read. |
 | `menu` | The navigation read behind `MenuByAliasQuery`. |
 | `product-review` | The review component resolver's read. |
