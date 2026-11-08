@@ -55,13 +55,13 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
-    "@laioutr-app/ui": "^2.35.1",
-    "@laioutr-core/canonical-types": "^0.40.0",
-    "@laioutr-core/core-types": "^0.79.0",
-    "@laioutr-core/devtools": "^0.79.0",
-    "@laioutr-core/frontend-core": "^0.79.0",
-    "@laioutr-core/kit": "^0.79.0",
-    "@laioutr-core/orchestr": "^0.79.0",
+    "@laioutr-app/ui": "^2.37.1",
+    "@laioutr-core/canonical-types": "^0.42.0",
+    "@laioutr-core/core-types": "^0.81.0",
+    "@laioutr-core/devtools": "^0.81.0",
+    "@laioutr-core/frontend-core": "^0.81.0",
+    "@laioutr-core/kit": "^0.81.0",
+    "@laioutr-core/orchestr": "^0.81.0",
     "@laioutr/eslint-config": "^1.9.5",
     "@laioutr/prettier-config": "^1.1.0",
     "@nuxt/devtools": "^2.6.3",
@@ -85,11 +85,11 @@
     "vue-tsc": "2.2.10"
   },
   "peerDependencies": {
-    "@laioutr-core/canonical-types": ">=0.40.0",
-    "@laioutr-core/core-types": ">=0.79.0",
-    "@laioutr-core/frontend-core": ">=0.79.0",
-    "@laioutr-core/kit": ">=0.79.0",
-    "@laioutr-core/orchestr": ">=0.79.0"
+    "@laioutr-core/canonical-types": ">=0.42.0",
+    "@laioutr-core/core-types": ">=0.81.0",
+    "@laioutr-core/frontend-core": ">=0.81.0",
+    "@laioutr-core/kit": ">=0.81.0",
+    "@laioutr-core/orchestr": ">=0.81.0"
   },
   "packageManager": "pnpm@10.15.0",
   "engines": {
