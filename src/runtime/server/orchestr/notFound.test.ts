@@ -107,6 +107,7 @@ describe('entities Shopware does not return', () => {
 
     const result = (await (productResolver as unknown as Resolve).resolve({
       entityIds: ['p1', 'p2'],
+      requestedComponents: [],
       context,
       passthrough: passthroughOf(),
       $entity: (entity: unknown) => entity,

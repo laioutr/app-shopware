@@ -31,6 +31,12 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   own thumbnails
 - Customer accounts: login, logout, registration and password recovery as the canonical auth
   actions, with the context token persisted and cleared the same way the embedded checkout does it
+- Customer profile and address book: the current customer with all addresses in one read, each
+  flagged as the default billing or shipping address, profile updates, and creating, updating,
+  deleting and defaulting addresses. `provinceCode` is the subdivision code without the country
+  (`BY`, not `DE-BY`), deleting a default address (before Shopware 6.7.3 also the address active in
+  the current context) answers `AddressNotDeletableError`, and Shopware's
+  validation errors arrive as `InvalidFieldError` with the canonical field path
 - Wishlist: the customer's Shopware wishlist as a canonical `ProductList`, with add and remove
   actions and links from each entry to its product and variant
 - Newsletter subscription and review submission as Orchestr actions
@@ -105,6 +111,26 @@ and for standalone Nuxt apps.
 | `savingsPercent` | Saving against the strikethrough price, as a **whole percent rounded down** — a badge never claims more than the actual discount, so 19.99 % reads as 19 %. Quantity tiers use the same rule against the single-unit price. |
 | `lowestPriorPrice` (variant) | `calculatedPrice.regulationPrice` — Shopware's lowest price over the prior period the shop configures, which EU price-indication rules require beside an announced reduction. Absent where the shop has none. |
 
+## Product specifications and flags
+
+`ProductSpecifications` is built from the Shopware properties of the variant the product's other
+components are read from, which inherits the parent's where it has none. Each property group becomes
+one row, its options joined in Shopware's own order; a group hidden from the detail page stays out,
+and English or German group names such as *Weight* / *Gewicht* get a `wellKnownName`.
+
+`ProductFlags` carries the two marks Shopware keeps on a product, as well-known codes:
+
+| `wellKnownName` | Source |
+| --- | --- |
+| `new` | `isNew`, which Shopware computes on every read: the release date lies within the shop's *Mark products as "new", for ? days*. A product without a release date is never new. |
+| `recommended` | `markAsTopseller`, which the admin calls *Highlight product* and Shopware's own storefront shows as *Tip*; a variant without its own takes the parent's. |
+
+A frontend translates and styles a known code, so there are no labels to localise: each flag's
+`name` (*New*, *Tip*) is only the English text shown where a frontend does not know the code.
+A discount is not a flag — the "Sale" badge comes from `ProductPrices` (`isOnSale`,
+`strikethroughPrice`). Flags are cached with the product's other catalogue data for up to a day, so
+`new` can stay up to a day after the shop's window ends.
+
 ## Custom fields
 
 Custom fields are Shopware's own extension mechanism, and a storefront often needs a few of them —
@@ -136,7 +162,10 @@ Shopware's storefront; a customer's, which Shopware does not translate, come as 
 exposed by default — custom fields often carry purchasing or ERP data a storefront must not
 publish — and an entity without a whitelist leaves its slot unset. On Shopware 6.6.10 and later, a
 field whose **Visible in Store API** switch is off never reaches the app, whatever the whitelist.
-The app reads a customer's custom fields; it does not write them yet.
+`CustomerUpdateAction` writes the custom fields it is given, whatever the whitelist: Shopware keeps
+those the shop lets a customer write through the Store API and drops the rest. Before 6.6.10.5,
+where Shopware erases all of a customer's fields when none of the sent ones is writable, the app
+asks the Admin API which are writable and sends only those.
 
 Unlike `includes`, which [stay in a hook](#tuning-the-store-api-reads), this is configuration: a
 wrong key yields a missing field rather than an emptied component. The app adds the `customFields`
@@ -177,6 +206,7 @@ export default defineNitroPlugin((nitro) => {
 | --- | --- |
 | `product` | A product read, composed — the variant branch nested under it has already been through `product-variant`. |
 | `product-variant` | A standalone variant read *and* the branch nested inside a product read, so widening variants widens them everywhere. |
+| `product-properties` | The detail-page read behind `ProductSpecifications`: the default variant's properties and their groups. It runs only when the component is requested, so listings never carry properties. |
 | `category` | The category component resolver's read. |
 | `menu` | The navigation read behind `MenuByAliasQuery`. |
 | `product-review` | The review component resolver's read. |
@@ -215,6 +245,76 @@ export default defineNitroPlugin((nitro) => {
 | `catalog.categoryPageIndex.minLevel` | `1` | Only categories *deeper* than this level are indexed — the default drops the navigation roots the storefront renders as the home page and the footer menu. |
 | `catalog.categoryPageIndex.activeOnly` | `true` | Restrict the index to active categories. |
 | `catalog.seoRouteNames` | `frontend.detail.page`; `frontend.navigation.page`, `frontend.landing.page` | `seo_url.routeName` values the slug resolver accepts, per entity type. Extend it when a plugin serves detail or listing pages under its own route name. |
+
+## Cart errors
+
+Shopware reports cart problems — stock, quantity rules, a code that does not apply, a blocked
+shipping or payment method — as cart errors. The app passes each one on as a canonical
+`CartMessage` (`@laioutr-core/canonical-types`), `{ code, level, message?, blocksCheckout? }`:
+
+- `code` is the well-known code for Shopware's message key, or the key itself where there is none
+  (`auto-promotion-not-found`, a plugin's own key).
+
+  | Shopware message key | `code` |
+  | --- | --- |
+  | `product-stock-reached`, warning — Shopware lowered the quantity | `quantity-adjusted` |
+  | `product-stock-reached`, error — the lines of one product ask for more than is in stock | `not-enough-stock` |
+  | `product-out-of-stock` | `sold-out` |
+  | `product-not-found` | `not-found` |
+  | `min-order-quantity` | `below-minimum-quantity` |
+  | `purchase-steps-quantity` | `invalid-quantity-increment` |
+  | `promotion-not-eligible`, with or without its reason suffix, and `promotion-excluded` | `discount-not-applicable` |
+  | `promotion-not-found` | `discount-not-found` |
+  | `shipping-method-blocked` | `shipping-method-unavailable` |
+  | `payment-method-blocked` | `payment-method-unavailable` |
+
+- `level` is Shopware's level 0, 10 or 20 as `info`, `warning` or `error`.
+- `message` is Shopware's text in the request's language — its `translatedMessage`, which Shopware
+  6.7.3 and later fill from the `checkout.<messageKey>` snippet — or else its English `message`. A
+  translation with a placeholder Shopware left unfilled (`%url%`) or with markup from its storefront
+  snippets falls back to the English text; a text that still has a placeholder of its own
+  (`product-not-found` before 6.7.3) is left out.
+- `blocksCheckout` is Shopware's block flag. Shopware before 6.6.7 does not send one, so there it
+  is taken from the error class the key belongs to — a blocked shipping or payment method, a
+  minimum quantity and purchase steps block at warning level, an unknown code does not block — and
+  a key the app does not know blocks at `error` level.
+
+A message carries no numbers. What it refers to is on the line: the quantity Shopware sells in
+`CartItemAvailability.quantity`, the limits in `CartItemQuantityRule`.
+
+**On the cart**, `CartMessages` holds the messages that are not about one of its lines — a blocked
+shipping method, a code that does not apply — and each line's `CartItemMessages` holds those about
+it. Shopware names the line by the product it references. Its promotion errors name no line, so
+they are always cart messages, never on a discount line.
+
+**On a mutation**, a cart error never fails the action: Shopware applies the write and reports
+what it changed. Add, update and remove items answer `messages` with what that write changed;
+update and remove answer nothing when it changed nothing beyond what it was asked. Shopware keeps
+no error with the cart, so an error about a change it made — a quantity lowered, a line removed,
+a discount added — arrives only there. An error it raises on every calculation stands on the cart
+and its lines until it is resolved, and is not repeated in `messages`: a blocked shipping or
+payment method, a code that does not apply or is excluded, the lines of one product over the
+stock, a missing address or VAT id.
+
+**Adding items** reports each item's outcome, which a storefront reads from `items[].status` to
+tell a refused product or code from an added one:
+
+- A product whose line Shopware removed is `rejected` with the `code` of the error about it as
+  `reason` and its text as `reasonLabel` — sold out, not found — or with `reason: 'not-orderable'`
+  when no error names its line, as for a product with variants.
+- A product whose line is in the cart is `added`, also when the lines of one product ask for more
+  than is in stock: that stands on the line's `CartItemMessages`. Its `quantity` is what its line
+  holds, at most what was asked for — Shopware answers the line's total, so for a product already
+  in the cart it can be more than this request added. A quantity Shopware lowered arrives in
+  `messages`. An item that added nothing to its line, because the earlier items of the request
+  took what it holds, is `rejected` with `reason: 'quantity-adjusted'`.
+- A discount code Shopware does not know is `rejected` with `reason: 'not-found'`; any other
+  refusal with `reason: 'discount-not-applicable'` and Shopware's text as `reasonLabel`.
+  Shopware's promotion errors name no code and its cart holds one error per key, so when two codes
+  of one action are refused for the same reason, one refusal stands for both.
+- A refusal reported on its item is not repeated in `messages`, also where Shopware raises it
+  again in the response to the next code, and a message several requests of one action report
+  arrives once.
 
 ## Checkout
 

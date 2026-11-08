@@ -15,6 +15,16 @@ export type ShopwareAddressIds = { countryId?: string; countryStateId?: string; 
 export const findCountry = (countries: Country[], countryCode: string): Country | undefined =>
   countries.find((country) => country.iso?.toUpperCase() === countryCode.toUpperCase());
 
+/** The ISO 3166-1 alpha-2 code of the sales channel's country with `countryId`. */
+export const countryCodeOf = (countries: Country[], countryId: string | undefined): string | undefined =>
+  countries.find((country) => country.id === countryId)?.iso;
+
+/** The canonical salutation key for a Shopware salutation id; the shop's `not_specified` is no salutation. */
+export const salutationKeyOf = (salutations: Salutation[], salutationId: string | undefined): string | undefined => {
+  const key = salutations.find((salutation) => salutation.id === salutationId)?.key;
+  return key === 'not_specified' ? undefined : key;
+};
+
 /**
  * The salutation id for a canonical salutation key. Shopware requires one on every customer and
  * address, so an absent or unknown key falls back to the shop's `not_specified` salutation.
@@ -24,8 +34,9 @@ export const findSalutationId = (salutations: Salutation[], key: string | undefi
   salutations.find((salutation) => salutation.key === 'not_specified')?.id;
 
 /**
- * Shopware's state short codes are ISO 3166-2 (`DE-BY`). Both that form and the bare subdivision
- * part (`BY`) are accepted, since the canonical `provinceCode` does not pin one down.
+ * Shopware's state short codes are ISO 3166-2 with the country (`DE-BY`), while the canonical
+ * `provinceCode` is the subdivision part alone (`BY`). Both forms are accepted, so an address read
+ * from Shopware resolves to its state again and a storefront sending the full code is not refused.
  */
 export const matchCountryState = (
   states: Pick<Schemas['CountryState'], 'id' | 'shortCode'>[],
@@ -102,4 +113,73 @@ export const toShopwareAddressBody = (
   };
 
   return Object.fromEntries(Object.entries(body).filter(([, value]) => value !== undefined));
+};
+
+/**
+ * The canonical `provinceCode` of a Shopware state: its short code without the country prefix
+ * (`DE-BY` reads as `BY`). A short code that carries no prefix is the shop's own and passes unchanged.
+ */
+const toProvinceCode = (shortCode: string, countryCode: string): string => {
+  const prefix = `${countryCode.toUpperCase()}-`;
+  return countryCode && shortCode.toUpperCase().startsWith(prefix) ? shortCode.slice(prefix.length) : shortCode;
+};
+
+/**
+ * Map a Shopware address onto the canonical one. The country comes from the `country` association,
+ * falling back to the sales channel's system entities, and the state from `countryState`.
+ */
+export const fromShopwareAddress = (address: Schemas['CustomerAddress'], systemEntities: SwSystemEntities): CanonicalAddress => {
+  const salutation = salutationKeyOf(systemEntities.salutations, address.salutationId);
+  const countryCode = address.country?.iso ?? countryCodeOf(systemEntities.countries, address.countryId) ?? '';
+
+  return {
+    firstName: address.firstName,
+    lastName: address.lastName,
+    ...(salutation ? { salutation } : {}),
+    ...(address.title ? { title: address.title } : {}),
+    ...(address.company ? { company: address.company } : {}),
+    ...(address.phoneNumber ? { phone: address.phoneNumber } : {}),
+    address1: address.street,
+    ...(address.additionalAddressLine1 ? { address2: address.additionalAddressLine1 } : {}),
+    city: address.city,
+    postalCode: address.zipcode ?? '',
+    countryCode,
+    ...(address.countryState?.shortCode ? { provinceCode: toProvinceCode(address.countryState.shortCode, countryCode) } : {}),
+  };
+};
+
+/** The writable fields of a stored Shopware address, as the base an update overlays. */
+export const toShopwareAddressBodyFromStored = (address: Schemas['CustomerAddress']): Partial<Schemas['CustomerAddressBody']> => {
+  const body: Partial<Schemas['CustomerAddressBody']> = {
+    firstName: address.firstName,
+    lastName: address.lastName,
+    salutationId: address.salutationId,
+    title: address.title,
+    company: address.company,
+    department: address.department,
+    street: address.street,
+    additionalAddressLine1: address.additionalAddressLine1,
+    additionalAddressLine2: address.additionalAddressLine2,
+    zipcode: address.zipcode,
+    city: address.city,
+    countryId: address.countryId,
+    countryStateId: address.countryStateId,
+    phoneNumber: address.phoneNumber,
+  };
+
+  return Object.fromEntries(Object.entries(body).filter(([, value]) => value !== undefined && value !== null));
+};
+
+/**
+ * Overlay a canonical partial address on a stored one. A changed country drops the stored state,
+ * which belongs to the old country, unless the update names a new one.
+ */
+export const mergeShopwareAddressBody = (
+  stored: Schemas['CustomerAddress'],
+  update: Partial<CanonicalAddress>,
+  ids: ShopwareAddressIds
+): Partial<Schemas['CustomerAddressBody']> => {
+  const base = toShopwareAddressBodyFromStored(stored);
+  if (ids.countryId && ids.countryId !== stored.countryId && !ids.countryStateId) delete base.countryStateId;
+  return { ...base, ...toShopwareAddressBody(update, ids) };
 };

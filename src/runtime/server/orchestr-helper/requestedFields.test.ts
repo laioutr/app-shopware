@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { resolveProductFields, resolveProductVariantFields } from './requestedFields';
+import { resolveProductFields, resolveProductPropertyFields, resolveProductVariantFields } from './requestedFields';
 import type { ResolveCriteria } from '../types/criteria';
 
 const passthroughResolver: ResolveCriteria = async (_target, criteria) => criteria;
@@ -77,5 +77,17 @@ describe('product manufacturer', () => {
 
     expect(criteria.associations.manufacturer).toEqual({});
     expect(criteria.includes.product).toContain('manufacturer');
+  });
+});
+
+describe('resolveProductPropertyFields', () => {
+  it('offers its criteria under the product-properties target with the group associated', async () => {
+    const resolve = vi.fn(passthroughResolver);
+
+    const criteria = await resolveProductPropertyFields(resolve);
+
+    expect(targetsSeenBy(resolve)).toEqual(['product-properties']);
+    expect(criteria.associations).toEqual({ properties: { associations: { group: {} } } });
+    expect(criteria.includes.property_group).toContain('visibleOnProductDetailPage');
   });
 });
