@@ -1,5 +1,154 @@
 # @laioutr/app-shopware
 
+## 0.21.0
+
+### Minor Changes
+
+- 67dbab9: Customers can log out, register and recover their password through the canonical `AuthLogoutAction`, `AuthRegisterAction` and `AuthRecoverAction`.
+
+  - **Logout** ends the Shopware session and clears the context token, notifying `shopware:context-token:changed` with `null` as a logout inside the embedded checkout does. The old token is detached from the customer too, so the embedded checkout's storefront session, which holds the same token, is logged out as well.
+  - **Register** creates the customer with the given address as billing address, logs them in and answers `signed-in`, persisting the new context token. A sales channel with double opt-in registration leaves the customer logged out until they confirm the mail, and the action answers `pending-confirmation`. An address that already has an account throws `EmailAlreadyInUseError`. Shopware's other validation errors arrive as `InvalidFieldError` with the canonical field path (`['address', 'postalCode']`) and the violation as the reason — `MISSING`, `TOO_SHORT`, `INVALID_FORMAT`, or Shopware's own name for a shop-specific rule. A value longer than Shopware stores, which Shopware 6.5 does not validate, arrives as `TOO_LONG` on its field instead of as a server error.
+  - **Login** throws `InvalidCredentialsError` for a wrong address or password, and `CustomerNotConfirmedError` for a customer who has not confirmed that mail yet, on Shopware 6.5 as on later versions. Shopware 6.7.12 and later send the mail again.
+  - **Recover** sends Shopware's password-reset mail. It answers the same for an address without an account, so it cannot be used to probe for accounts.
+
+  **Breaking:** `AuthLoginAction` no longer answers a failed login with `success: false`. A wrong address or password throws `InvalidCredentialsError`, as the canonical action declares. Too many attempts fail the call with status 429, and any other failure, such as Shopware being unreachable, fails it too.
+
+  ```ts
+  // before
+  const { success } = await fetchAction(AuthLoginAction, credentials);
+  if (!success) showWrongCredentials();
+
+  // after: the action's error reaches the browser as the cause of the thrown error
+  try {
+    await fetchAction(AuthLoginAction, credentials);
+  } catch (error) {
+    const name = (error as { cause?: { name?: string } }).cause?.name;
+    if (name === '[SERVER] InvalidCredentialsError') showWrongCredentials();
+    else throw error;
+  }
+  ```
+
+  Register and recover need `storefrontUrl`, which Shopware builds the links in its mails from. Register passes `consents.privacyPolicy` on as Shopware's `acceptedDataProtection` and sends `true` when the form does not ask; a channel that requires the consent reports a refusal on `['consents', 'privacyPolicy']`.
+
+- 5ccfffb: Cart line items link to their `ProductVariant` through `CartItemProductVariantLink`, so a cart row can render live variant data such as options, stock, media and the product link. The link is read from the cart the request already loaded, with no extra Store API call. Promotion lines have no variant and resolve no link.
+- 3ccf7a9: **Breaking:** the app requires `@laioutr-core/orchestr`, `frontend-core`, `core-types` and `kit` 0.81.0 or later, and `@laioutr-core/canonical-types` 0.42.0 or later. A project that also runs `@laioutr-app/ui` needs 2.37.1 or later, which brings the same `canonical-types`.
+
+  ```jsonc
+  // before
+  "@laioutr-core/canonical-types": ">=0.40.0",
+  "@laioutr-core/orchestr": ">=0.79.0"
+  // after
+  "@laioutr-core/canonical-types": ">=0.42.0",
+  "@laioutr-core/orchestr": ">=0.81.0"
+  ```
+
+- 86a6385: Customers can manage their profile and address book through the canonical customer actions: `CustomerUpdateAction`, `AddressGetAllAction`, `CustomerAddressCreateAction`, `CustomerAddressUpdateAction`, `CustomerAddressDeleteAction` and `CustomerAddressSetDefaultAction`.
+
+  `CustomerGetCurrentAction` fills `addresses` and `phone`, read with the customer in a single Store API call. `addresses` holds the same entries `AddressGetAllAction` returns: each address with its `id`, and `isDefaultBilling` and `isDefaultShipping` set on the customer's defaults. One address can be both.
+
+  - An address's `countryCode` is the ISO 3166-1 alpha-2 code, and its `provinceCode` the ISO 3166-2 subdivision code without the country: Shopware's state `DE-BY` reads as `BY`. A write accepts both `BY` and `DE-BY`.
+  - Shopware keeps phone numbers on addresses, so the customer's `phone` is the phone of the default billing address, and `CustomerUpdateAction` writes it there.
+  - Updates are partial: the stored profile or address fills in whatever the input leaves out.
+  - `CustomerUpdateAction` writes the `customFields` the shop lets the Store API write to a customer. Before Shopware 6.6.10.5, and where the app cannot read the shop's version, it asks the Admin API which those are, and writes none when the Admin API is not configured or may not read custom fields: those Shopware versions erase every custom field of a customer when none of the sent ones is writable.
+  - Errors use the canonical types: `UnauthenticatedError` for a guest, `AddressNotFoundError` for an address the customer does not have, `AddressNotDeletableError` when Shopware refuses to delete a default address (or, before Shopware 6.7.3, the address active in the current context), and `InvalidFieldError` for a validation failure, with the canonical field path. A value longer than Shopware stores, which Shopware 6.5 does not validate, arrives as `TOO_LONG` on its field instead of as a server error.
+
+- c2f24e0: The Laioutr Cockpit offers the app's settings as a form under an environment's Configuration → Shopware, with the secrets stored sealed and shown only as set.
+- 3e3ddf2: Shopware custom fields reach the storefront. The `customFields` option whitelists keys per entity, and the app maps the listed ones unchanged into `ProductBase.customFields`, `ProductVariantBase.customFields`, `CategoryBase.customFields` and the `customFields` of the customer `CustomerGetCurrentAction` answers. `*` matches any run of characters. Nothing is exposed until a key is listed. Product, variant and category values are the translated ones; a customer's come as stored, since Shopware does not translate them, and are read, not written. The app projects the whitelisted fields after `shopware:criteria:resolve`, so a handler that narrows a read's `includes` keeps them.
+
+  ```jsonc
+  // laioutrrc.json → apps[@laioutr/app-shopware].config
+  {
+    "customFields": {
+      "product": { "include": ["energyLabel", "gpsr_*"] },
+      "variant": { "include": ["datasheet"] },
+      "category": { "include": ["teaser"] },
+      "customer": { "include": ["loyaltyTier"] },
+    },
+  }
+  ```
+
+- 931eec3: Product and variant prices carry the Omnibus lowest prior price, and savings percentages read the same everywhere.
+
+  - `ProductVariantPrices.lowestPriorPrice` and `ProductPrices.lowestPriorPrice` are the regulation price the shop enters in Shopware — the lowest price of the prior 30 days, which EU price-indication rules require next to an announced reduction. A product's is the one of the cheapest variant, which sets its `price`. It is absent where the shop has entered none.
+  - `savingsPercent` on product, variant and quantity-tier prices is a whole percent, rounded down, so a badge never claims more than the actual discount. It used to round to the nearest percent, which read a 19.99 % saving as 20 %.
+  - Quantity-tier `savingsPercent` is now the saving against the single-unit price, as canonical-types defines it. It used to be the tier price as a share of that price, so a 10 % discount read as `90`.
+
+- c2f24e0: `ProductByIdQuery` loads a product by its Shopware id, the id a wishlist entry keeps. A variant's id answers its product with that variant selected, and an id Shopware does not sell in the sales channel answers as not found.
+- d5371ff: Products carry their manufacturer as `ProductBrand`, with its name and website, and `ProductInfo.brandLink` links to the same site. A product without variants used to show no brand at all, because its manufacturer was never read; it now shows it like any other product. A website entered without a scheme (`www.example.com`) is taken as https, and anything that is not an http(s) URL is left out.
+- 49c355d: Another app can call the same Shopware instance in the visitor's session through the new `@laioutr/app-shopware/runtime` entry. `defineShopware` is the Orchestr builder this app's own handlers use, typed for the importing app: its `context` carries the store-API client, the Admin API client, the store-API `endpoint`, the visitor's context token, the resolved language and currency, and `storeApiHeaders()` for a plugin route the typed client does not know. `getShopwareContext(event, clientEnv)` returns the same context outside an Orchestr handler. `persistContextToken` and `clearContextToken` store or drop a token a write returned, with the same `shopware:context-token:changed` notification this app fires.
+
+  ```ts
+  import { defineShopware } from '@laioutr/app-shopware/runtime';
+
+  export default defineShopware.componentResolver({
+    label: 'Live stock',
+    entityType: 'ProductVariant',
+    provides: [LiveStock],
+    resolve: async ({ entityIds, context }) => {
+      const stock = await $fetch(`${context.endpoint}/my-plugin/live-stock`, {
+        method: 'POST',
+        headers: context.storeApiHeaders(),
+        body: { ids: entityIds },
+      });
+      // …
+    },
+  });
+  ```
+
+- 0ef1067: Products carry their Shopware properties and marketing flags.
+
+  - `ProductSpecifications` lists the product's properties, one row per property group in Shopware's own order, leaving out groups hidden from the detail page. English and German names for common groups (weight, dimensions, material, …) get a `wellKnownName`. The properties are read only when the component is requested, so listings stay as small as before; a `product-properties` target in `shopware:criteria:resolve` widens that read.
+  - Shopware's native weight, width, height and length lead the specifications as `Measurement` rows with the `wellKnownName` `weight`, `width`, `height` and `length`: weight in kilograms, the measures in the new `dimensionUnit` option, `mm` by default as Shopware's admin labels them, or `cm` for a shop whose data holds centimetres. An unset or zero field makes no row, and a property group with the same `wellKnownName` wins over the native field.
+  - `ProductFlags` holds the marks Shopware keeps on a product as well-known codes: `new` while its release date is within the shop's "mark as new" days, and `recommended` where the merchant highlights it (Shopware's _Highlight product_, shown as _Tip_ in Shopware's storefront). A frontend translates and styles the code; each flag's `name` is English text for a frontend that does not know it. A discount is not a flag: "Sale" comes from `ProductPrices`.
+
+- ca23522: The Shopware customer wishlist is available through the canonical product-list tokens: `ProductListGetWishlistQuery`, `ProductListItemsLink`, `ProductListItemProductLink`, `ProductListItemProductVariantLink`, `ProductListAddItemsAction` and `ProductListRemoveItemsAction`.
+
+  Variant ids are stored as given. Removing a bare product also removes the entries for its variants. Guests get `UnauthenticatedError` from the actions. A storefront that keeps a guest list locally can replay it with `ProductListAddItemsAction` after login: it runs on Shopware's `/customer/wishlist/merge` and skips products already on the list.
+
+- 1682fdc: Shopware's cart errors reach the storefront as canonical cart messages, which a storefront translates by their well-known `code` — `sold-out`, `quantity-adjusted`, `discount-not-applicable` and the rest — or shows by their `message`, in the request's language from Shopware 6.7.3.
+
+  - **On the cart**, `CartMessages` holds what is about the cart as a whole, such as a blocked shipping method or a code that does not apply, and each line's `CartItemMessages` what is about that line, such as more than is in stock. They stand as long as Shopware reports them.
+  - **On a write**, `CartAddItemsAction`, `CartUpdateItemsAction` and `CartRemoveItemsAction` answer `messages` with what that write changed beyond what it was asked, such as a quantity lowered to the stock. What stands on the cart is not repeated there.
+  - **`blocksCheckout`** is Shopware's own block flag, also on Shopware before 6.6.7, which does not send it.
+
+  **Breaking:** a cart error never fails a cart write. `CartAddItemsAction`, `CartUpdateItemsAction` and `CartRemoveItemsAction` failed with a generic error, answered as a 500, on every error-level cart error — a product sold out, more than is in stock, a lapsed automatic promotion — although Shopware had applied the write. A storefront reads `items[].status` to tell a refused add from an added one: a product Shopware did not put in the cart is rejected with the message's code as `reason` and its text as `reasonLabel`. A refused discount code is rejected as `not-found` when it does not exist and as `discount-not-applicable` otherwise, instead of with Shopware's own key.
+
+  ```ts
+  // before
+  try {
+    await fetchAction(CartAddItemsAction, input);
+  } catch {
+    // a product was sold out
+  }
+  if (item.reason === 'promotion-not-eligible') showCodeHint(item.reasonLabel);
+
+  // after
+  const { items } = await fetchAction(CartAddItemsAction, input);
+  for (const item of items) {
+    if (item.status === 'rejected') showRejection(item.reason, item.reasonLabel); // 'sold-out', 'discount-not-applicable', …
+  }
+
+  const result = await fetchAction(CartUpdateItemsAction, updates);
+  for (const message of result?.messages ?? []) showCartMessage(message);
+  ```
+
+### Patch Changes
+
+- 058b7dd: `SubscribeAction` forwards the input's `customFields` to Shopware's newsletter subscription. Shopware 6.6 and later stores the ones the shop lets the Store API write to a newsletter recipient and drops the rest.
+- 65898d8: Product search and category listings page, filter and sort correctly from Shopware 6.5 through 6.7, and several fixes apply on every version.
+
+  The app reads the connected shop's Shopware version from its Store API schema, once a day per shop, and pages each read the way that release expects. When the version cannot be read, the app behaves as on the current release.
+
+  - **`ProductSearchQuery`** reads `/search-suggest` from Shopware 6.6.10 up to 6.7.3, where `/search` ignores the requested page size, and `/search` on every other release. Shopware 6.5 caches suggest results without the page and the built-in filters, so a second page or a price filter could be answered with another request's results and total, and 6.7.3 and later page suggest results by their own size. Search also applies the chosen sorting now.
+  - **`ProductsByCategoryIdQuery`** returns the requested page on Shopware 6.5, which answered every page with the first.
+  - **A page past the last one** reads as an empty page on Shopware 6.7, which answered it with 404 `PRODUCT__LISTING_PAGE_OUT_OF_RANGE` and failed the read.
+  - **A sorting key the shop does not offer** — stale in a bookmarked URL, or one the merchant has since turned off — falls back to the default sorting on listings and search. Shopware 6.5 failed the whole read with `PRODUCT_SORTING_NOT_FOUND`.
+  - **Cart tax** counts shipping tax once. Shopware's cart taxes already include it, and it was added a second time.
+  - **`CustomerGetCurrentAction`** answers the customer's id, name and salutation, which came back empty.
+  - **`CreateReviewAction`** answers `success: true` for a saved review instead of reporting every one as failed.
+  - **Reviews** carry the date they were written instead of an invalid date.
+  - **`ProductsByCategorySlugQuery`** pre-loads every variant of the listed products; variants past the first Store API page were missing.
+
 ## 0.20.0
 
 ### Minor Changes
