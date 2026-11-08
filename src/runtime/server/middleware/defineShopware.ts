@@ -1,11 +1,9 @@
 import { defineOrchestr, useNitroApp } from '#imports';
 import type { ShopwareAdminClient } from '../client/shopwareAdminClientFactory';
 import type { ShopwareContext } from '../context/getShopwareContext';
-import type { ProductFlag } from '../shopware-helper/productFlags';
 import type { ShopwareVersion } from '../shopware-helper/shopwareVersion';
 import type { ResolveCriteria } from '../types/criteria';
 import type { ShopwareSettings } from '../types/settings';
-import type { ShopwareProduct } from '../types/shopware';
 import type { defineOrchestrMock } from '@laioutr-core/orchestr/types';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
 import { getShopwareContext } from '../context/getShopwareContext';
@@ -22,7 +20,6 @@ export type ShopwareOrchestrContext = Omit<ShopwareContext, 'adminClient'> & {
   shopwareVersion: ShopwareVersion | undefined;
   settings: ShopwareSettings;
   resolveCriteria: ResolveCriteria;
-  resolveProductFlags: (product: ShopwareProduct, variant: ShopwareProduct, flags: ProductFlag[]) => Promise<ProductFlag[]>;
 };
 
 // `defineOrchestr` reaches the module only as a Nuxt auto-import, which has no type outside a Nuxt
@@ -47,18 +44,6 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
       return result.criteria;
     };
 
-    const resolveProductFlags = async (product: ShopwareProduct, variant: ShopwareProduct, flags: ProductFlag[]) => {
-      const result = { flags };
-      await nitro.hooks.callHook('shopware:product-flags:resolve', {
-        event: args.event,
-        locale: args.clientEnv.locale,
-        product,
-        variant,
-        result,
-      });
-      return result.flags;
-    };
-
     return {
       context: {
         ...shopware,
@@ -68,7 +53,6 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
         shopwareVersion,
         settings: settings.settings,
         resolveCriteria,
-        resolveProductFlags,
       },
     };
   });

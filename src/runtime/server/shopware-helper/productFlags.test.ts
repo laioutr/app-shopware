@@ -5,43 +5,28 @@ import type { ShopwareProduct } from '../types/shopware';
 const row = (fields: Record<string, unknown> = {}) =>
   ({ calculatedPrice: { totalPrice: 10, unitPrice: 10, listPrice: null }, ...fields }) as unknown as ShopwareProduct;
 
-const variants = (flags: ReturnType<typeof deriveProductFlags>) => flags.map((flag) => flag.variant);
+const codes = (flags: ReturnType<typeof deriveProductFlags>) => flags.map((flag) => flag.wellKnownName);
 
 describe('deriveProductFlags', () => {
   it('returns no flags for a plain product', () => {
     expect(deriveProductFlags(row(), row())).toEqual([]);
   });
 
-  it('flags new and topseller products', () => {
+  it('flags new and topseller products with their well-known codes', () => {
     expect(deriveProductFlags(row(), row({ isNew: true, markAsTopseller: true }))).toEqual([
-      { variant: 'new', label: 'New' },
-      { variant: 'topseller', label: 'Topseller' },
+      { wellKnownName: 'new', name: 'New' },
+      { wellKnownName: 'bestseller', name: 'Bestseller' },
     ]);
   });
 
   it('lets the parent decide where the variant inherits', () => {
-    expect(variants(deriveProductFlags(row({ markAsTopseller: true }), row({ markAsTopseller: null })))).toEqual(['topseller']);
-    expect(variants(deriveProductFlags(row({ markAsTopseller: true }), row({ markAsTopseller: false })))).toEqual([]);
+    expect(codes(deriveProductFlags(row({ markAsTopseller: true }), row({ markAsTopseller: null })))).toEqual(['bestseller']);
+    expect(codes(deriveProductFlags(row({ markAsTopseller: true }), row({ markAsTopseller: false })))).toEqual([]);
   });
 
-  it('flags a sale when the list price is above the price paid', () => {
+  it('leaves a discount to the prices component', () => {
     const discounted = row({ calculatedPrice: { totalPrice: 80, unitPrice: 80, listPrice: { price: 100 } } });
 
-    expect(variants(deriveProductFlags(discounted, discounted))).toEqual(['sale']);
-  });
-
-  it('reads the cheapest price first, like the prices component', () => {
-    const product = row({
-      calculatedPrice: { totalPrice: 80, unitPrice: 80, listPrice: { price: 100 } },
-      calculatedCheapestPrice: { totalPrice: 120, unitPrice: 120, listPrice: { price: 100 } },
-    });
-
-    expect(variants(deriveProductFlags(product, row()))).toEqual([]);
-  });
-
-  it('does not flag a list price below the price paid', () => {
-    const product = row({ calculatedPrice: { totalPrice: 299, unitPrice: 299, listPrice: { price: 279 } } });
-
-    expect(deriveProductFlags(product, product)).toEqual([]);
+    expect(deriveProductFlags(discounted, discounted)).toEqual([]);
   });
 });

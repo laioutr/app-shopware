@@ -80,17 +80,6 @@ export default defineShopwareComponentResolver({
       })
       .filter((product): product is NonNullable<typeof product> => !!product);
 
-    const flagsByEntityId = new Map(
-      requestedComponents.includes('flags') ?
-        await Promise.all(
-          shopwareProducts.map(
-            async ({ entityId, rawProduct, rawVariant }) =>
-              [entityId, await context.resolveProductFlags(rawProduct, rawVariant, deriveProductFlags(rawProduct, rawVariant))] as const
-          )
-        )
-      : []
-    );
-
     // Read off the variant the rest of the projection uses, which inherits the parent's properties
     // where it has none of its own.
     const propertiesByVariantId = new Map<string, ShopwareProduct['properties']>();
@@ -189,7 +178,7 @@ export default defineShopwareComponentResolver({
           };
         },
 
-        flags: flagsByEntityId.get(entityId) ?? [],
+        flags: () => ({ flags: deriveProductFlags(rawProduct, rawVariant) }),
 
         specifications: () => ({ properties: mapSpecifications(propertiesByVariantId.get(rawVariant.id)) }),
 
@@ -220,12 +209,6 @@ export default defineShopwareComponentResolver({
       // Half of it is stock-derived, so it decays like prices rather than living for
       // the resolver's full day. `optionGroups` needs no override: nothing in it is.
       defaultVariant: {
-        ttl: '15 minutes',
-        swr: true,
-        staleMaxAge: '1 minute',
-      },
-      // `sale` follows the price and `new` a release-date window, so neither may outlive the price.
-      flags: {
         ttl: '15 minutes',
         swr: true,
         staleMaxAge: '1 minute',

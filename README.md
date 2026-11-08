@@ -111,20 +111,18 @@ components are read from, which inherits the parent's where it has none. Each pr
 one row, its options joined in Shopware's own order; a group hidden from the detail page stays out,
 and English or German group names such as *Weight* / *Gewicht* get a `wellKnownName`.
 
-`ProductFlags` carries what Shopware marks on the product: `new` (Shopware's "mark as new" window),
-`topseller` and `sale` (a list price above the price paid, the same condition as `isOnSale`). Labels
-are English; localise, drop or add flags in a filter hook:
+`ProductFlags` carries the two marks Shopware keeps on a product, as well-known codes:
 
-```ts
-// server/plugins/shopware-flags.ts
-export default defineNitroPlugin((nitro) => {
-  nitro.hooks.hook('shopware:product-flags:resolve', ({ locale, result }) => {
-    if (!locale.startsWith('de')) return;
-    const labels: Record<string, string> = { new: 'Neu', topseller: 'Tipp', sale: 'Angebot' };
-    result.flags = result.flags.map((flag) => ({ ...flag, label: labels[flag.variant] ?? flag.label }));
-  });
-});
-```
+| `wellKnownName` | Source |
+| --- | --- |
+| `new` | `isNew`, which Shopware computes on every read: the release date lies within the shop's *Mark products as "new", for ? days*. A product without a release date is never new. |
+| `bestseller` | `markAsTopseller`; a variant without its own takes the parent's. |
+
+A frontend translates and styles a known code, so there are no labels to localise: each flag's
+`name` (*New*, *Bestseller*) is only the English text shown where a frontend does not know the code.
+A discount is not a flag — the "Sale" badge comes from `ProductPrices` (`isOnSale`,
+`strikethroughPrice`). Flags are cached with the product's other catalogue data for up to a day, so
+`new` can stay up to a day after the shop's window ends.
 
 ## Tuning the Store API reads
 
