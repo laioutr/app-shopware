@@ -15,6 +15,16 @@ export type ShopwareAddressIds = { countryId?: string; countryStateId?: string; 
 export const findCountry = (countries: Country[], countryCode: string): Country | undefined =>
   countries.find((country) => country.iso?.toUpperCase() === countryCode.toUpperCase());
 
+/** The ISO 3166-1 alpha-2 code of the sales channel's country with `countryId`. */
+export const countryCodeOf = (countries: Country[], countryId: string | undefined): string | undefined =>
+  countries.find((country) => country.id === countryId)?.iso;
+
+/** The canonical salutation key for a Shopware salutation id; the shop's `not_specified` is no salutation. */
+export const salutationKeyOf = (salutations: Salutation[], salutationId: string | undefined): string | undefined => {
+  const key = salutations.find((salutation) => salutation.id === salutationId)?.key;
+  return key === 'not_specified' ? undefined : key;
+};
+
 /**
  * The salutation id for a canonical salutation key. Shopware requires one on every customer and
  * address, so an absent or unknown key falls back to the shop's `not_specified` salutation.
@@ -24,8 +34,9 @@ export const findSalutationId = (salutations: Salutation[], key: string | undefi
   salutations.find((salutation) => salutation.key === 'not_specified')?.id;
 
 /**
- * Shopware's state short codes are ISO 3166-2 (`DE-BY`). Both that form and the bare subdivision
- * part (`BY`) are accepted, since the canonical `provinceCode` does not pin one down.
+ * Shopware's state short codes are ISO 3166-2 with the country (`DE-BY`), while the canonical
+ * `provinceCode` is the subdivision part alone (`BY`). Both forms are accepted, so an address read
+ * from Shopware resolves to its state again and a storefront sending the full code is not refused.
  */
 export const matchCountryState = (
   states: Pick<Schemas['CountryState'], 'id' | 'shortCode'>[],
@@ -105,17 +116,26 @@ export const toShopwareAddressBody = (
 };
 
 /**
+ * The canonical `provinceCode` of a Shopware state: its short code without the country prefix
+ * (`DE-BY` reads as `BY`). A short code that carries no prefix is the shop's own and passes unchanged.
+ */
+const toProvinceCode = (shortCode: string, countryCode: string): string => {
+  const prefix = `${countryCode.toUpperCase()}-`;
+  return countryCode && shortCode.toUpperCase().startsWith(prefix) ? shortCode.slice(prefix.length) : shortCode;
+};
+
+/**
  * Map a Shopware address onto the canonical one. Country and salutation resolve through the sales
  * channel's system entities, so only the state needs the `countryState` association on the read.
  */
 export const fromShopwareAddress = (address: Schemas['CustomerAddress'], systemEntities: SwSystemEntities): CanonicalAddress => {
-  const salutation = systemEntities.salutations.find((entry) => entry.id === address.salutationId)?.key;
-  const countryCode = address.country?.iso ?? systemEntities.countries.find((country) => country.id === address.countryId)?.iso ?? '';
+  const salutation = salutationKeyOf(systemEntities.salutations, address.salutationId);
+  const countryCode = address.country?.iso ?? countryCodeOf(systemEntities.countries, address.countryId) ?? '';
 
   return {
     firstName: address.firstName,
     lastName: address.lastName,
-    ...(salutation && salutation !== 'not_specified' ? { salutation } : {}),
+    ...(salutation ? { salutation } : {}),
     ...(address.title ? { title: address.title } : {}),
     ...(address.company ? { company: address.company } : {}),
     ...(address.phoneNumber ? { phone: address.phoneNumber } : {}),
@@ -124,7 +144,7 @@ export const fromShopwareAddress = (address: Schemas['CustomerAddress'], systemE
     city: address.city,
     postalCode: address.zipcode ?? '',
     countryCode,
-    ...(address.countryState?.shortCode ? { provinceCode: address.countryState.shortCode } : {}),
+    ...(address.countryState?.shortCode ? { provinceCode: toProvinceCode(address.countryState.shortCode, countryCode) } : {}),
   };
 };
 

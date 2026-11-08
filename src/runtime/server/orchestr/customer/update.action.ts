@@ -5,7 +5,11 @@ import { listCustomerAddresses, readCustomer } from '../../shopware-helper/custo
 import { findSalutationId, toShopwareAddressBodyFromStored } from '../../shopware-helper/mailingAddress';
 import { accountCall, bodyFieldOfColumn } from '../../shopware-helper/shopwareErrors';
 
-type ChangeProfileBody = operations['changeProfile post /account/change-profile']['body'] & { customFields?: Record<string, unknown> };
+type ChangeProfileBody = operations['changeProfile post /account/change-profile']['body'] & {
+  accountType?: string;
+  vatIds?: string[];
+  customFields?: Record<string, unknown>;
+};
 
 /**
  * Update the customer's profile through `/account/change-profile`.
@@ -32,7 +36,11 @@ export default defineShopwareAction(CustomerUpdateAction, async ({ context, inpu
       // Required by the generated type; Shopware rejects a missing one with its own violation.
       salutationId: salutationId as string,
       title: person.title ?? customer.title,
+      // Up to 6.7, change-profile clears the company and VAT ids unless the request names a business
+      // account, so the stored account type travels along.
+      accountType: customer.accountType,
       company: customer.company,
+      ...(customer.vatIds?.length ? { vatIds: customer.vatIds } : {}),
       ...(input.customFields ? { customFields: input.customFields } : {}),
     };
 

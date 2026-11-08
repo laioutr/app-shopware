@@ -31,9 +31,12 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   own thumbnails
 - Customer accounts: login, logout, registration and password recovery as the canonical auth
   actions, with the context token persisted and cleared the same way the embedded checkout does it
-- Customer profile and address book: the current customer with all addresses in one read, profile
-  updates, and creating, updating, deleting and defaulting addresses — Shopware's validation errors
-  arrive as `InvalidFieldError` with the canonical field path
+- Customer profile and address book: the current customer with all addresses in one read, each
+  flagged as the default billing or shipping address, profile updates, and creating, updating,
+  deleting and defaulting addresses. `provinceCode` is the subdivision code without the country
+  (`BY`, not `DE-BY`), deleting a default address (before Shopware 6.7.3 also the address active in
+  the current context) answers `AddressNotDeletableError`, and Shopware's
+  validation errors arrive as `InvalidFieldError` with the canonical field path
 - Wishlist: the customer's Shopware wishlist as a canonical `ProductList`, with add and remove
   actions and links from each entry to its product and variant
 - Newsletter subscription and review submission as Orchestr actions

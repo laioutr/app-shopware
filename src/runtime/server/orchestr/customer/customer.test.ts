@@ -6,7 +6,12 @@ import addressSetDefault from './address-set-default.action';
 import addressUpdate from './address-update.action';
 import getCurrent from './get-current.action';
 import update from './update.action';
-import { AddressNotFoundError, InvalidFieldError, UnauthenticatedError } from '@laioutr-core/canonical-types/ecommerce';
+import {
+  AddressNotDeletableError,
+  AddressNotFoundError,
+  InvalidFieldError,
+  UnauthenticatedError,
+} from '@laioutr-core/canonical-types/ecommerce';
 
 vi.mock('../../middleware/defineShopware', () => ({
   defineShopwareAction: (_token: unknown, run: unknown) => run,
@@ -88,16 +93,35 @@ describe('get-current', () => {
       phone: '+49 30 1',
       displayName: 'Ada Lovelace',
       person: { firstName: 'Ada', lastName: 'Lovelace', salutation: 'mrs', title: 'Dr.' },
-      defaultBillingAddress: { address1: 'Main St 1', countryCode: 'DE' },
-      defaultShippingAddress: { address1: 'Side St 2' },
+      addresses: [
+        { id: 'addr-billing', address: { address1: 'Main St 1', countryCode: 'DE' }, isDefaultBilling: true, isDefaultShipping: false },
+        { id: 'addr-shipping', address: { address1: 'Side St 2' }, isDefaultBilling: false, isDefaultShipping: true },
+      ],
     });
-    expect(result.customer.addresses).toHaveLength(2);
+    expect(result.customer).not.toHaveProperty('defaultBillingAddress');
+    expect(result.customer).not.toHaveProperty('defaultShippingAddress');
+  });
+
+  it('takes the phone from the default billing address', async () => {
+    respond({
+      'readCustomer post /account/customer': { ...customer, addresses: [{ ...shipping, phoneNumber: '+49 40 9' }, billing] },
+    });
+
+    const result = (await run(getCurrent, {})) as { customer: Record<string, unknown> };
+
+    expect(result.customer.phone).toBe('+49 30 1');
   });
 
   it('answers a guest context as unauthenticated', async () => {
     respond({ 'readCustomer post /account/customer': apiError(403) });
 
     await expect(run(getCurrent, {})).rejects.toBeInstanceOf(UnauthenticatedError);
+  });
+
+  it('lets a Shopware failure through rather than answering a signed-in customer as a guest', async () => {
+    respond({ 'readCustomer post /account/customer': apiError(503) });
+
+    await expect(run(getCurrent, {})).rejects.toMatchObject({ status: 503 });
   });
 });
 
@@ -109,6 +133,24 @@ describe('update', () => {
 
     expect(callsTo('changeProfile post /account/change-profile')[0]?.[1]).toEqual({
       body: { firstName: 'Augusta', lastName: 'Lovelace', salutationId: 'sal-mrs', title: 'Dr.', company: undefined },
+    });
+  });
+
+  it("keeps a business customer's account type, company and VAT ids", async () => {
+    respond({
+      'readCustomer post /account/customer': {
+        ...customer,
+        accountType: 'business',
+        company: 'Analytical Engines',
+        vatIds: ['DE123456789'],
+      },
+      'changeProfile post /account/change-profile': { success: true },
+    });
+
+    await run(update, { input: { person: { firstName: 'Augusta' } } });
+
+    expect(callsTo('changeProfile post /account/change-profile')[0]?.[1]).toMatchObject({
+      body: { accountType: 'business', company: 'Analytical Engines', vatIds: ['DE123456789'] },
     });
   });
 
@@ -174,6 +216,17 @@ describe('address-get-all', () => {
     expect(result.addresses).toEqual([
       expect.objectContaining({ id: 'addr-billing', isDefaultBilling: true, isDefaultShipping: false }),
       expect.objectContaining({ id: 'addr-shipping', isDefaultBilling: false, isDefaultShipping: true }),
+    ]);
+  });
+
+  it('sets both flags on an address that is the default for both', async () => {
+    respond({ 'readCustomer post /account/customer': { ...customer, defaultShippingAddressId: 'addr-billing' } });
+
+    const result = (await run(addressGetAll, {})) as { addresses: Record<string, unknown>[] };
+
+    expect(result.addresses).toEqual([
+      expect.objectContaining({ id: 'addr-billing', isDefaultBilling: true, isDefaultShipping: true }),
+      expect.objectContaining({ id: 'addr-shipping', isDefaultBilling: false, isDefaultShipping: false }),
     ]);
   });
 });
@@ -246,9 +299,9 @@ describe('address-update', () => {
       'updateCustomerAddress patch /account/address/{addressId}': overflow('additional_address_line1'),
     });
 
-    await expect(
-      run(addressUpdate, { input: { id: 'addr-billing', address: { address2: 'x'.repeat(300) } } })
-    ).rejects.toMatchObject({ data: { reason: 'TOO_LONG', field: ['address', 'address2'] } });
+    await expect(run(addressUpdate, { input: { id: 'addr-billing', address: { address2: 'x'.repeat(300) } } })).rejects.toMatchObject({
+      data: { reason: 'TOO_LONG', field: ['address', 'address2'] },
+    });
   });
 });
 
@@ -270,6 +323,18 @@ describe('address-delete', () => {
 
     await expect(run(addressDelete, { input: { id: 'addr-other' } })).rejects.toBeInstanceOf(AddressNotFoundError);
   });
+
+  it.each(['CHECKOUT__CUSTOMER_ADDRESS_IS_DEFAULT', 'CHECKOUT__CUSTOMER_ADDRESS_IS_ACTIVE'])(
+    'answers %s as not deletable',
+    async (code) => {
+      respond({ 'deleteCustomerAddress delete /account/address/{addressId}': apiError(400, [{ code }]) });
+
+      const result = run(addressDelete, { input: { id: 'addr-billing' } });
+
+      await expect(result).rejects.toBeInstanceOf(AddressNotDeletableError);
+      await expect(result).rejects.toMatchObject({ data: { id: 'addr-billing' } });
+    }
+  );
 });
 
 describe('address-set-default', () => {

@@ -159,8 +159,25 @@ describe('fromShopwareAddress', () => {
       city: 'Berlin',
       postalCode: '10115',
       countryCode: 'DE',
-      provinceCode: 'DE-BE',
+      provinceCode: 'BE',
     });
+  });
+
+  it('passes a state short code without the country prefix unchanged', () => {
+    const address = { ...(storedAddress as object), countryState: { shortCode: 'BE' } } as never;
+    expect(fromShopwareAddress(address, systemEntities).provinceCode).toBe('BE');
+  });
+
+  it('reads a province that resolves to the same state when written back', async () => {
+    const canonical = fromShopwareAddress(storedAddress, systemEntities);
+    const client = clientWithStates([
+      { id: 'state-by', shortCode: 'DE-BY' },
+      { id: 'state-be', shortCode: 'DE-BE' },
+    ]);
+
+    const ids = await resolveAddressIds(client as never, systemEntities, canonical, { fieldPrefix: [], complete: true });
+
+    expect(toShopwareAddressBody(canonical, ids).countryStateId).toBe('state-be');
   });
 });
 

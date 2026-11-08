@@ -7,7 +7,12 @@ import {
   toCanonicalFieldPath,
   toInvalidFieldReason,
 } from './shopwareErrors';
-import { AddressNotFoundError, InvalidFieldError, UnauthenticatedError } from '@laioutr-core/canonical-types/ecommerce';
+import {
+  AddressNotDeletableError,
+  AddressNotFoundError,
+  InvalidFieldError,
+  UnauthenticatedError,
+} from '@laioutr-core/canonical-types/ecommerce';
 
 const apiError = (status: number, errors: unknown[]) => Object.assign(new Error('Failed request'), { status, details: { errors } });
 
@@ -124,6 +129,15 @@ describe('throwAsAccountError', () => {
     expect(err).toBeInstanceOf(AddressNotFoundError);
     expect((err as AddressNotFoundError).data).toEqual({ id: 'addr-1' });
   });
+
+  it.each(['CHECKOUT__CUSTOMER_ADDRESS_IS_DEFAULT', 'CHECKOUT__CUSTOMER_ADDRESS_IS_ACTIVE'])(
+    'answers %s, a refused delete, as not deletable',
+    (code) => {
+      const err = thrownBy(() => throwAsAccountError(apiError(400, [{ code }]), { addressId: 'addr-1' }));
+      expect(err).toBeInstanceOf(AddressNotDeletableError);
+      expect((err as AddressNotDeletableError).data).toEqual({ id: 'addr-1' });
+    }
+  );
 
   it('places a violation under the given prefix', () => {
     const err = thrownBy(() =>

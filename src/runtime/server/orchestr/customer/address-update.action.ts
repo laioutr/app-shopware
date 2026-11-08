@@ -2,7 +2,7 @@ import { AddressNotFoundError, CustomerAddressUpdateAction } from '@laioutr-core
 import type { Schemas } from '../../types/storeApiTypes';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 import { listCustomerAddresses } from '../../shopware-helper/customerAddresses';
-import { mergeShopwareAddressBody, resolveAddressIds } from '../../shopware-helper/mailingAddress';
+import { countryCodeOf, mergeShopwareAddressBody, resolveAddressIds } from '../../shopware-helper/mailingAddress';
 import { accountCall, bodyFieldOfColumn } from '../../shopware-helper/shopwareErrors';
 
 /**
@@ -17,7 +17,7 @@ export default defineShopwareAction(CustomerAddressUpdateAction, async ({ contex
   if (!stored) throw new AddressNotFoundError(addressId);
 
   // A province on its own is resolved against the stored country.
-  const storedCountryCode = systemEntities.countries.find((country) => country.id === stored.countryId)?.iso;
+  const storedCountryCode = countryCodeOf(systemEntities.countries, stored.countryId);
   const countryCode = input.address.countryCode ?? (input.address.provinceCode ? storedCountryCode : undefined);
   const ids = await resolveAddressIds(
     storefrontClient,

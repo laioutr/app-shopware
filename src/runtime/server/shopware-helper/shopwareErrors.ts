@@ -1,4 +1,5 @@
 import {
+  AddressNotDeletableError,
   AddressNotFoundError,
   InvalidFieldError,
   type InvalidFieldErrorReason,
@@ -108,9 +109,17 @@ export const throwAsInvalidField = (err: unknown, prefix: string[] = [], columnP
 export const bodyFieldOfColumn = (column: string) => `/${column}`;
 
 /**
+ * Shopware's refusals to delete an address it keeps: a default address, and before 6.7.3 also the
+ * address active in the current context. Either way the shop still uses the address, so both are
+ * the one canonical refusal.
+ */
+const UNDELETABLE_ADDRESS_CODES = ['CHECKOUT__CUSTOMER_ADDRESS_IS_DEFAULT', 'CHECKOUT__CUSTOMER_ADDRESS_IS_ACTIVE'];
+
+/**
  * Rethrow a failed account call in canonical terms: a context without a customer (401, 403) is
  * {@link UnauthenticatedError}, an address the customer does not own is {@link AddressNotFoundError},
- * and a validation failure is {@link InvalidFieldError}. Anything else is rethrown unchanged.
+ * an address Shopware refuses to delete is {@link AddressNotDeletableError}, and a validation failure
+ * is {@link InvalidFieldError}. Anything else is rethrown unchanged.
  */
 export const throwAsAccountError = (
   err: unknown,
@@ -124,6 +133,9 @@ export const throwAsAccountError = (
   if (status === 401 || status === 403) throw new UnauthenticatedError();
   if (addressId && (status === 404 || shopwareErrorCodes(err).includes('CHECKOUT__CUSTOMER_ADDRESS_NOT_FOUND'))) {
     throw new AddressNotFoundError(addressId);
+  }
+  if (addressId && shopwareErrorCodes(err).some((code) => UNDELETABLE_ADDRESS_CODES.includes(code))) {
+    throw new AddressNotDeletableError(addressId);
   }
   return throwAsInvalidField(err, fieldPrefix, columnPointer);
 };

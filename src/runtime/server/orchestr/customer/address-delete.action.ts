@@ -4,7 +4,8 @@ import { accountCall } from '../../shopware-helper/shopwareErrors';
 
 /**
  * Delete an address. Shopware refuses to delete a default address (`CHECKOUT__CUSTOMER_ADDRESS_IS_DEFAULT`)
- * and there is no canonical error for it, so that refusal reaches the caller as Shopware raised it.
+ * and, before 6.7.3, the address active in the current context (`CHECKOUT__CUSTOMER_ADDRESS_IS_ACTIVE`);
+ * both reach the caller as `AddressNotDeletableError`.
  */
 export default defineShopwareAction(CustomerAddressDeleteAction, async ({ context, input }) => {
   const addressId = input.id;
