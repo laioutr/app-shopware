@@ -8,7 +8,7 @@ import {
 } from '@laioutr-core/canonical-types/entity/cart-item';
 import { cartFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
-import { lineMessagesOf } from '../../shopware-helper/cartErrors';
+import { messagesByLineOf } from '../../shopware-helper/cartErrors';
 import { isSupportedCartLineItem, mapCartItem, mapDiscountItem } from '../../shopware-helper/cartMapper';
 import { getCart } from '../../shopware-helper/getCart';
 
@@ -21,6 +21,7 @@ export default defineShopwareComponentResolver({
     passthrough.set(cartFragmentToken, cart);
 
     const lineItemsById = new Map((cart.lineItems ?? []).map((li) => [li.id, li]));
+    const messagesByLine = messagesByLineOf(cart);
 
     const entities = entityIds
       .map((id) => lineItemsById.get(id))
@@ -35,7 +36,7 @@ export default defineShopwareComponentResolver({
           availability: () => mapped.availability,
           quantityRule: () => mapped.quantityRule,
           productData: () => mapped.productData,
-          messages: () => ({ messages: lineMessagesOf(cart, id) }),
+          messages: () => ({ messages: messagesByLine.get(id) ?? [] }),
         });
       });
 

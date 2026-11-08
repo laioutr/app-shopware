@@ -197,9 +197,13 @@ shipping or payment method — as cart errors. The app passes each one on as a c
   | `payment-method-blocked` | `payment-method-unavailable` |
 
 - `level` is Shopware's level 0, 10 or 20 as `info`, `warning` or `error`.
-- `message` is Shopware's own text.
-- `blocksCheckout` is Shopware's block flag. Shopware 6.5 does not send one, so there a message
-  at `error` level blocks.
+- `message` is Shopware's text in the request's language — its `translatedMessage`, which Shopware
+  6.7.3 and later fill from the `checkout.<messageKey>` snippet — or else its English `message`. A
+  text with a placeholder Shopware left unfilled (`product-not-found` before 6.7.3) is left out.
+- `blocksCheckout` is Shopware's block flag. Shopware before 6.6.7 does not send one, so there it
+  is taken from the error class the key belongs to — a blocked shipping or payment method, a
+  minimum quantity and purchase steps block at warning level, an unknown code does not block — and
+  a key the app does not know blocks at `error` level.
 
 A message carries no numbers. What it refers to is on the line: the quantity Shopware sells in
 `CartItemAvailability.quantity`, the limits in `CartItemQuantityRule`.
@@ -210,21 +214,32 @@ it. Shopware names the line by the product it references. Its promotion errors n
 they are always cart messages, never on a discount line.
 
 **On a mutation**, a cart error never fails the action: Shopware applies the write and reports
-what it changed. Add, update and remove items answer `messages` with what that write reported;
-update and remove answer nothing when it reported nothing. Shopware keeps no error with the cart,
-so an error about a change it made — a quantity lowered, a line removed — arrives only there,
-while one it raises on every calculation, such as a line over the stock, also stands on the cart
-until it is resolved.
+what it changed. Add, update and remove items answer `messages` with what that write changed;
+update and remove answer nothing when it changed nothing beyond what it was asked. Shopware keeps
+no error with the cart, so an error about a change it made — a quantity lowered, a line removed,
+a discount added — arrives only there. An error it raises on every calculation stands on the cart
+and its lines until it is resolved, and is not repeated in `messages`: a blocked shipping or
+payment method, a code that does not apply or is excluded, the lines of one product over the
+stock, a missing address or VAT id.
 
-**Adding items** reports each item's outcome:
+**Adding items** reports each item's outcome, which a storefront reads from `items[].status` to
+tell a refused product or code from an added one:
 
-- A product whose line carries an error — sold out, not found, more than is in stock — is
-  `rejected` with the message's `code` as `reason` and its text as `reasonLabel`. A warning, such
-  as a quantity lowered to the stock, leaves it `added` and arrives in `messages`.
+- A product whose line Shopware removed is `rejected` with the `code` of the error about it as
+  `reason` and its text as `reasonLabel` — sold out, not found — or with `reason: 'not-orderable'`
+  when no error names its line, as for a product with variants.
+- A product whose line is in the cart is `added`, also when the lines of one product ask for more
+  than is in stock: that stands on the line's `CartItemMessages`. Its `quantity` is what its line
+  holds, at most what was asked for — Shopware answers the line's total, so for a product already
+  in the cart it can be more than this request added. A quantity Shopware lowered arrives in
+  `messages`.
 - A discount code Shopware does not know is `rejected` with `reason: 'not-found'`; any other
-  refusal with `reason: 'discount-not-applicable'` and Shopware's message as `reasonLabel`.
-- A refusal reported on its item is not repeated in `messages`, and a message several requests
-  of one action report arrives once.
+  refusal with `reason: 'discount-not-applicable'` and Shopware's text as `reasonLabel`.
+  Shopware's promotion errors name no code and its cart holds one error per key, so when two codes
+  of one action are refused for the same reason, one refusal stands for both.
+- A refusal reported on its item is not repeated in `messages`, also where Shopware raises it
+  again in the response to the next code, and a message several requests of one action report
+  arrives once.
 
 ## Checkout
 

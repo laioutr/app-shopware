@@ -24,6 +24,7 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
 
   // What Shopware reported beyond each item's outcome, across every request of this action.
   const messages: CartMessage[] = [];
+  const refusals: CartMessage[] = [];
 
   const products = input.filter((i) => i.type === 'product');
   let productItems: CartBatchResultItem[] = [];
@@ -48,7 +49,7 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
 
     await persistToken(cart.data.token);
 
-    const outcome = addedProductsOutcome(products, cart.data.errors);
+    const outcome = addedProductsOutcome(products, cart.data);
     productItems = outcome.items;
     messages.push(...outcome.messages);
   }
@@ -68,15 +69,17 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
 
     const outcome = discountCodeOutcome(code, cart.data);
     messages.push(...outcome.messages);
+    if (outcome.refusal) refusals.push(outcome.refusal);
     return outcome.item;
   };
 
   // Built in input order, which is the order the canonical batch result is read back in.
   const items: CartBatchResultItem[] = [];
+  let nextProduct = 0;
 
   for (const item of input) {
     if (item.type === 'product') {
-      items.push(productItems[products.indexOf(item)]!);
+      items.push(productItems[nextProduct++]!);
     } else if (item.type === 'discount-code') {
       items.push(await redeemDiscountCode(item.code));
     } else {
@@ -90,5 +93,5 @@ export default defineShopwareAction(CartAddItemsAction, async ({ event, context,
     }
   }
 
-  return { items, ...mutationMessages(messages) };
+  return { items, ...mutationMessages(messages, refusals) };
 });

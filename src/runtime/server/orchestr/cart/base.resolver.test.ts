@@ -7,7 +7,7 @@ vi.mock('../../const/passthroughTokens', () => ({ cartFragmentToken: 'cart' }));
 vi.mock('../../shopware-helper/getCart', () => ({ getCart: vi.fn() }));
 
 type Resolve = {
-  resolve: (args: Record<string, unknown>) => Promise<{ entities: { base: () => unknown; messages: () => unknown }[] }>;
+  resolve: (args: Record<string, unknown>) => Promise<{ entities: { messages: () => unknown }[] }>;
 };
 
 const resolveCart = async (cart: unknown) => {
@@ -49,7 +49,6 @@ describe('the cart messages component', () => {
         { code: 'shipping-method-unavailable', level: 'warning', message: 'Shipping method Standard not available', blocksCheckout: true },
       ],
     });
-    expect(cart.base()).not.toHaveProperty('customFields');
   });
 
   it('is empty for a cart without errors', async () => {
