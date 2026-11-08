@@ -1,6 +1,9 @@
+import { consola } from 'consola';
 import { swTranslatedRaw } from './swTranslated';
 import type { ShopwareCriteria, ShopwareCriteriaTarget } from '../types/criteria';
 import type { CustomFieldsConfig, CustomFieldsEntity } from '../types/customFields';
+
+const logger = consola.withTag('shopware/custom-fields');
 
 const escapeRegExp = (value: string) => value.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
 
@@ -25,7 +28,24 @@ export const customFieldMatcher = (include: string[]): CustomFieldMatcher => {
   return matcher;
 };
 
-const includeFor = (config: CustomFieldsConfig | undefined, entity: CustomFieldsEntity) => config?.[entity]?.include ?? [];
+// The config is the same on every request, so each entity's misconfiguration is reported once.
+const warnedEntities = new Set<CustomFieldsEntity>();
+
+/**
+ * The entity's whitelist. One that is not a list of names, as a form's free JSON can hold, exposes
+ * nothing for that entity rather than failing every read of it.
+ */
+const includeFor = (config: CustomFieldsConfig | undefined, entity: CustomFieldsEntity): string[] => {
+  const include: unknown = config?.[entity]?.include;
+  if (include === undefined) return [];
+  if (Array.isArray(include) && include.every((pattern) => typeof pattern === 'string')) return include;
+
+  if (!warnedEntities.has(entity)) {
+    warnedEntities.add(entity);
+    logger.warn(`customFields.${entity}.include is not a list of field names, so no ${entity} custom field is exposed`, { include });
+  }
+  return [];
+};
 
 /**
  * The whitelisted custom fields of a Shopware entity, read from `translated` so a field without a

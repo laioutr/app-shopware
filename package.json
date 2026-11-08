@@ -27,7 +27,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "laioutr.manifest.json"
   ],
   "scripts": {
     "changeset": "changeset",

@@ -116,9 +116,7 @@ export default defineShopwareComponentResolver({
           id: rawVariant.id,
           sku: rawVariant.productNumber ?? undefined,
           // Typed locally because the resolver hands `rawVariant` back as `any`.
-          options: (rawVariant.options as ShopwareProduct['options'])
-            ?.map((option) => swTranslated(option, 'name') ?? '')
-            .filter(Boolean),
+          options: (rawVariant.options as ShopwareProduct['options'])?.map((option) => swTranslated(option, 'name') ?? '').filter(Boolean),
           status: rawVariant.available ? 'inStock' : 'outOfStock',
         },
 
@@ -169,6 +167,8 @@ export default defineShopwareComponentResolver({
             rawProduct.calculatedCheapestPrice?.totalPrice ?? rawProduct.calculatedPrice.totalPrice,
             context.currency
           );
+          // From the price that sets `price`, so it is the prior price of that same variant.
+          const rawPriorPrice = (rawProduct.calculatedCheapestPrice ?? rawProduct.calculatedPrice).regulationPrice?.price;
 
           const hasSavings = typeof listPrice === 'object' && listPrice.greaterThan(totalPrice);
 
@@ -178,6 +178,7 @@ export default defineShopwareComponentResolver({
             savingsPercent: savingsPercentOf(totalPrice, listPrice),
             isOnSale: hasSavings,
             isStartingFrom: rawProduct.calculatedCheapestPrice?.hasRange || rawProduct.calculatedPrice.hasRange,
+            lowestPriorPrice: typeof rawPriorPrice === 'number' ? Money.fromDecimal(rawPriorPrice, context.currency) : undefined,
           };
         },
 

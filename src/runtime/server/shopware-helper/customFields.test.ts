@@ -142,3 +142,24 @@ describe('withCustomFieldIncludes', () => {
     ).toEqual(['id', 'customFields']);
   });
 });
+
+describe('a whitelist that is not a list of names', () => {
+  const product = { customFields: { gpsr_address: 'Street 1' } };
+
+  it('exposes nothing for that entity rather than failing the read', () => {
+    expect(pickCustomFields(product, { product: { include: 'gpsr_*' } } as never, 'product')).toBeUndefined();
+    expect(pickCustomFields(product, { product: { include: [1, 2] } } as never, 'product')).toBeUndefined();
+  });
+
+  it('leaves the read without the custom fields column', () => {
+    const criteria = { includes: { product: ['id'] } } as unknown as ShopwareCriteria;
+
+    expect(withCustomFieldIncludes('product', criteria, { product: { include: 'gpsr_*' } } as never)).toBe(criteria);
+  });
+
+  it('keeps the other entities working', () => {
+    const config = { product: { include: 'gpsr_*' }, variant: { include: ['gpsr_*'] } } as never;
+
+    expect(pickCustomFields(product, config, 'variant')).toEqual({ gpsr_address: 'Street 1' });
+  });
+});
