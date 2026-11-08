@@ -119,7 +119,7 @@ export const resolveProductPropertyFields = async (resolveCriteria: ResolveCrite
       properties: { associations: { group: {} } },
     },
     includes: {
-      product: ['id', 'properties'],
+      product: ['id', 'properties', 'weight', 'width', 'height', 'length'],
       property_group_option: ['id', 'name', 'position', 'group', 'translated'],
       property_group: ['id', 'name', 'position', 'sortingType', 'visibleOnProductDetailPage', 'translated'],
     },

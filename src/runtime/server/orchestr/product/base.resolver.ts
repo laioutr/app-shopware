@@ -21,6 +21,7 @@ import { defineShopwareComponentResolver } from '../../middleware/defineShopware
 import { resolveProductPropertyFields } from '../../orchestr-helper/requestedFields';
 import { toRequestCriteria } from '../../shopware-helper/criteria';
 import { pickCustomFields } from '../../shopware-helper/customFields';
+import { mapDimensions } from '../../shopware-helper/dimensionsMapper';
 import { fetchAllProducts } from '../../shopware-helper/fetchAllProductVariants';
 import { mapManufacturerBrand } from '../../shopware-helper/manufacturerMapper';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
@@ -48,7 +49,7 @@ export default defineShopwareComponentResolver({
     ProductRating,
     ProductSpecifications,
   ],
-  resolve: async ({ entityIds, context, requestedComponents, $entity, passthrough }) => {
+  resolve: async ({ entityIds, context, clientEnv, requestedComponents, $entity, passthrough }) => {
     // If the product has variants, we select the first variant as default data source. In that case the parent might not contain much information.
     // This case only happens if the resolver is called with a product-id that does not exist in parentIdToDefaultVariantId.
     // If you want to influence which variant is selected, passthrough a `parentIdToDefaultVariantIdToken`.
@@ -82,8 +83,8 @@ export default defineShopwareComponentResolver({
       .filter((product): product is NonNullable<typeof product> => !!product);
 
     // Read off the variant the rest of the projection uses, which inherits the parent's properties
-    // where it has none of its own.
-    const propertiesByVariantId = new Map<string, ShopwareProduct['properties']>();
+    // and dimensions where it has none of its own.
+    const specificationsByVariantId = new Map<string, ShopwareProduct>();
     if (requestedComponents.includes('specifications') && shopwareProducts.length > 0) {
       const criteria = await resolveProductPropertyFields(context.resolveCriteria);
       const response = await context.storefrontClient.invoke('readProduct post /product', {
@@ -92,7 +93,7 @@ export default defineShopwareComponentResolver({
           ...toRequestCriteria(criteria),
         },
       });
-      for (const element of response.data.elements ?? []) propertiesByVariantId.set(element.id, element.properties);
+      for (const element of response.data.elements ?? []) specificationsByVariantId.set(element.id, element);
     }
 
     const entities = shopwareProducts.map(({ entityId, rawProduct, rawVariant }) => {
@@ -182,7 +183,16 @@ export default defineShopwareComponentResolver({
 
         flags: () => ({ flags: deriveProductFlags(rawProduct, rawVariant) }),
 
-        specifications: () => ({ properties: mapSpecifications(propertiesByVariantId.get(rawVariant.id)) }),
+        specifications: () => {
+          const row = specificationsByVariantId.get(rawVariant.id);
+          const properties = mapSpecifications(row?.properties);
+          // A property group that already names a dimension wins over the native field.
+          const named = new Set(properties.map((property) => property.wellKnownName));
+          const dimensions = mapDimensions(row, { unit: context.dimensionUnit, languageCode: clientEnv.language.code }).filter(
+            (dimension) => !named.has(dimension.wellKnownName)
+          );
+          return { properties: [...dimensions, ...properties] };
+        },
 
         rating: {
           average: rawProduct.ratingAverage ?? rawVariant.ratingAverage ?? 0,

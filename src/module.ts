@@ -7,6 +7,7 @@ import {
   ORDER_HANDOFF_ENDPOINT_PATH,
 } from './runtime/server/const/checkout';
 import { registerLaioutrApp } from '@laioutr-core/kit';
+import type { DimensionUnit } from './runtime/server/shopware-helper/dimensionsMapper';
 import type { CustomFieldsConfig } from './runtime/server/types/customFields';
 import type { NuxtModule } from '@nuxt/schema';
 import { name, version } from '../package.json';
@@ -44,6 +45,11 @@ export interface ModuleOptions {
    * fields often carry data a storefront must not publish.
    */
   customFields?: CustomFieldsConfig;
+  /**
+   * The unit the shop enters product width, height and length in. Shopware's admin labels them
+   * millimetres, the default; a shop whose data holds centimetres sets `cm`.
+   */
+  dimensionUnit?: DimensionUnit;
 }
 
 /**
