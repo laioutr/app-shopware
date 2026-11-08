@@ -4,9 +4,16 @@ import { persistContextToken } from '../../shopware-helper/persistContextToken';
 import { shopwareErrorCodes } from '../../shopware-helper/shopwareErrors';
 
 /**
+ * Shopware's answers for a customer who has not confirmed the mail of a double opt-in registration.
+ * Shopware 6.5 reports it as an inactive customer. Both answers come only once the password matched,
+ * and a confirmed customer the merchant deactivated is not found before that check.
+ */
+const NOT_CONFIRMED_CODES = ['CHECKOUT__CUSTOMER_OPTIN_NOT_COMPLETED', 'CHECKOUT__CUSTOMER_IS_INACTIVE'];
+
+/**
  * Log a customer in through Shopware's `/account/login`. A customer who has not confirmed the mail
- * of a double opt-in registration gets {@link CustomerNotConfirmedError}, and Shopware sends that
- * mail again.
+ * of a double opt-in registration gets {@link CustomerNotConfirmedError}; Shopware 6.7.12 and later
+ * send that mail again.
  */
 export default defineShopwareAction(AuthLoginAction, async ({ context, input, event }) => {
   try {
@@ -23,9 +30,7 @@ export default defineShopwareAction(AuthLoginAction, async ({ context, input, ev
 
     return { success: res.status === 200 };
   } catch (err) {
-    // Shopware checks the opt-in only after the password matched, so this tells no stranger that
-    // the account exists.
-    if (shopwareErrorCodes(err).includes('CHECKOUT__CUSTOMER_OPTIN_NOT_COMPLETED')) throw new CustomerNotConfirmedError();
+    if (shopwareErrorCodes(err).some((code) => NOT_CONFIRMED_CODES.includes(code))) throw new CustomerNotConfirmedError();
     return { success: false, message: (err as Error).message };
   }
 });
