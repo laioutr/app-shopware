@@ -182,6 +182,14 @@ describe('login', () => {
     );
   });
 
+  it('throws CustomerNotConfirmedError for the inactive customer Shopware 6.5 reports instead', async () => {
+    context.storefrontClient.invoke.mockRejectedValue(apiError(401, [{ code: 'CHECKOUT__CUSTOMER_IS_INACTIVE' }]));
+
+    await expect((login as unknown as Run)({ context, input: credentials, event })).rejects.toBeInstanceOf(
+      CustomerNotConfirmedError
+    );
+  });
+
   it('answers unsuccessfully for wrong credentials', async () => {
     context.storefrontClient.invoke.mockRejectedValue(apiError(401, [{ code: 'CHECKOUT__CUSTOMER_AUTH_BAD_CREDENTIALS' }]));
 
