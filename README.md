@@ -73,7 +73,7 @@ export default defineNuxtConfig({
 | `storefrontUrl` | for checkout, registration, password recovery | Storefront base URL where `LaioutrConnector` is installed. Its origin is exposed publicly so the embedded checkout can pin `postMessage` traffic. Shopware also builds the links in its registration, password-reset and newsletter mails from it, so it must be a domain of the sales channel. |
 | `checkoutLoginCallbackUrl` | no | Absolute URL the storefront returns to after a login inside checkout. Defaults to the request origin; point it at the project's IdP login route for external-IdP projects. |
 | `checkoutLogoutCallbackUrl` | no | Absolute URL the storefront returns to after a logout inside checkout. Point it at the IdP's RP-logout route so a storefront logout ends the external session too. |
-| `customFields` | no | Shopware custom fields to expose, per entity. See [Custom fields](#custom-fields). |
+| `customFields` | no | Shopware custom fields to expose, per entity: `product`, `variant`, `category` and `customer`. See [Custom fields](#custom-fields). |
 
 `accessToken`, `adminClientId` and `adminClientSecret` are secrets and stay server-side: they land
 in the private runtime config, and only `storefrontUrl`'s origin is exposed publicly. Read them
@@ -116,7 +116,9 @@ with the entity and maps them unchanged into the canonical `customFields` slot:
 {
   "customFields": {
     "product": { "include": ["energyLabel", "gpsr_*"] },
-    "variant": { "include": ["datasheet"] }
+    "variant": { "include": ["datasheet"] },
+    "category": { "include": ["teaser"] },
+    "customer": { "include": ["loyaltyTier"] }
   }
 }
 ```
@@ -125,11 +127,15 @@ with the entity and maps them unchanged into the canonical `customFields` slot:
 | --- | --- |
 | `product` | `ProductBase.customFields` — the parent product's fields |
 | `variant` | `ProductVariantBase.customFields` — the variant's own, inherited from the parent where it has none |
+| `category` | `CategoryBase.customFields` |
+| `customer` | `Customer.customFields` of the signed-in customer that `CustomerGetCurrentAction` answers |
 
 `*` matches any run of characters: `gpsr_*` takes a whole set, `*` takes everything. Values come
 from `translated`, so a field without a value in the visitor's language falls back as it does in
-Shopware's storefront. Nothing is exposed by default — custom fields often carry purchasing or ERP
-data a storefront must not publish — and an entity without a whitelist leaves its slot unset.
+Shopware's storefront; a customer's, which Shopware does not translate, come as stored. Nothing is
+exposed by default — custom fields often carry purchasing or ERP data a storefront must not
+publish — and an entity without a whitelist leaves its slot unset. On Shopware 6.6.10 and later, a
+field whose **Visible in Store API** switch is off never reaches the app, whatever the whitelist.
 
 Unlike `includes`, which [stay in a hook](#tuning-the-store-api-reads), this is configuration: a
 wrong key yields a missing field rather than an emptied component.

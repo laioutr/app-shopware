@@ -18,8 +18,9 @@ const includeFor = (config: CustomFieldsConfig | undefined, entity: CustomFields
 
 /**
  * The whitelisted custom fields of a Shopware entity, read from `translated` so a field without a
- * value in the visitor's language falls back the way Shopware's own storefront does. Undefined while
- * the entity has nothing whitelisted, so an unconfigured shop sends no empty object.
+ * value in the visitor's language falls back the way Shopware's own storefront does; an entity
+ * Shopware does not translate, a customer, has only the column. Undefined while the entity has
+ * nothing whitelisted, so an unconfigured shop sends no empty object.
  */
 export const pickCustomFields = (
   rawEntity: unknown,
@@ -36,25 +37,30 @@ export const pickCustomFields = (
   return Object.fromEntries(Object.entries(raw as Record<string, unknown>).filter(([key]) => matches(key)));
 };
 
-/** Which whitelists feed the `product` entity's `includes` on each read. */
-const ENTITIES_BY_TARGET: Partial<Record<ShopwareCriteriaTarget, CustomFieldsEntity[]>> = {
-  product: ['product', 'variant'],
-  'product-variant': ['variant'],
+/** Per read, the Shopware entity whose `includes` it projects and the whitelists its rows are mapped with. */
+const PROJECTION_BY_TARGET: Partial<Record<ShopwareCriteriaTarget, { entity: string; whitelists: CustomFieldsEntity[] }>> = {
+  product: { entity: 'product', whitelists: ['product', 'variant'] },
+  'product-variant': { entity: 'product', whitelists: ['variant'] },
+  category: { entity: 'category', whitelists: ['category'] },
+  // The navigation read's categories reach the category resolver through the passthrough.
+  menu: { entity: 'category', whitelists: ['category'] },
 };
 
 /**
  * Shopware returns `customFields` as one JSON column, so the projection names the column and the
- * whitelist is applied when mapping. Runs ahead of `shopware:criteria:resolve`, so a handler sees the
- * column already projected.
+ * whitelist is applied when mapping. A read that projects nothing returns whole rows and is left as
+ * it is. Runs ahead of `shopware:criteria:resolve`, so a handler sees the column already projected.
  */
 export const withCustomFieldIncludes = (
   target: ShopwareCriteriaTarget,
   criteria: ShopwareCriteria,
   config: CustomFieldsConfig | undefined
 ): ShopwareCriteria => {
-  const wanted = (ENTITIES_BY_TARGET[target] ?? []).some((entity) => includeFor(config, entity).length > 0);
-  const product = criteria.includes.product;
-  if (!wanted || !product || product.includes('customFields')) return criteria;
+  const projection = PROJECTION_BY_TARGET[target];
+  if (!projection?.whitelists.some((entity) => includeFor(config, entity).length > 0)) return criteria;
 
-  return { ...criteria, includes: { ...criteria.includes, product: [...product, 'customFields'] } };
+  const fields = criteria.includes[projection.entity];
+  if (!fields || fields.includes('customFields')) return criteria;
+
+  return { ...criteria, includes: { ...criteria.includes, [projection.entity]: [...fields, 'customFields'] } };
 };

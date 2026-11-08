@@ -1,4 +1,4 @@
-export type CustomFieldsEntity = 'product' | 'variant';
+export type CustomFieldsEntity = 'product' | 'variant' | 'category' | 'customer';
 
 export interface CustomFieldsWhitelist {
   /** Custom-field keys to expose; `*` matches any run of characters (`gpsr_*`, or `*` for all). */

@@ -1,5 +1,6 @@
 import { CustomerGetCurrentAction, UnauthenticatedError } from '@laioutr-core/canonical-types/ecommerce';
 import { defineShopwareAction } from '../../middleware/defineShopware';
+import { pickCustomFields } from '../../shopware-helper/customFields';
 
 /**
  * Read the customer behind the request's context token. Shopware answers `403` when the token
@@ -27,6 +28,7 @@ export default defineShopwareAction(CustomerGetCurrentAction, async ({ context }
   return {
     customer: {
       id: customer.id,
+      customFields: pickCustomFields(customer, context.customFields, 'customer'),
       email: customer.email,
       displayName: displayName || (customer.email ?? ''),
       person: { firstName, lastName, salutation: customer.salutation?.salutationKey, title: customer.title ?? undefined },

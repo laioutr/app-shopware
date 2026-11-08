@@ -56,6 +56,20 @@ describe('pickCustomFields', () => {
   it('returns an empty object for an entity without custom fields', () => {
     expect(pickCustomFields({ customFields: null }, { product: { include: ['*'] } }, 'product')).toEqual({});
   });
+
+  it("reads a category's translated values under the category whitelist alone", () => {
+    const category = { customFields: { teaser: 'stale' }, translated: { customFields: { teaser: 'Neu', erpId: '42' } } };
+
+    expect(pickCustomFields(category, { category: { include: ['teaser'] } }, 'category')).toEqual({ teaser: 'Neu' });
+    expect(pickCustomFields(category, { product: { include: ['*'] } }, 'category')).toBeUndefined();
+  });
+
+  it("reads a customer's column, which Shopware does not translate", () => {
+    const customer = { customFields: { loyaltyTier: 'gold', creditLimit: 5000 }, translated: [] };
+
+    expect(pickCustomFields(customer, { customer: { include: ['loyaltyTier'] } }, 'customer')).toEqual({ loyaltyTier: 'gold' });
+    expect(pickCustomFields(customer, { product: { include: ['*'] } }, 'customer')).toBeUndefined();
+  });
 });
 
 describe('withCustomFieldIncludes', () => {
@@ -86,9 +100,33 @@ describe('withCustomFieldIncludes', () => {
     ]);
   });
 
-  it('never touches a read without a product projection', () => {
+  it('projects the column on a category or navigation read only for the category whitelist', () => {
+    const categoryCriteria = (category: string[]): ShopwareCriteria => ({ includes: { category }, associations: {} });
+
+    for (const target of ['category', 'menu'] as const) {
+      expect(withCustomFieldIncludes(target, categoryCriteria(['id']), { product: { include: ['*'] } }).includes.category).toEqual(['id']);
+      expect(withCustomFieldIncludes(target, categoryCriteria(['id']), { category: { include: ['a'] } }).includes.category).toEqual([
+        'id',
+        'customFields',
+      ]);
+    }
+  });
+
+  it('keeps the category and customer whitelists off product reads', () => {
+    const all = { category: { include: ['*'] }, customer: { include: ['*'] } };
+    expect(withCustomFieldIncludes('product', criteria(['id']), all).includes.product).toEqual(['id']);
+    expect(withCustomFieldIncludes('product-variant', criteria(['id']), all).includes.product).toEqual(['id']);
+  });
+
+  it('never touches a read that projects nothing', () => {
     const seed: ShopwareCriteria = { includes: {}, associations: {} };
-    expect(withCustomFieldIncludes('category', seed, { product: { include: ['*'] } })).toBe(seed);
+    expect(withCustomFieldIncludes('category', seed, { category: { include: ['*'] } })).toBe(seed);
+    expect(withCustomFieldIncludes('menu', seed, { category: { include: ['*'] } })).toBe(seed);
+  });
+
+  it('never touches a read no whitelist maps', () => {
+    const seed = criteria(['id']);
+    expect(withCustomFieldIncludes('product-review', seed, { product: { include: ['*'] }, category: { include: ['*'] } })).toBe(seed);
   });
 
   it('does not project the column twice', () => {

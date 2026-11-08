@@ -2,9 +2,16 @@
 '@laioutr/app-shopware': minor
 ---
 
-Shopware custom fields reach the storefront. A new `customFields` option whitelists keys per entity, and the app reads them along with the product and maps them unchanged into `ProductBase.customFields` and `ProductVariantBase.customFields`. Values are the translated ones, and `*` matches any run of characters. Nothing is exposed until a key is listed.
+Shopware custom fields reach the storefront. The `customFields` option whitelists keys per entity, and the app maps the listed ones unchanged into `ProductBase.customFields`, `ProductVariantBase.customFields`, `CategoryBase.customFields` and the `customFields` of the customer `CustomerGetCurrentAction` answers. Product, variant and category values are the translated ones; a customer's come as stored, since Shopware does not translate them. `*` matches any run of characters. Nothing is exposed until a key is listed.
 
 ```jsonc
 // laioutrrc.json → apps[@laioutr/app-shopware].config
-{ "customFields": { "product": { "include": ["energyLabel", "gpsr_*"] }, "variant": { "include": ["datasheet"] } } }
+{
+  "customFields": {
+    "product": { "include": ["energyLabel", "gpsr_*"] },
+    "variant": { "include": ["datasheet"] },
+    "category": { "include": ["teaser"] },
+    "customer": { "include": ["loyaltyTier"] }
+  }
+}
 ```

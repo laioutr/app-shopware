@@ -39,8 +39,9 @@ export interface ModuleOptions {
   checkoutLogoutCallbackUrl?: string;
   /**
    * Shopware custom fields to expose in the canonical `customFields` slots — `product` on
-   * `ProductBase`, `variant` on `ProductVariantBase`. Nothing is exposed by default: custom fields
-   * often carry data a storefront must not publish.
+   * `ProductBase`, `variant` on `ProductVariantBase`, `category` on `CategoryBase` and `customer` on
+   * the `Customer` that `CustomerGetCurrentAction` answers. Nothing is exposed by default: custom
+   * fields often carry data a storefront must not publish.
    */
   customFields?: CustomFieldsConfig;
 }

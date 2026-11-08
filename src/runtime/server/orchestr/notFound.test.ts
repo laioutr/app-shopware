@@ -139,3 +139,20 @@ describe('entities Shopware does not return', () => {
     expect(result.notFound ?? []).toEqual([]);
   });
 });
+
+describe("a category's custom fields", () => {
+  it('maps the whitelisted ones into the base component', async () => {
+    context.storefrontClient.invoke.mockResolvedValue({
+      data: { elements: [{ id: 'c1', translated: { name: 'Shoes', customFields: { teaser: 'New in', erpId: '42' } } }] },
+    });
+
+    const result = (await (categoryResolver as unknown as Resolve).resolve({
+      entityIds: ['c1'],
+      context: { ...context, customFields: { category: { include: ['teaser'] } } },
+      passthrough: passthroughOf(),
+      $entity: (entity: unknown) => entity,
+    })) as { entities: Array<{ base: () => { customFields?: unknown } }> };
+
+    expect(result.entities[0]?.base().customFields).toEqual({ teaser: 'New in' });
+  });
+});
