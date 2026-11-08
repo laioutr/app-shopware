@@ -201,6 +201,76 @@ export default defineNitroPlugin((nitro) => {
 | `catalog.categoryPageIndex.activeOnly` | `true` | Restrict the index to active categories. |
 | `catalog.seoRouteNames` | `frontend.detail.page`; `frontend.navigation.page`, `frontend.landing.page` | `seo_url.routeName` values the slug resolver accepts, per entity type. Extend it when a plugin serves detail or listing pages under its own route name. |
 
+## Cart errors
+
+Shopware reports cart problems — stock, quantity rules, a code that does not apply, a blocked
+shipping or payment method — as cart errors. The app passes each one on as a canonical
+`CartMessage` (`@laioutr-core/canonical-types`), `{ code, level, message?, blocksCheckout? }`:
+
+- `code` is the well-known code for Shopware's message key, or the key itself where there is none
+  (`auto-promotion-not-found`, a plugin's own key).
+
+  | Shopware message key | `code` |
+  | --- | --- |
+  | `product-stock-reached`, warning — Shopware lowered the quantity | `quantity-adjusted` |
+  | `product-stock-reached`, error — the lines of one product ask for more than is in stock | `not-enough-stock` |
+  | `product-out-of-stock` | `sold-out` |
+  | `product-not-found` | `not-found` |
+  | `min-order-quantity` | `below-minimum-quantity` |
+  | `purchase-steps-quantity` | `invalid-quantity-increment` |
+  | `promotion-not-eligible`, with or without its reason suffix, and `promotion-excluded` | `discount-not-applicable` |
+  | `promotion-not-found` | `discount-not-found` |
+  | `shipping-method-blocked` | `shipping-method-unavailable` |
+  | `payment-method-blocked` | `payment-method-unavailable` |
+
+- `level` is Shopware's level 0, 10 or 20 as `info`, `warning` or `error`.
+- `message` is Shopware's text in the request's language — its `translatedMessage`, which Shopware
+  6.7.3 and later fill from the `checkout.<messageKey>` snippet — or else its English `message`. A
+  translation with a placeholder Shopware left unfilled (`%url%`) or with markup from its storefront
+  snippets falls back to the English text; a text that still has a placeholder of its own
+  (`product-not-found` before 6.7.3) is left out.
+- `blocksCheckout` is Shopware's block flag. Shopware before 6.6.7 does not send one, so there it
+  is taken from the error class the key belongs to — a blocked shipping or payment method, a
+  minimum quantity and purchase steps block at warning level, an unknown code does not block — and
+  a key the app does not know blocks at `error` level.
+
+A message carries no numbers. What it refers to is on the line: the quantity Shopware sells in
+`CartItemAvailability.quantity`, the limits in `CartItemQuantityRule`.
+
+**On the cart**, `CartMessages` holds the messages that are not about one of its lines — a blocked
+shipping method, a code that does not apply — and each line's `CartItemMessages` holds those about
+it. Shopware names the line by the product it references. Its promotion errors name no line, so
+they are always cart messages, never on a discount line.
+
+**On a mutation**, a cart error never fails the action: Shopware applies the write and reports
+what it changed. Add, update and remove items answer `messages` with what that write changed;
+update and remove answer nothing when it changed nothing beyond what it was asked. Shopware keeps
+no error with the cart, so an error about a change it made — a quantity lowered, a line removed,
+a discount added — arrives only there. An error it raises on every calculation stands on the cart
+and its lines until it is resolved, and is not repeated in `messages`: a blocked shipping or
+payment method, a code that does not apply or is excluded, the lines of one product over the
+stock, a missing address or VAT id.
+
+**Adding items** reports each item's outcome, which a storefront reads from `items[].status` to
+tell a refused product or code from an added one:
+
+- A product whose line Shopware removed is `rejected` with the `code` of the error about it as
+  `reason` and its text as `reasonLabel` — sold out, not found — or with `reason: 'not-orderable'`
+  when no error names its line, as for a product with variants.
+- A product whose line is in the cart is `added`, also when the lines of one product ask for more
+  than is in stock: that stands on the line's `CartItemMessages`. Its `quantity` is what its line
+  holds, at most what was asked for — Shopware answers the line's total, so for a product already
+  in the cart it can be more than this request added. A quantity Shopware lowered arrives in
+  `messages`. An item that added nothing to its line, because the earlier items of the request
+  took what it holds, is `rejected` with `reason: 'quantity-adjusted'`.
+- A discount code Shopware does not know is `rejected` with `reason: 'not-found'`; any other
+  refusal with `reason: 'discount-not-applicable'` and Shopware's text as `reasonLabel`.
+  Shopware's promotion errors name no code and its cart holds one error per key, so when two codes
+  of one action are refused for the same reason, one refusal stands for both.
+- A refusal reported on its item is not repeated in `messages`, also where Shopware raises it
+  again in the response to the next code, and a message several requests of one action report
+  arrives once.
+
 ## Checkout
 
 The app registers a `Checkout` page type. Tag one page with it in Studio and drop the

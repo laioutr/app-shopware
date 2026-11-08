@@ -1,16 +1,17 @@
 import { useRuntimeConfig } from '#imports';
-import { CartBase, CartCost } from '@laioutr-core/canonical-types/entity/cart';
+import { CartBase, CartCost, CartMessages } from '@laioutr-core/canonical-types/entity/cart';
 import { Link } from '@laioutr-core/core-types/common';
 import { Checkout } from '../../../shared/pageTypes/checkout.pagetype';
 import { cartFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
+import { cartMessagesOf } from '../../shopware-helper/cartErrors';
 import { mapCartCost } from '../../shopware-helper/cartMapper';
 import { getCart } from '../../shopware-helper/getCart';
 
 export default defineShopwareComponentResolver({
   entityType: 'Cart',
   label: 'Shopware Cart Component Resolver',
-  provides: [CartBase, CartCost],
+  provides: [CartBase, CartCost, CartMessages],
   resolve: async ({ context, $entity, passthrough }) => {
     /* Cart is identified per unique context session */
     const cart = passthrough.get(cartFragmentToken) ?? (await getCart(context.storefrontClient));
@@ -34,6 +35,7 @@ export default defineShopwareComponentResolver({
           id: cart.token ?? '',
           base: () => ({ totalQuantity, checkoutLink }),
           cost: () => mapCartCost(cart, context.currency),
+          messages: () => ({ messages: cartMessagesOf(cart) }),
         }),
       ],
     };
