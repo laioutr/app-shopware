@@ -103,8 +103,17 @@ const levelOf = (level: number | undefined): Level => {
 
 const messageKeyOf = (error: CartErrorEntry): string => error.messageKey ?? error.key ?? 'unknown';
 
-/** A placeholder Shopware never filled: `ProductNotFoundError` passes its format string as the message. */
-const UNFILLED_PLACEHOLDER = /%[sd]\b/;
+/**
+ * A placeholder Shopware never filled: `ProductNotFoundError` passes its format string as the message
+ * (`%s`), and a storefront snippet names one its error has no parameter for (`%url%`).
+ */
+const UNFILLED_PLACEHOLDER = /%[sd]\b|%\w+%/;
+
+/** Markup from Shopware's storefront snippets, such as a link to its own account page. */
+const MARKUP = /<[a-z][^>]*>/i;
+
+const isUsableText = (text: unknown): text is string =>
+  typeof text === 'string' && text !== '' && !UNFILLED_PLACEHOLDER.test(text) && !MARKUP.test(text);
 
 /**
  * The error's text in the request's language. Shopware 6.7.3 and later serialize `translatedMessage`,
@@ -113,12 +122,8 @@ const UNFILLED_PLACEHOLDER = /%[sd]\b/;
  */
 const textOf = (error: CartErrorEntry): string | undefined => {
   const { translatedMessage } = error;
-  const translated =
-    typeof translatedMessage === 'string' && translatedMessage !== '' && translatedMessage !== `checkout.${messageKeyOf(error)}` ?
-      translatedMessage
-    : undefined;
-  const text = translated ?? error.message;
-  return text && !UNFILLED_PLACEHOLDER.test(text) ? text : undefined;
+  const translated = translatedMessage === `checkout.${messageKeyOf(error)}` ? undefined : translatedMessage;
+  return [translated, error.message].find(isUsableText);
 };
 
 /**
@@ -235,10 +240,12 @@ export const addedProductsOutcome = (
   const lineIds = products.map(productLineIdOf);
   const unclaimed = new Map((cart.lineItems ?? []).filter((li) => li.type === 'product').map((li) => [li.id, li.quantity]));
   const rejections = new Map<string, CartMessage>();
+  const firstMessageAbout = new Map<string, CartMessage>();
   const messages: CartMessage[] = [];
 
   const lines = [...new Set(lineIds)].map((id) => ({ id }));
   for (const { error, message, lineIds: about } of attributeMessages(cart.errors, lines)) {
+    for (const id of about) if (!firstMessageAbout.has(id)) firstMessageAbout.set(id, message);
     const refused = about.filter((id) => !unclaimed.has(id) && !rejections.has(id));
     for (const id of refused) rejections.set(id, message);
     if (refused.length === 0 && !isRaisedOnEveryCalculation(error)) messages.push(message);
@@ -260,7 +267,17 @@ export const addedProductsOutcome = (
 
     const added = Math.min(quantity, held);
     unclaimed.set(lineId, held - added);
-    return { status: 'added', productId, variantId, quantity: added };
+    if (added > 0) return { status: 'added', productId, variantId, quantity: added };
+
+    // The line is there, but this item added nothing to it: the earlier items took what it holds.
+    const about = firstMessageAbout.get(lineId);
+    return {
+      status: 'rejected',
+      productId,
+      variantId,
+      reason: 'quantity-adjusted',
+      ...(about?.message ? { reasonLabel: about.message } : {}),
+    };
   });
 
   return { items, messages };
@@ -268,14 +285,13 @@ export const addedProductsOutcome = (
 
 /**
  * Shopware's promotion errors about the cart rather than a submitted code: an automatic promotion
- * that lapsed, a discount it added or removed, a promotion worth nothing.
+ * that lapsed, a discount it added or removed, a discount whose condition it does not know.
  */
 const CART_PROMOTION_KEYS = new Set([
   'auto-promotion-not-found',
   'promotion-discount-added',
   'promotion-discount-deleted',
-  'promotion-discount-zero-value',
-  'promotions-on-cart-price-zero-error',
+  'promotion-discount-unknown-condition',
 ]);
 
 /**
@@ -286,7 +302,7 @@ const CART_PROMOTION_KEYS = new Set([
  * (`promotion-not-eligible-<reason>`), and a plugin names its own refusals.
  */
 const isCodeRefusal = (error: CartErrorEntry): boolean => {
-  const key = error.messageKey ?? error.key ?? '';
+  const key = messageKeyOf(error);
   return key.includes('promotion') && !CART_PROMOTION_KEYS.has(key);
 };
 

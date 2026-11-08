@@ -199,7 +199,9 @@ shipping or payment method — as cart errors. The app passes each one on as a c
 - `level` is Shopware's level 0, 10 or 20 as `info`, `warning` or `error`.
 - `message` is Shopware's text in the request's language — its `translatedMessage`, which Shopware
   6.7.3 and later fill from the `checkout.<messageKey>` snippet — or else its English `message`. A
-  text with a placeholder Shopware left unfilled (`product-not-found` before 6.7.3) is left out.
+  translation with a placeholder Shopware left unfilled (`%url%`) or with markup from its storefront
+  snippets falls back to the English text; a text that still has a placeholder of its own
+  (`product-not-found` before 6.7.3) is left out.
 - `blocksCheckout` is Shopware's block flag. Shopware before 6.6.7 does not send one, so there it
   is taken from the error class the key belongs to — a blocked shipping or payment method, a
   minimum quantity and purchase steps block at warning level, an unknown code does not block — and
@@ -232,7 +234,8 @@ tell a refused product or code from an added one:
   than is in stock: that stands on the line's `CartItemMessages`. Its `quantity` is what its line
   holds, at most what was asked for — Shopware answers the line's total, so for a product already
   in the cart it can be more than this request added. A quantity Shopware lowered arrives in
-  `messages`.
+  `messages`. An item that added nothing to its line, because the earlier items of the request
+  took what it holds, is `rejected` with `reason: 'quantity-adjusted'`.
 - A discount code Shopware does not know is `rejected` with `reason: 'not-found'`; any other
   refusal with `reason: 'discount-not-applicable'` and Shopware's text as `reasonLabel`.
   Shopware's promotion errors name no code and its cart holds one error per key, so when two codes

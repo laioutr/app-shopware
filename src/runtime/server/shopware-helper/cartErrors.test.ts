@@ -122,6 +122,22 @@ describe('the canonical message of a Shopware cart error', () => {
     ]);
   });
 
+  it.each([
+    ['an unfilled placeholder', 'Bitte unter %url% eine Anrede setzen.'],
+    ['markup', 'Bitte <a href="/account">hier</a> eine Anrede setzen.'],
+  ])('falls back to the message when the translation holds %s', (_, translatedMessage) => {
+    const [message] = messagesOf([
+      {
+        messageKey: 'salutation-missing-billing-address',
+        level: 10,
+        message: 'A salutation is missing from your billing address.',
+        translatedMessage,
+      },
+    ]);
+
+    expect(message?.message).toBe('A salutation is missing from your billing address.');
+  });
+
   it('normalizes the keyed-object form and passes on nothing for no errors', () => {
     expect(messagesOf({ 'some-id': { code: 0, key: 'x', level: 0, message: 'note', messageKey: 'x' } })).toHaveLength(1);
     expect(messagesOf(undefined)).toEqual([]);
@@ -296,6 +312,21 @@ describe('addedProductsOutcome', () => {
     expect(items.map((item) => item.status === 'added' && item.quantity)).toEqual([3, 1]);
   });
 
+  it('refuses an item that added nothing to a line the earlier items took', () => {
+    const { items } = addedProductsOutcome(
+      [
+        { productId: 'parent-1', variantId: 'variant-1', quantity: 3 },
+        { productId: 'parent-1', variantId: 'variant-1', quantity: 3 },
+      ],
+      { lineItems: [line('variant-1', 3)], errors: [] } as never
+    );
+
+    expect(items).toEqual([
+      { status: 'added', productId: 'parent-1', variantId: 'variant-1', quantity: 3 },
+      { status: 'rejected', productId: 'parent-1', variantId: 'variant-1', reason: 'quantity-adjusted' },
+    ]);
+  });
+
   it('answers what is about no line, but not what stands on the cart', () => {
     const { messages } = addedProductsOutcome([{ productId: 'parent-1', variantId: 'variant-1', quantity: 1 }], {
       lineItems: [line('variant-1', 1)],
@@ -401,6 +432,15 @@ describe('discountCodeOutcome', () => {
     } as never);
 
     expect(item).toEqual({ status: 'rejected', reason: 'discount-not-applicable', reasonLabel: 'WINTER not eligible' });
+  });
+
+  it('takes a code refused on a cart worth nothing as not applicable', () => {
+    const { item } = discountCodeOutcome('SUMMER', {
+      lineItems: [],
+      errors: [{ key: 'promotions-on-cart-price-zero-error', messageKey: 'promotions-on-cart-price-zero-error', level: 0, message: 'Cart is free' }],
+    } as never);
+
+    expect(item).toEqual({ status: 'rejected', reason: 'discount-not-applicable', reasonLabel: 'Cart is free' });
   });
 
   it('leaves a lapsed automatic promotion a cart message, not the code’s refusal', () => {
