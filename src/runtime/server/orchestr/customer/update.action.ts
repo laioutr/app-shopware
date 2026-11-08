@@ -2,6 +2,7 @@ import { CustomerUpdateAction } from '@laioutr-core/canonical-types/ecommerce';
 import type { operations, Schemas } from '../../types/storeApiTypes';
 import { defineShopwareAction } from '../../middleware/defineShopware';
 import { listCustomerAddresses, readCustomer } from '../../shopware-helper/customerAddresses';
+import { customFieldsToWrite } from '../../shopware-helper/customerCustomFields';
 import { findSalutationId, toShopwareAddressBodyFromStored } from '../../shopware-helper/mailingAddress';
 import { accountCall, bodyFieldOfColumn } from '../../shopware-helper/shopwareErrors';
 
@@ -17,15 +18,16 @@ type ChangeProfileBody = operations['changeProfile post /account/change-profile'
  * That route replaces the profile and requires name and salutation on every call, so the stored
  * customer fills in whatever the input leaves out. Shopware keeps phone numbers on addresses, so a
  * `phone` is written to the default billing address, which is where the customer read takes it from.
- * `customFields` reach Shopware as given; it stores those the shop made writable through the Store
- * API and drops the rest.
+ * Shopware stores the `customFields` the shop made writable through the Store API and drops the
+ * rest; {@link customFieldsToWrite} keeps Shopware 6.5 from erasing the others.
  */
 export default defineShopwareAction(CustomerUpdateAction, async ({ context, input }) => {
   const { storefrontClient, systemEntities } = context;
 
   const customer = await accountCall(() => readCustomer(storefrontClient));
+  const customFields = input.customFields ? await customFieldsToWrite(input.customFields, context) : undefined;
 
-  if (input.person || input.customFields) {
+  if (input.person || customFields) {
     const person = input.person ?? {};
     const salutationId =
       person.salutation === undefined ? customer.salutationId : findSalutationId(systemEntities.salutations, person.salutation);
@@ -41,7 +43,7 @@ export default defineShopwareAction(CustomerUpdateAction, async ({ context, inpu
       accountType: customer.accountType,
       company: customer.company,
       ...(customer.vatIds?.length ? { vatIds: customer.vatIds } : {}),
-      ...(input.customFields ? { customFields: input.customFields } : {}),
+      ...(customFields ? { customFields } : {}),
     };
 
     await accountCall(() => storefrontClient.invoke('changeProfile post /account/change-profile', { body }), {
