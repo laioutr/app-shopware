@@ -8,16 +8,22 @@ const adminAnswering = (names: string[]) => {
 };
 
 describe('customFieldsToWrite', () => {
-  it('sends the fields as given from Shopware 6.6, which skips an empty result itself', async () => {
+  it('sends the fields as given from Shopware 6.6.10.5, which skips an empty result itself', async () => {
     const { invoke, adminClient } = adminAnswering([]);
 
-    await expect(customFieldsToWrite({ loyalty: 'gold' }, { shopwareVersion: [6, 6, 0, 0], adminClient })).resolves.toEqual({
+    await expect(customFieldsToWrite({ loyalty: 'gold' }, { shopwareVersion: [6, 6, 10, 5], adminClient })).resolves.toEqual({
       loyalty: 'gold',
     });
     expect(invoke).not.toHaveBeenCalled();
   });
 
-  it('sends only the keys the Store API may write to a customer before 6.6', async () => {
+  it('filters on 6.6.10.4, which still erases on an empty result', async () => {
+    const { adminClient } = adminAnswering([]);
+
+    await expect(customFieldsToWrite({ erp_number: 'K-1' }, { shopwareVersion: [6, 6, 10, 4], adminClient })).resolves.toBeUndefined();
+  });
+
+  it('sends only the keys the Store API may write to a customer before 6.6.10.5', async () => {
     const { invoke, adminClient } = adminAnswering(['loyalty']);
 
     await expect(
@@ -32,13 +38,13 @@ describe('customFieldsToWrite', () => {
     );
   });
 
-  it('sends nothing before 6.6 when no key is writable, which would erase every custom field', async () => {
+  it('sends nothing before 6.6.10.5 when no key is writable, which would erase every custom field', async () => {
     const { adminClient } = adminAnswering([]);
 
     await expect(customFieldsToWrite({ erp_number: 'K-1' }, { shopwareVersion: [6, 5, 6, 1], adminClient })).resolves.toBeUndefined();
   });
 
-  it('sends nothing for an empty bag before 6.6', async () => {
+  it('sends nothing for an empty bag before 6.6.10.5', async () => {
     const { invoke, adminClient } = adminAnswering(['loyalty']);
 
     await expect(customFieldsToWrite({}, { shopwareVersion: [6, 5, 6, 1], adminClient })).resolves.toBeUndefined();

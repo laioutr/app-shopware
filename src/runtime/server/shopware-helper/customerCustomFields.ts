@@ -7,17 +7,17 @@ const logger = consola.withTag('shopware/customer');
 /**
  * The custom fields of a profile update that are safe to send to `/account/change-profile`.
  *
- * Shopware keeps only the keys the shop lets the Store API write to a customer, and Shopware 6.5
- * stores an empty result as `{}`, which erases every custom field the customer has, the merchant's
- * own included. 6.6 and later skip an empty result, so there the fields travel as given. Before 6.6
- * the Admin API tells which keys are writable and only those are sent; without the Admin API none
- * are, rather than risk the erasure.
+ * Shopware keeps only the keys the shop lets the Store API write to a customer, and before 6.6.10.5
+ * it stores an empty result as `{}`, which erases every custom field the customer has, the
+ * merchant's own included. From 6.6.10.5 Shopware skips an empty result, so there the fields travel as
+ * given. Before it, and for a shop whose version is unknown, the Admin API tells which keys are
+ * writable and only those are sent; without the Admin API none are, rather than risk the erasure.
  */
 export const customFieldsToWrite = async (
   fields: Record<string, unknown>,
   { shopwareVersion, adminClient }: { shopwareVersion: ShopwareVersion | undefined; adminClient: ShopwareAdminClient }
 ): Promise<Record<string, unknown> | undefined> => {
-  if (isAtLeast(shopwareVersion, '6.6.0.0')) return fields;
+  if (isAtLeast(shopwareVersion, '6.6.10.5')) return fields;
 
   const keys = Object.keys(fields);
   if (keys.length === 0) return undefined;
@@ -36,7 +36,7 @@ export const customFieldsToWrite = async (
     });
     writable = new Set((response.data.data ?? []).map((field: { name: string }) => field.name));
   } catch (error) {
-    logger.warn('Customer custom fields not written: before Shopware 6.6 the Admin API must tell which are writable', {
+    logger.warn('Customer custom fields not written: before Shopware 6.6.10.5 the Admin API must tell which are writable', {
       keys,
       error: (error as Error).message,
     });

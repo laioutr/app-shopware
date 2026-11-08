@@ -125,8 +125,8 @@ const toProvinceCode = (shortCode: string, countryCode: string): string => {
 };
 
 /**
- * Map a Shopware address onto the canonical one. Country and salutation resolve through the sales
- * channel's system entities, so only the state needs the `countryState` association on the read.
+ * Map a Shopware address onto the canonical one. The country comes from the `country` association,
+ * falling back to the sales channel's system entities, and the state from `countryState`.
  */
 export const fromShopwareAddress = (address: Schemas['CustomerAddress'], systemEntities: SwSystemEntities): CanonicalAddress => {
   const salutation = salutationKeyOf(systemEntities.salutations, address.salutationId);
