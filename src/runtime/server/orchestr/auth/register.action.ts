@@ -57,7 +57,7 @@ export default defineShopwareAction(AuthRegisterAction, async ({ context, input,
       },
     });
 
-    return { status: customer.doubleOptInRegistration && !customer.doubleOptInConfirmDate ? 'pending-confirmation' : 'signed-in' };
+    return { status: customer.doubleOptInRegistration && !customer.doubleOptInConfirmDate ? 'pending-confirmation' : 'signed-in' } as const;
   } catch (err) {
     if (shopwareErrorCodes(err).includes('VIOLATION::CUSTOMER_EMAIL_NOT_UNIQUE')) throw new EmailAlreadyInUseError();
     // Apart from `email`, every column registration writes also exists on the billing address, and is
