@@ -1,4 +1,4 @@
-import { defineOrchestr, useNitroApp } from '#imports';
+import { defineOrchestr, getRequestURL, useNitroApp } from '#imports';
 import type { ShopwareAdminClient } from '../client/shopwareAdminClientFactory';
 import type { ShopwareContext } from '../context/getShopwareContext';
 import type { ShopwareVersion } from '../shopware-helper/shopwareVersion';
@@ -20,6 +20,8 @@ export type ShopwareOrchestrContext = Omit<ShopwareContext, 'adminClient'> & {
   shopwareVersion: ShopwareVersion | undefined;
   settings: ShopwareSettings;
   resolveCriteria: ResolveCriteria;
+  /** Origin this request arrived on, for links that have to leave the Vue app. */
+  origin: string;
 };
 
 // `defineOrchestr` reaches the module only as a Nuxt auto-import, which has no type outside a Nuxt
@@ -51,6 +53,7 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
         // which is what the media library reports on such a shop.
         adminClient: shopware.adminClient ?? shopwareAdminClientFactory(),
         shopwareVersion,
+        origin: getRequestURL(args.event).origin,
         settings: settings.settings,
         resolveCriteria,
       },
