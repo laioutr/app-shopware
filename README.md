@@ -16,7 +16,9 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
 ## Features
 
 - Products, categories, menus, reviews and search served through Laioutr's Orchestr layer, mapped
-  onto the canonical entity model — so storefront components stay backend-agnostic
+  onto the canonical entity model — so storefront components stay backend-agnostic. A product is
+  found by its slug or by its Shopware id (`ProductByIdQuery`), which a wishlist entry keeps; a
+  variant's id answers its product with that variant selected
 - Cart as a first-class entity: add, update and remove items, redeem discount codes, and read back
   the shop's automatic cart discounts — with server-held Shopware context tokens that never reach
   the browser; each product line links to its `ProductVariant`, so a cart row can render live
@@ -30,7 +32,9 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
 - Shopware media as a Laioutr media library, plus a `@nuxt/image` provider that serves Shopware's
   own thumbnails
 - Customer accounts: login, logout, registration and password recovery as the canonical auth
-  actions, with the context token persisted and cleared the same way the embedded checkout does it
+  actions, with the context token persisted and cleared the same way the embedded checkout does it.
+  A wrong address or password answers `InvalidCredentialsError`, an unconfirmed double opt-in
+  `CustomerNotConfirmedError`
 - Customer profile and address book: the current customer with all addresses in one read, each
   flagged as the default billing or shipping address, profile updates, and creating, updating,
   deleting and defaulting addresses. `provinceCode` is the subdivision code without the country
@@ -88,7 +92,8 @@ from the environment rather than committing them to `nuxt.config.ts`.
 
 In a Laioutr project the same options come from the app's `config` object in `laioutrrc.json`,
 which the platform passes into this module — the `nuxt.config.ts` form above is for the playground
-and for standalone Nuxt apps.
+and for standalone Nuxt apps. The Laioutr Cockpit offers them as a form under an environment's
+Configuration → Shopware, declared in `laioutr.manifest.json`, with the secrets stored sealed.
 
 ```jsonc
 // laioutrrc.json
@@ -110,7 +115,7 @@ and for standalone Nuxt apps.
 | `price` | `calculatedPrice` — for a product, its cheapest variant's where Shopware reports one |
 | `strikethroughPrice` | `calculatedPrice.listPrice`, only while it is above the price |
 | `savingsPercent` | Saving against the strikethrough price, as a **whole percent rounded down** — a badge never claims more than the actual discount, so 19.99 % reads as 19 %. Quantity tiers use the same rule against the single-unit price. |
-| `lowestPriorPrice` (variant) | `calculatedPrice.regulationPrice` — Shopware's lowest price over the prior period the shop configures, which EU price-indication rules require beside an announced reduction. Absent where the shop has none. |
+| `lowestPriorPrice` | `regulationPrice` of the price that sets `price`: the variant's `calculatedPrice`, and for a product its cheapest variant's where Shopware reports one. It is the regulation price the shop enters for that price — the lowest price of the prior 30 days, which EU price-indication rules require beside an announced reduction. Absent where the shop has none. |
 
 ## Product specifications and flags
 
@@ -167,7 +172,8 @@ with the entity and maps them unchanged into the canonical `customFields` slot:
 from `translated`, so a field without a value in the visitor's language falls back as it does in
 Shopware's storefront; a customer's, which Shopware does not translate, come as stored. Nothing is
 exposed by default — custom fields often carry purchasing or ERP data a storefront must not
-publish — and an entity without a whitelist leaves its slot unset. On Shopware 6.6.10 and later, a
+publish — and an entity without a whitelist leaves its slot unset. A whitelist that is not a list of
+names exposes nothing for its entity and logs a warning, rather than failing every read of it. On Shopware 6.6.10 and later, a
 field whose **Visible in Store API** switch is off never reaches the app, whatever the whitelist.
 `CustomerUpdateAction` writes the custom fields it is given, whatever the whitelist: Shopware keeps
 those the shop lets a customer write through the Store API and drops the rest. Before 6.6.10.5,

@@ -3,12 +3,20 @@ import login from './login.action';
 import logout from './logout.action';
 import recover from './recover.action';
 import register from './register.action';
-import { CustomerNotConfirmedError, EmailAlreadyInUseError, InvalidFieldError } from '@laioutr-core/canonical-types/ecommerce';
+import {
+  CustomerNotConfirmedError,
+  EmailAlreadyInUseError,
+  InvalidCredentialsError,
+  InvalidFieldError,
+} from '@laioutr-core/canonical-types/ecommerce';
 import { clearContextToken, persistContextToken } from '../../shopware-helper/persistContextToken';
 
 const runtimeConfig = { '@laioutr/app-shopware': { storefrontUrl: 'https://shop.example.com' as string | undefined } };
 
-vi.mock('#imports', () => ({ useRuntimeConfig: () => runtimeConfig }));
+vi.mock('#imports', () => ({
+  useRuntimeConfig: () => runtimeConfig,
+  createError: (input: { statusCode: number; statusMessage: string }) => Object.assign(new Error(input.statusMessage), input),
+}));
 vi.mock('../../middleware/defineShopware', () => ({
   defineShopwareAction: (_token: unknown, run: unknown) => run,
 }));
@@ -158,9 +166,7 @@ describe('register', () => {
       apiError(400, [{ code: 'VIOLATION::CUSTOMER_EMAIL_NOT_UNIQUE', source: { pointer: '/email' } }])
     );
 
-    await expect((register as unknown as Run)({ context, input: registerInput, event })).rejects.toBeInstanceOf(
-      EmailAlreadyInUseError
-    );
+    await expect((register as unknown as Run)({ context, input: registerInput, event })).rejects.toBeInstanceOf(EmailAlreadyInUseError);
   });
 
   it('refuses to register without a storefront URL', async () => {
@@ -177,23 +183,44 @@ describe('login', () => {
   it('throws CustomerNotConfirmedError for a customer who has not confirmed the opt-in mail', async () => {
     context.storefrontClient.invoke.mockRejectedValue(apiError(401, [{ code: 'CHECKOUT__CUSTOMER_OPTIN_NOT_COMPLETED' }]));
 
-    await expect((login as unknown as Run)({ context, input: credentials, event })).rejects.toBeInstanceOf(
-      CustomerNotConfirmedError
-    );
+    await expect((login as unknown as Run)({ context, input: credentials, event })).rejects.toBeInstanceOf(CustomerNotConfirmedError);
   });
 
   it('throws CustomerNotConfirmedError for the inactive customer Shopware 6.5 reports instead', async () => {
     context.storefrontClient.invoke.mockRejectedValue(apiError(401, [{ code: 'CHECKOUT__CUSTOMER_IS_INACTIVE' }]));
 
-    await expect((login as unknown as Run)({ context, input: credentials, event })).rejects.toBeInstanceOf(
-      CustomerNotConfirmedError
-    );
+    await expect((login as unknown as Run)({ context, input: credentials, event })).rejects.toBeInstanceOf(CustomerNotConfirmedError);
   });
 
-  it('answers unsuccessfully for wrong credentials', async () => {
+  it('throws InvalidCredentialsError for a wrong address or password', async () => {
     context.storefrontClient.invoke.mockRejectedValue(apiError(401, [{ code: 'CHECKOUT__CUSTOMER_AUTH_BAD_CREDENTIALS' }]));
 
-    await expect((login as unknown as Run)({ context, input: credentials, event })).resolves.toMatchObject({ success: false });
+    await expect((login as unknown as Run)({ context, input: credentials, event })).rejects.toBeInstanceOf(InvalidCredentialsError);
+  });
+
+  it('throws InvalidCredentialsError for the bare 401 Shopware 6.5 answers', async () => {
+    context.storefrontClient.invoke.mockRejectedValue(apiError(401, [{ code: '0' }]));
+
+    await expect((login as unknown as Run)({ context, input: credentials, event })).rejects.toBeInstanceOf(InvalidCredentialsError);
+  });
+
+  it('answers 429 of its own when Shopware refuses further attempts', async () => {
+    context.storefrontClient.invoke.mockRejectedValue(apiError(429, [{ code: 'CHECKOUT__CUSTOMER_AUTH_THROTTLED' }]));
+
+    await expect((login as unknown as Run)({ context, input: credentials, event })).rejects.toMatchObject({ statusCode: 429 });
+  });
+
+  it('throws any other failure as it came, rather than answering it as a refused login', async () => {
+    const outage = apiError(503);
+    context.storefrontClient.invoke.mockRejectedValue(outage);
+
+    await expect((login as unknown as Run)({ context, input: credentials, event })).rejects.toBe(outage);
+  });
+
+  it('answers success once Shopware accepts the credentials', async () => {
+    context.storefrontClient.invoke.mockResolvedValue({ status: 200, data: { contextToken: 'token' } });
+
+    await expect((login as unknown as Run)({ context, input: credentials, event })).resolves.toEqual({ success: true });
   });
 });
 

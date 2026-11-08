@@ -1,0 +1,99 @@
+{
+  "configSettings": {
+    "placement": "environment",
+    "menu": {
+      "label": "Shopware",
+      "icon": "LuStore"
+    },
+    "sections": [
+      {
+        "label": "Store API",
+        "description": "The sales channel this environment reads products, carts and customers from. Shopware admin → Sales Channels → your channel → API access.",
+        "fields": [
+          {
+            "name": "endpoint",
+            "type": "text",
+            "label": "Store API address",
+            "description": "The shop's address followed by /store-api.",
+            "placeholder": "https://shop.example.com/store-api"
+          },
+          {
+            "name": "accessToken",
+            "type": "secret",
+            "label": "API access key"
+          }
+        ]
+      },
+      {
+        "label": "Admin API",
+        "description": "An integration for what the Store API does not offer: the media library, the sales channel's currency and language, and before Shopware 6.6.10.5 which customer custom fields a customer may write. Shopware admin → Settings → System → Integrations.",
+        "fields": [
+          {
+            "name": "adminEndpoint",
+            "type": "text",
+            "label": "Admin API address",
+            "description": "The shop's address followed by /api.",
+            "placeholder": "https://shop.example.com/api"
+          },
+          {
+            "name": "adminClientId",
+            "type": "secret",
+            "label": "Access key ID"
+          },
+          {
+            "name": "adminClientSecret",
+            "type": "secret",
+            "label": "Secret access key"
+          }
+        ]
+      },
+      {
+        "label": "Storefront",
+        "description": "The Shopware storefront where the LaioutrConnector plugin is installed.",
+        "fields": [
+          {
+            "name": "storefrontUrl",
+            "type": "text",
+            "label": "Storefront address",
+            "description": "Needed for checkout, registration, password recovery and newsletter sign-up. Shopware builds the links in its mails from it, so it must be a domain of the sales channel.",
+            "placeholder": "https://shop.example.com"
+          },
+          {
+            "name": "checkoutLoginCallbackUrl",
+            "type": "text",
+            "label": "Return address after a login in checkout",
+            "description": "Leave empty to return to the storefront the customer came from. Set the project's login route when customers sign in through an external identity provider."
+          },
+          {
+            "name": "checkoutLogoutCallbackUrl",
+            "type": "text",
+            "label": "Return address after a logout in checkout",
+            "description": "Leave empty to return to the storefront the customer came from. Set the identity provider's logout route so that a logout in checkout also ends the external session."
+          }
+        ]
+      },
+      {
+        "label": "Catalog",
+        "fields": [
+          {
+            "name": "dimensionUnit",
+            "type": "select",
+            "label": "Unit of width, height and length",
+            "description": "The unit the shop enters product measures in. Shopware's admin labels them millimetres; choose centimetres when the shop's data holds centimetres.",
+            "default": "mm",
+            "options": [
+              { "value": "mm", "label": "Millimetres" },
+              { "value": "cm", "label": "Centimetres" }
+            ]
+          },
+          {
+            "name": "customFields",
+            "type": "json",
+            "label": "Custom fields",
+            "description": "The Shopware custom fields the storefront may read, per entity: product, variant, category and customer, each with an include list of field names, where * matches any run of characters. Nothing is exposed while this is empty. Custom fields often hold purchasing or ERP data, so list the fields the storefront shows rather than *. A product with variants usually keeps its fields on the variant, so list those under variant."
+          }
+        ]
+      }
+    ]
+  }
+}
