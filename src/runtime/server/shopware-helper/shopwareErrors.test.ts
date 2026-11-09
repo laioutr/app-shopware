@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  hasViolationAt,
   shopwareErrorCodes,
   shopwareErrorStatus,
   throwAsAccountError,
@@ -36,6 +37,11 @@ describe('toCanonicalFieldPath', () => {
 
   it('places a pointer relative to a nested input under its prefix', () => {
     expect(toCanonicalFieldPath('/street', ['address'])).toEqual(['address', 'address1']);
+  });
+
+  it("renames a route's own field names before the shared ones", () => {
+    expect(toCanonicalFieldPath('/password', [], { password: 'currentPassword' })).toEqual(['currentPassword']);
+    expect(toCanonicalFieldPath('/countryId', [], { password: 'currentPassword' })).toEqual(['countryCode']);
   });
 });
 
@@ -146,5 +152,26 @@ describe('throwAsAccountError', () => {
       })
     );
     expect((err as InvalidFieldError).data).toEqual({ reason: 'MISSING', field: ['address', 'postalCode'] });
+  });
+
+  it("reports a violation on the route's renamed field", () => {
+    const err = thrownBy(() =>
+      throwAsAccountError(apiError(400, [{ code: 'VIOLATION::TOO_SHORT_ERROR', source: { pointer: '/newPasswordConfirm' } }]), {
+        fieldNames: { newPasswordConfirm: 'newPassword' },
+      })
+    );
+    expect((err as InvalidFieldError).data).toEqual({ reason: 'TOO_SHORT', field: ['newPassword'] });
+  });
+});
+
+describe('hasViolationAt', () => {
+  it('finds a violation of one of the given fields', () => {
+    const err = apiError(400, [{ code: 'VIOLATION::IS_BLANK_ERROR', source: { pointer: '/em' } }]);
+    expect(hasViolationAt(err, ['/hash', '/em'])).toBe(true);
+    expect(hasViolationAt(err, ['/hash'])).toBe(false);
+  });
+
+  it('answers false for another error', () => {
+    expect(hasViolationAt(new Error('boom'), ['/hash'])).toBe(false);
   });
 });

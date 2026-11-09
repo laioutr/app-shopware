@@ -31,10 +31,12 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   entity behind it
 - Shopware media as a Laioutr media library, plus a `@nuxt/image` provider that serves Shopware's
   own thumbnails
-- Customer accounts: login, logout, registration and password recovery as the canonical auth
-  actions, with the context token persisted and cleared the same way the embedded checkout does it.
-  A wrong address or password answers `InvalidCredentialsError`, an unconfirmed double opt-in
-  `CustomerNotConfirmedError`
+- Customer accounts: login, logout, registration, double opt-in confirmation, password recovery and
+  reset, and password and email changes as the canonical auth and customer actions, with the context
+  token persisted and cleared the same way the embedded checkout does it. A wrong address or password
+  answers `InvalidCredentialsError`, an unconfirmed double opt-in `CustomerNotConfirmedError`. The
+  app's own actions delete the account, set the default payment method and the language of
+  Shopware's mails, and read the newsletter status; see [Customer accounts](#customer-accounts)
 - Customer profile and address book: the current customer with all addresses in one read, each
   flagged as the default billing or shipping address, profile updates, and creating, updating,
   deleting and defaulting addresses. `provinceCode` is the subdivision code without the country
@@ -43,7 +45,13 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   validation errors arrive as `InvalidFieldError` with the canonical field path
 - Wishlist: the customer's Shopware wishlist as a canonical `ProductList`, with add and remove
   actions and links from each entry to its product and variant
-- Newsletter subscription and review submission as Orchestr actions
+- Newsletter subscription, its double opt-in confirmation and unsubscribing, and review submission
+  as Orchestr actions
+- The visitor's session: read it and switch its shipping method, payment method and shipping
+  country, and empty the cart; see [Session and cart](#session-and-cart)
+- Breadcrumbs from Shopware's own breadcrumb, with every category level and its SEO URL, and a
+  variant query that finds the variant for a selection without loading every variant; see
+  [Catalog](#catalog)
 - The product's manufacturer as its canonical brand: name and website
 
 ## Requirements
@@ -384,7 +392,77 @@ The list's id is the customer's id, because Shopware keeps one wishlist per cust
 - Shopware wishlist entries carry no quantity, note or custom fields, so those inputs are not
   kept. The shop must have the wishlist enabled (`core.cart.wishlistEnabled`).
 
+## Catalog
+
+| Token | Shopware | What it does |
+| --- | --- | --- |
+| `ProductBreadcrumbLink` | `GET /breadcrumb/{id}` | The product's category path from below the navigation root, ending in the product. Each level links to its category by its SEO URL. |
+| `CategoryBreadcrumbLink` | `GET /breadcrumb/{id}?type=category` | The category's path down to the category itself. |
+| `ShopwareProductVariantByOptionsQuery` | `POST /product/{productId}/find-variant` | The `ProductVariant` for a selection, as `{ productId, options: [{ name, value }], switchedOption? }`. |
+
+- **Breadcrumbs are Shopware's own.** The route is experimental in Shopware and absent on older
+  releases. Where it cannot be read, the product breadcrumb falls back to the product's main category
+  and the product, and a category's breadcrumb is empty; both log a warning.
+- **The variant query takes names, not ids.** A selection is named the way `ProductOptionGroups` and
+  `ProductVariantOptions` name it, in the request's language, and matched case-insensitively against
+  the product's configurator. `switchedOption` names the axis the visitor changed last: when no
+  variant carries the whole combination, Shopware answers the closest one that keeps that value, so
+  read the found variant's `options`. Without it, such a combination is not found, as is a value the
+  product does not offer.
+
+## Customer accounts
+
+| Token | Shopware | Notes |
+| --- | --- | --- |
+| `AuthResetPasswordAction` | `POST /account/recovery-password-confirm` | Reads `hash` from the recovery link. An expired or unknown link throws `PasswordResetTokenInvalidError` with its `reason`, the password policy `InvalidFieldError` on `newPassword`. |
+| `ShopwareAuthCheckResetLinkAction` | `POST /account/customer-recovery-is-expired` | `{ link }` → `{ status: 'valid' \| 'expired' \| 'invalid' }`, so the reset page can offer a new mail before the customer types a password. |
+| `AuthConfirmEmailAction` | `POST /account/register-confirm` | Reads `hash` and `em` from the confirmation link. Answers `signed-in` and persists the customer's new context token, or `confirmed` for a link opened a second time. |
+| `CustomerChangePasswordAction` | `POST /account/change-password` | A wrong current password throws `CurrentPasswordInvalidError`. A context token Shopware rotates to is persisted, so the customer stays signed in. |
+| `CustomerChangeEmailAction` | `POST /account/change-email` | Answers `changed`. An address another account has throws `EmailAlreadyInUseError`. |
+| `ShopwareCustomerDeleteAction` | `DELETE /account/customer` | Deletes the account and clears the context token, as a logout does. |
+| `ShopwareCustomerPaymentMethodSetDefaultAction` | `POST /account/change-payment-method/{paymentMethodId}` | `{ paymentMethodId }`; a method the shop does not offer is `InvalidFieldError` on `paymentMethodId`. |
+| `ShopwareCustomerChangeLanguageAction` | `POST /account/change-language` | `{ locale? }`, a BCP 47 tag, the request's language without one. Sets the language of Shopware's mails to the customer, not the storefront's. |
+| `ShopwareCustomerGetNewsletterStatusAction` | `POST /account/newsletter-recipient` | `{ status: 'subscribed' \| 'pending-confirmation' \| 'unsubscribed' \| 'not-subscribed' }`. |
+
+Shopware's default mail templates put the parameters in the link's query
+(`/account/recover/password?hash=…`, `/registration/confirm?em=…&hash=…`); the actions read them from
+the link the customer opened, so the page passes its own URL on unchanged. A shop that rewrites those
+templates must keep the parameter names. Each action that needs a customer throws
+`UnauthenticatedError` for a guest.
+
+## Newsletter
+
+| Token | Shopware | Notes |
+| --- | --- | --- |
+| `SubscribeAction` | `POST /newsletter/subscribe` | Needs `storefrontUrl`, which Shopware builds the double opt-in link from. |
+| `ShopwareNewsletterConfirmAction` | `POST /newsletter/confirm` | `{ link }`, the double opt-in link. An unknown or broken link throws `EmailConfirmationTokenInvalidError`. |
+| `ShopwareNewsletterUnsubscribeAction` | `POST /newsletter/unsubscribe` | `{ email }`. Answers the same for an address that is not subscribed. |
+
+## Session and cart
+
+| Token | Shopware | Notes |
+| --- | --- | --- |
+| `ShopwareContextGetAction` | `GET /context`, `POST /shipping-method`, `POST /payment-method` | Whether the visitor is signed in, the currency, language and shipping country, the chosen shipping and payment method, and the methods available to choose from. |
+| `ShopwareContextUpdateAction` | `PATCH /context` | `{ shippingMethodId?, paymentMethodId?, countryCode? }`. The cart's shipping costs follow. A visitor without a session gets one, persisted like a cart write's. |
+| `ShopwareCartClearAction` | `DELETE /checkout/cart` | Empties the cart and keeps the session. |
+
+Currency and language are not switched through the context. The app sends the market's currency
+and language with every Store API call, which overrides what the context stores, so a switch would
+hold only until the next request. They change with the market.
+
 ## Exports
+
+### `@laioutr/app-shopware/tokens`
+
+The app's own tokens, for a storefront component to call. They import nothing from the server side.
+
+```ts
+import { ShopwareContextGetAction, ShopwareProductVariantByOptionsQuery } from '@laioutr/app-shopware/tokens';
+
+const { data: session } = useQueryAction(ShopwareContextGetAction);
+```
+
+`@laioutr/app-shopware/runtime` exports them too.
 
 ### `@laioutr/app-shopware/runtime`
 
