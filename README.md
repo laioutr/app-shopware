@@ -43,6 +43,11 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   validation errors arrive as `InvalidFieldError` with the canonical field path
 - Wishlist: the customer's Shopware wishlist as a canonical `ProductList`, with add and remove
   actions and links from each entry to its product and variant
+- Search and search suggestions on the Store API: `ProductSearchQuery` with filters, sorting and
+  paging, and `SuggestedSearchSearchQuery` with completions, brands, categories and the suggested
+  products as `Product` entities with price and image
+- Shopware's cross-selling groups on the product, as groups or as one list of products (see
+  [Cross-selling](#cross-selling))
 - Newsletter subscription and review submission as Orchestr actions
 - The product's manufacturer as its canonical brand: name and website
 
@@ -384,6 +389,45 @@ The list's id is the customer's id, because Shopware keeps one wishlist per cust
 - Shopware wishlist entries carry no quantity, note or custom fields, so those inputs are not
   kept. The shop must have the wishlist enabled (`core.cart.wishlistEnabled`).
 
+## Cross-selling
+
+The product's cross-selling groups — the ones the shop sets up in the product's *Cross Selling* tab,
+from a product stream or a hand-picked list — come from `/store-api/product/{productId}/cross-selling`.
+No canonical token covers them, so the app defines its own:
+
+| Token | Kind | What it answers |
+| --- | --- | --- |
+| `ShopwareProductCrossSellingProductsLink` (`shopware/product/cross-selling-products`) | `Product` → `Product` | Every product of every group, group by group in the shop's order, each product once and never the product itself. 24 per page by default. |
+| `ShopwareProductCrossSellingsLink` (`shopware/product/cross-sellings`) | `Product` → `ProductCrossSelling` | The product's groups in the shop's order. A group that is inactive or holds no products is left out. |
+| `ShopwareCrossSellingProductsLink` (`shopware/product-cross-selling/products`) | `ProductCrossSelling` → `Product` | One group's products, in the group's own sorting. 24 per page by default. |
+| `ProductCrossSellingBase` | `ProductCrossSelling` component `base` | `{ name, position, type }`; `type` is `productStream` or `productList`. |
+
+**In Studio**, put a product slider on the product detail page, bind it to the page's product query
+and choose the link *Cross-selling products (Shopware)*. The slider then shows the cross-selling
+products of whichever product the page shows, with price, cover and the variant Shopware answered,
+like any listing tile. A section that shows one tab per group follows *Cross-selling groups
+(Shopware)* and, from each group, *Cross-selling group products (Shopware)*.
+
+In code, the same link is one entry under the product query:
+
+```ts
+import { ProductBase, ProductInfo, ProductPrices } from '@laioutr-core/canonical-types/entity/product';
+import { unwrapToken } from '@laioutr-core/core-types/orchestr';
+import { ShopwareProductCrossSellingProductsLink } from '@laioutr/app-shopware/tokens';
+
+const links = {
+  [unwrapToken(ShopwareProductCrossSellingProductsLink)]: { components: [ProductBase, ProductInfo, ProductPrices] },
+};
+```
+
+- **The variant counts.** On a product page the cross-selling is read for the variant the page
+  shows, so a variant with groups of its own gets those, and one that inherits gets its product's.
+- **Cached for ten minutes** per product, language and currency. A stream's products drop out as they
+  sell out, so the window is the one the variants link uses, not the day the catalogue keeps.
+- **One read per product.** The route answers a single product, so a page that links many products
+  reads up to four at a time. A product whose read fails links no cross-selling and logs a warning;
+  the others are unaffected.
+
 ## Exports
 
 ### `@laioutr/app-shopware/runtime`
@@ -425,6 +469,16 @@ export default defineShopware.componentResolver({
 
 The token is read exactly as this app reads it: `shopware:context-token:resolve` first, the cookie
 second.
+
+The runtime entry also exports the cross-selling tokens. It reaches server-only code, so a Vue
+component imports them from the client-safe entry instead.
+
+### `@laioutr/app-shopware/tokens`
+
+The app's own Orchestr tokens, safe to import from a component or a section: `ProductCrossSellingBase`,
+`ShopwareProductCrossSellingsLink`, `ShopwareCrossSellingProductsLink`,
+`ShopwareProductCrossSellingProductsLink` and `WELL_KNOWN_CROSS_SELLING_TYPES`. See
+[Cross-selling](#cross-selling).
 
 ## Development
 

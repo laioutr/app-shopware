@@ -1,4 +1,6 @@
 import { createPassthroughToken } from '#imports';
+import type { ProductRow } from '../shopware-helper/productTargets';
+import type { MediaImage } from '@laioutr-core/core-types/common';
 import { ShopwareCategory, ShopwareProduct } from '../types/shopware';
 import { Schemas } from '../types/storeApiTypes';
 
@@ -30,7 +32,10 @@ export const suggestionResultsFragmentToken = createPassthroughToken<{
     link:
       | { type: 'reference'; reference: { type: string; id: string; slug: string } }
       | { type: 'pageType'; pageType: string; params: Record<string, string> };
+    cover?: MediaImage;
   }>;
+  /** The product rows the suggest read answered, for the suggestion's products link. */
+  products: ProductRow[];
 }>('@laioutr/app-shopware/completionResults');
 
 export const cartFragmentToken = createPassthroughToken<Schemas['Cart']>('@laioutr/app-shopware/cartFragment');
@@ -38,4 +43,12 @@ export const cartFragmentToken = createPassthroughToken<Schemas['Cart']>('@laiou
 /** Product id → parent id for the entries of the wishlist page a request read, so the item links need no lookup. */
 export const wishlistEntryParentsToken = createPassthroughToken<Record<string, string | undefined>>(
   '@laioutr/app-shopware/wishlistEntryParents'
+);
+
+/**
+ * Cross-selling group id → the product ids it was read for and the rows it answered. Set by the groups
+ * link, so the group's products link nested under it needs no second read.
+ */
+export const crossSellingGroupsToken = createPassthroughToken<Record<string, { productIds: string[]; products: ProductRow[] }>>(
+  '@laioutr/app-shopware/crossSellingGroups'
 );

@@ -1,68 +1,28 @@
-import { ProductSearchPage } from '@laioutr-core/canonical-types/ecommerce';
+import { SuggestedSearchBase } from '@laioutr-core/canonical-types/entity/suggested-search';
 import { SuggestedSearchSearchQuery } from '@laioutr-core/canonical-types/suggested-search';
 import { suggestionResultsFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareQuery } from '../../middleware/defineShopware';
-import { createFallbackSlug, entitySlug } from '../../shopware-helper/mappers/slugMapper';
-import { ShopwareExtensions } from '../../types/shopware';
+import { mapSuggestResponse } from '../../shopware-helper/suggestMapper';
 
-export default defineShopwareQuery(SuggestedSearchSearchQuery, async ({ context, input, passthrough }) => {
-  const { storefrontClient } = context;
+type SuggestResponse = Parameters<typeof mapSuggestResponse>[0];
 
-  const { query } = input;
+export default defineShopwareQuery({
+  implements: SuggestedSearchSearchQuery,
+  provides: [SuggestedSearchBase],
+  run: async ({ context, input, passthrough, $entity }) => {
+    const query = input.query ?? '';
+    const id = `search-suggest:${query}`;
 
-  const { data } = await storefrontClient.invoke('searchSuggest post /search-suggest', {
-    body: { search: query ?? '' },
-  });
+    // Shopware refuses a suggest read without a term, so an empty box suggests nothing.
+    let data: SuggestResponse;
+    if (query.trim()) {
+      const response = await context.storefrontClient.invoke('searchSuggest post /search-suggest', { body: { search: query } });
+      // The typed client leaves out the extensions that carry completions, brands and categories.
+      data = response.data as unknown as SuggestResponse;
+    }
 
-  const res = data as unknown as ShopwareExtensions;
+    passthrough.set(suggestionResultsFragmentToken, { id, ...mapSuggestResponse(data) });
 
-  const querySuggestionsResults = Object.values(res.extensions?.completionResult ?? {})
-    .filter((val) => val !== 'array_struct')
-    .map((val, index) => ({
-      id: `query_suggestion_${index}`,
-      type: 'query-suggestion',
-      title: val,
-      link: { type: 'pageType', pageType: ProductSearchPage, params: { q: val } } as const,
-    }));
-
-  const brandResults = Object.values(res.extensions?.multiSuggestResult?.suggestResults?.product_manufacturer?.elements ?? []).map(
-    (manufacturer) => ({
-      id: manufacturer.id,
-      type: 'brand',
-      title: manufacturer.name,
-      link: {
-        type: 'reference',
-        reference: { type: 'brand', id: manufacturer.id, slug: createFallbackSlug(manufacturer.name, manufacturer.id) },
-      } as const,
-    })
-  );
-
-  const categoryResults = Object.values(res.extensions?.multiSuggestResult?.suggestResults?.category?.elements ?? []).map((category) => ({
-    id: category.id,
-    type: 'category',
-    title: category.name,
-    link: {
-      type: 'reference',
-      reference: { type: 'category', id: category.id, slug: entitySlug(category) },
-    } as const,
-  }));
-
-  const productResults = (data.elements ?? []).map((product) => ({
-    id: product.id,
-    type: 'product',
-    title: product.name,
-    link: {
-      type: 'reference',
-      reference: { type: 'product', id: product.id, slug: entitySlug(product) },
-    } as const,
-  }));
-
-  const id = `search-suggest:${query}`;
-
-  passthrough.set(suggestionResultsFragmentToken, {
-    id,
-    suggestions: [...querySuggestionsResults, ...brandResults, ...categoryResults, ...productResults],
-  });
-
-  return { id };
+    return { entity: $entity({ id, base: { query } }) };
+  },
 });
