@@ -46,6 +46,7 @@ jobs:
       # Opens/updates a "Version Packages" PR while changesets are pending.
       # When that PR is merged, runs `pnpm release` to build + publish to npmjs.org.
       - name: Create Release PR or publish
+        id: changesets
         uses: changesets/action@v1
         with:
           version: pnpm changeset version
@@ -57,3 +58,11 @@ jobs:
           # A PR opened with the default GITHUB_TOKEN cannot trigger further workflows, so
           # release PRs would never get CI. This token gives them a different identity.
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
+      # Laioutr's registry never sees a package on npmjs, so the Cockpit learns of the version,
+      # and of the settings form in laioutr.manifest.json, only from this call.
+      - name: Release to the Laioutr Cockpit
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          LAIOUTR_API_KEY: ${{ secrets.LAIOUTR_API_KEY }}
+        run: pnpm dlx @laioutr/cli@0.6.1 app release
