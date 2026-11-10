@@ -8,6 +8,19 @@ import type { MediaImage } from '@laioutr-core/core-types/common';
 
 type SuggestResponse = ShopwareExtensions & { elements?: ShopwareProduct[] };
 
+export interface MappedSuggestResponse {
+  suggestions: Array<{
+    id: string;
+    type: string;
+    title: string;
+    link:
+      | { readonly type: 'reference'; readonly reference: { type: string; id: string; slug: string } }
+      | { readonly type: 'pageType'; readonly pageType: string; readonly params: Record<string, string> };
+    cover?: MediaImage;
+  }>;
+  products: ProductRow[];
+}
+
 const coverOf = (product: ShopwareProduct): MediaImage | undefined => {
   const media = product.cover?.media;
   if (!media) return undefined;
@@ -20,7 +33,7 @@ const coverOf = (product: ShopwareProduct): MediaImage | undefined => {
  * the product rows behind them. Shopware leaves a variant's own name empty where it inherits the
  * parent's, so names are read translated.
  */
-export const mapSuggestResponse = (data: SuggestResponse | undefined) => {
+export const mapSuggestResponse = (data: SuggestResponse | undefined): MappedSuggestResponse => {
   const querySuggestions = Object.values(data?.extensions?.completionResult ?? {})
     .filter((value) => value !== 'array_struct')
     .map((value, index) => ({

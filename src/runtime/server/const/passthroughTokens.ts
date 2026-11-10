@@ -44,11 +44,3 @@ export const cartFragmentToken = createPassthroughToken<Schemas['Cart']>('@laiou
 export const wishlistEntryParentsToken = createPassthroughToken<Record<string, string | undefined>>(
   '@laioutr/app-shopware/wishlistEntryParents'
 );
-
-/**
- * Cross-selling group id → the product ids it was read for and the rows it answered. Set by the groups
- * link, so the group's products link nested under it needs no second read.
- */
-export const crossSellingGroupsToken = createPassthroughToken<Record<string, { productIds: string[]; products: ProductRow[] }>>(
-  '@laioutr/app-shopware/crossSellingGroups'
-);

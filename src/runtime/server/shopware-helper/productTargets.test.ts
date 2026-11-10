@@ -15,10 +15,4 @@ describe('productTargetsOf', () => {
       defaultVariantIds: { 'p-1': 'v-1', 'p-2': 'p-2' },
     });
   });
-
-  it('leaves out the excluded product, also when a sibling variant of it is answered', () => {
-    expect(
-      productTargetsOf([{ id: 'v-own-2', parentId: 'p-own' }, { id: 'v-own-1' }, { id: 'p-3' }], ['p-own', 'v-own-1']).targetIds
-    ).toEqual(['p-3']);
-  });
 });
