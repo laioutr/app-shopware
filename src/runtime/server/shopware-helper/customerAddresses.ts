@@ -3,7 +3,6 @@ import type { StorefrontClient } from '../types/shopware';
 import type { Schemas } from '../types/storeApiTypes';
 import type { SwSystemEntities } from './system/getSystemEntities';
 import type { AddressBookEntry } from '@laioutr-core/canonical-types';
-import type { z } from 'zod/v4';
 
 /**
  * Associations an address read needs: the state's short code, and the country, which the system
@@ -36,7 +35,7 @@ export const readCustomer = async (client: StorefrontClient): Promise<Schemas['C
 export const toAddressBookEntries = (
   customer: Schemas['Customer'],
   systemEntities: SwSystemEntities
-): z.output<typeof AddressBookEntry>[] =>
+): (typeof AddressBookEntry)['_zod']['output'][] =>
   (customer.addresses ?? []).map((address) => ({
     id: address.id,
     address: fromShopwareAddress(address, systemEntities),

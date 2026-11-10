@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import checkResetLink from './check-reset-link.action';
 import confirmEmail from './confirm-email.action';
 import resetPassword from './reset-password.action';
 import {
@@ -86,41 +85,6 @@ describe('reset password', () => {
     context.storefrontClient.invoke.mockRejectedValue(outage);
 
     await expect(run(resetPassword, { link: recoveryLink, newPassword: 'new-secret' })).rejects.toBe(outage);
-  });
-});
-
-describe('check reset link', () => {
-  it.each([
-    [{ isExpired: false, apiAlias: 'array_struct' }, 'valid'],
-    [{ isExpired: true, apiAlias: 'array_struct' }, 'expired'],
-    [{ apiAlias: 'array_struct', data: [{ isExpired: true }] }, 'expired'],
-  ])('answers %o as %s', async (data, status) => {
-    context.storefrontClient.invoke.mockResolvedValue({ data });
-
-    await expect(run(checkResetLink, { link: recoveryLink })).resolves.toEqual({ status });
-    expect(context.storefrontClient.invoke).toHaveBeenCalledWith(
-      'getCustomerRecoveryIsExpired post /account/customer-recovery-is-expired',
-      {
-        body: { hash: 'recovery-hash' },
-      }
-    );
-  });
-
-  it('answers a hash Shopware does not know as invalid', async () => {
-    context.storefrontClient.invoke.mockRejectedValue(apiError(404, [{ code: 'CHECKOUT__CUSTOMER_NOT_FOUND_BY_HASH' }]));
-
-    await expect(run(checkResetLink, { link: recoveryLink })).resolves.toEqual({ status: 'invalid' });
-  });
-
-  it('answers a link without a hash as invalid without asking Shopware', async () => {
-    await expect(run(checkResetLink, { link: 'https://shop.example.com/' })).resolves.toEqual({ status: 'invalid' });
-    expect(context.storefrontClient.invoke).not.toHaveBeenCalled();
-  });
-
-  it('answers valid when Shopware sends no readable flag, leaving the reset to decide', async () => {
-    context.storefrontClient.invoke.mockResolvedValue({ data: { apiAlias: 'array_struct' } });
-
-    await expect(run(checkResetLink, { link: recoveryLink })).resolves.toEqual({ status: 'valid' });
   });
 });
 

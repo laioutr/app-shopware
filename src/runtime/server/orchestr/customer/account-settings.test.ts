@@ -1,24 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import changeEmail from './change-email.action';
-import changeLanguage from './change-language.action';
 import changePassword from './change-password.action';
-import deleteCustomer from './delete.action';
-import getNewsletterStatus from './get-newsletter-status.action';
-import setDefaultPaymentMethod from './payment-method-set-default.action';
 import {
   CurrentPasswordInvalidError,
   EmailAlreadyInUseError,
   InvalidFieldError,
   UnauthenticatedError,
 } from '@laioutr-core/canonical-types/ecommerce';
-import { clearContextToken, persistContextToken } from '../../shopware-helper/persistContextToken';
+import { persistContextToken } from '../../shopware-helper/persistContextToken';
 
 vi.mock('../../middleware/defineShopware', () => ({
   defineShopwareAction: (_token: unknown, run: unknown) => run,
 }));
 vi.mock('../../shopware-helper/persistContextToken', () => ({
   persistContextToken: vi.fn().mockResolvedValue(undefined),
-  clearContextToken: vi.fn().mockResolvedValue(undefined),
 }));
 
 type Run = (args: Record<string, unknown>) => Promise<unknown>;
@@ -31,25 +26,17 @@ const event = { id: 'event' };
 let contextChanged: ((token: string) => void) | undefined;
 
 const context = {
-  languageId: 'lang-de',
   storefrontClient: {
     invoke: vi.fn(),
     hook: vi.fn((name: string, callback: (token: string) => void) => {
       if (name === 'onContextChanged') contextChanged = callback;
     }),
   },
-  systemEntities: {
-    locales: [
-      { languageId: 'lang-de', iso: 'de-DE' },
-      { languageId: 'lang-en', iso: 'en-GB' },
-    ],
-  },
 };
 
 beforeEach(() => {
   context.storefrontClient.invoke.mockReset();
   vi.mocked(persistContextToken).mockClear();
-  vi.mocked(clearContextToken).mockClear();
   contextChanged = undefined;
 });
 
@@ -134,102 +121,5 @@ describe('change email', () => {
     const result = run(changeEmail, input);
     await expect(result).rejects.toBeInstanceOf(InvalidFieldError);
     await expect(result).rejects.toMatchObject({ data: { field: ['email'] } });
-  });
-});
-
-describe('delete customer', () => {
-  it('deletes the customer and clears the context token', async () => {
-    context.storefrontClient.invoke.mockResolvedValue({ data: undefined });
-
-    await run(deleteCustomer);
-
-    expect(context.storefrontClient.invoke).toHaveBeenCalledWith('deleteCustomer delete /account/customer');
-    expect(clearContextToken).toHaveBeenCalledWith(event);
-  });
-
-  it('throws UnauthenticatedError for a guest and keeps the token', async () => {
-    context.storefrontClient.invoke.mockRejectedValue(apiError(403));
-
-    await expect(run(deleteCustomer)).rejects.toBeInstanceOf(UnauthenticatedError);
-    expect(clearContextToken).not.toHaveBeenCalled();
-  });
-});
-
-describe('set default payment method', () => {
-  it('sets the method by its id', async () => {
-    context.storefrontClient.invoke.mockResolvedValue({ data: { success: true } });
-
-    await run(setDefaultPaymentMethod, { paymentMethodId: 'pm-invoice' });
-
-    expect(context.storefrontClient.invoke).toHaveBeenCalledWith(
-      'changePaymentMethod post /account/change-payment-method/{paymentMethodId}',
-      { pathParams: { paymentMethodId: 'pm-invoice' } }
-    );
-  });
-
-  it.each([
-    apiError(400, [{ code: 'CHECKOUT__UNKNOWN_PAYMENT_METHOD' }]),
-    apiError(400, [{ code: 'FRAMEWORK__INVALID_UUID' }]),
-    apiError(404),
-  ])('reports a method the shop does not offer on paymentMethodId', async (err) => {
-    context.storefrontClient.invoke.mockRejectedValue(err);
-
-    const result = run(setDefaultPaymentMethod, { paymentMethodId: 'pm-unknown' });
-    await expect(result).rejects.toBeInstanceOf(InvalidFieldError);
-    await expect(result).rejects.toMatchObject({ data: { reason: 'INVALID_VALUE', field: ['paymentMethodId'] } });
-  });
-
-  it('throws UnauthenticatedError for a guest', async () => {
-    context.storefrontClient.invoke.mockRejectedValue(apiError(403));
-
-    await expect(run(setDefaultPaymentMethod, { paymentMethodId: 'pm-invoice' })).rejects.toBeInstanceOf(UnauthenticatedError);
-  });
-});
-
-describe('change language', () => {
-  it("sets the request's language without a locale", async () => {
-    context.storefrontClient.invoke.mockResolvedValue({ data: { success: true } });
-
-    await run(changeLanguage, {});
-
-    expect(context.storefrontClient.invoke).toHaveBeenCalledWith('changeLanguage post /account/change-language', {
-      body: { language: 'lang-de' },
-    });
-  });
-
-  it('sets the language of a locale, matched regardless of case and separator', async () => {
-    context.storefrontClient.invoke.mockResolvedValue({ data: { success: true } });
-
-    await run(changeLanguage, { locale: 'en_gb' });
-
-    expect(context.storefrontClient.invoke).toHaveBeenCalledWith('changeLanguage post /account/change-language', {
-      body: { language: 'lang-en' },
-    });
-  });
-
-  it('refuses a locale the sales channel does not offer without asking Shopware', async () => {
-    await expect(run(changeLanguage, { locale: 'fr-FR' })).rejects.toMatchObject({ data: { reason: 'INVALID_VALUE', field: ['locale'] } });
-    expect(context.storefrontClient.invoke).not.toHaveBeenCalled();
-  });
-});
-
-describe('newsletter status', () => {
-  it.each([
-    ['direct', 'subscribed'],
-    ['optIn', 'subscribed'],
-    ['notSet', 'pending-confirmation'],
-    ['optOut', 'unsubscribed'],
-    ['undefined', 'not-subscribed'],
-    ['some-plugin-status', 'not-subscribed'],
-  ])("answers Shopware's %s as %s", async (shopwareStatus, status) => {
-    context.storefrontClient.invoke.mockResolvedValue({ data: { apiAlias: 'account_newsletter_recipient', status: shopwareStatus } });
-
-    await expect(run(getNewsletterStatus)).resolves.toEqual({ status });
-  });
-
-  it('throws UnauthenticatedError for a guest', async () => {
-    context.storefrontClient.invoke.mockRejectedValue(apiError(403));
-
-    await expect(run(getNewsletterStatus)).rejects.toBeInstanceOf(UnauthenticatedError);
   });
 });

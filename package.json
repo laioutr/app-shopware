@@ -13,10 +13,6 @@
     "./runtime": {
       "types": "./dist/runtime/index.d.ts",
       "import": "./dist/runtime/index.js"
-    },
-    "./tokens": {
-      "types": "./dist/runtime/shared/tokens/index.d.ts",
-      "import": "./dist/runtime/shared/tokens/index.js"
     }
   },
   "main": "./dist/module.mjs",
@@ -27,9 +23,6 @@
       ],
       "runtime": [
         "./dist/runtime/index.d.ts"
-      ],
-      "tokens": [
-        "./dist/runtime/shared/tokens/index.d.ts"
       ]
     }
   },
@@ -90,16 +83,14 @@
     "typescript": "5.9.2",
     "unbuild": "3.6.1",
     "vitest": "3.1.1",
-    "vue-tsc": "2.2.10",
-    "zod": "3.25.61"
+    "vue-tsc": "2.2.10"
   },
   "peerDependencies": {
     "@laioutr-core/canonical-types": ">=0.42.0",
     "@laioutr-core/core-types": ">=0.81.0",
     "@laioutr-core/frontend-core": ">=0.81.0",
     "@laioutr-core/kit": ">=0.81.0",
-    "@laioutr-core/orchestr": ">=0.81.0",
-    "zod": ">=3.25.0"
+    "@laioutr-core/orchestr": ">=0.81.0"
   },
   "packageManager": "pnpm@10.15.0",
   "engines": {
