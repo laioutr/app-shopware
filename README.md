@@ -31,10 +31,11 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   entity behind it
 - Shopware media as a Laioutr media library, plus a `@nuxt/image` provider that serves Shopware's
   own thumbnails
-- Customer accounts: login, logout, registration and password recovery as the canonical auth
-  actions, with the context token persisted and cleared the same way the embedded checkout does it.
-  A wrong address or password answers `InvalidCredentialsError`, an unconfirmed double opt-in
-  `CustomerNotConfirmedError`
+- Customer accounts: login, logout, registration, double opt-in confirmation, password recovery and
+  reset, and password and email changes as the canonical auth and customer actions, with the context
+  token persisted and cleared the same way the embedded checkout does it. A wrong address or password
+  answers `InvalidCredentialsError`, an unconfirmed double opt-in `CustomerNotConfirmedError`; see
+  [Customer accounts](#customer-accounts)
 - Customer profile and address book: the current customer with all addresses in one read, each
   flagged as the default billing or shipping address, profile updates, and creating, updating,
   deleting and defaulting addresses. `provinceCode` is the subdivision code without the country
@@ -44,6 +45,8 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
 - Wishlist: the customer's Shopware wishlist as a canonical `ProductList`, with add and remove
   actions and links from each entry to its product and variant
 - Newsletter subscription and review submission as Orchestr actions
+- Breadcrumbs with every category level and its SEO URL, from Shopware's breadcrumb route or, on
+  releases without it, the category tree; see [Catalog](#catalog)
 - The product's manufacturer as its canonical brand: name and website
 
 ## Requirements
@@ -383,6 +386,41 @@ The list's id is the customer's id, because Shopware keeps one wishlist per cust
   repeat.
 - Shopware wishlist entries carry no quantity, note or custom fields, so those inputs are not
   kept. The shop must have the wishlist enabled (`core.cart.wishlistEnabled`).
+
+## Catalog
+
+| Token | Shopware | What it does |
+| --- | --- | --- |
+| `ProductBreadcrumbLink` | `GET /breadcrumb/{id}` | The product's category path from below the navigation root, ending in the product as the current page. Each level links to its category by its SEO URL. |
+| `CategoryBreadcrumbLink` | `GET /breadcrumb/{id}?type=category` | The category's path down to the category itself, the current page. |
+
+- **Breadcrumbs are Shopware's own where the shop has the route.** Shopware added it in 6.6.7. On
+  older releases, and where a read fails (with a warning), the path is built from the category tree
+  instead: the category's `path` below the navigation, service or footer root it sits under, read
+  through `/category`. For a product that is the path of its main category. A shop whose version is
+  known to predate the route is never asked for it.
+- A page links to its category, a link category to its external URL; a folder is named, not linked.
+
+## Customer accounts
+
+| Token | Shopware | Notes |
+| --- | --- | --- |
+| `AuthResetPasswordAction` | `POST /account/recovery-password-confirm` | Reads `hash` from the recovery link. An expired or unknown link throws `PasswordResetTokenInvalidError` with its `reason`, the password policy `InvalidFieldError` on `newPassword`. |
+| `AuthConfirmEmailAction` | `POST /account/register-confirm` | Reads `hash` and `em` from the confirmation link. Answers `signed-in` and persists the customer's new context token, or `confirmed` for a link opened a second time. |
+| `CustomerChangePasswordAction` | `POST /account/change-password` | A wrong current password throws `CurrentPasswordInvalidError`. A context token Shopware rotates to is persisted, so the customer stays signed in. |
+| `CustomerChangeEmailAction` | `POST /account/change-email` | Answers `changed`. An address another account has throws `EmailAlreadyInUseError`. |
+
+Shopware's default mail templates put the parameters in the link's query
+(`/account/recover/password?hash=…`, `/registration/confirm?em=…&hash=…`); the actions read them from
+the link the customer opened, so the page passes its own URL on unchanged. A shop that rewrites those
+templates must keep the parameter names. Each action that needs a customer throws
+`UnauthenticatedError` for a guest.
+
+## Newsletter
+
+| Token | Shopware | Notes |
+| --- | --- | --- |
+| `SubscribeAction` | `POST /newsletter/subscribe` | Needs `storefrontUrl`, which Shopware builds the double opt-in link from. |
 
 ## Exports
 

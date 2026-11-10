@@ -201,6 +201,34 @@ export type Schemas = {
   Association: {
     [key: string]: components['schemas']['Association'];
   };
+  Breadcrumb: {
+    /** @enum {string} */
+    apiAlias: 'breadcrumb';
+    categoryId: string;
+    name: string;
+    path: string;
+    seoUrls?: components['schemas']['SeoUrl'][];
+    translated: {
+      categoryId: string;
+      customFields?: GenericRecord;
+      description?: string;
+      externalLink?: string;
+      internalLink?: string;
+      keywords?: string;
+      linkNewTab?: boolean;
+      /** @enum {string} */
+      linkType?: 'category' | 'external' | 'landing_page' | 'product';
+      metaDescription?: string;
+      metaTitle?: string;
+      name: string;
+      path: string;
+      slotConfig?: GenericRecord;
+      type: string;
+    };
+    /** @enum {string} */
+    type: 'page' | 'link' | 'folder';
+  };
+  BreadcrumbCollection: components['schemas']['Breadcrumb'][];
   CalculatedPrice: {
     /** @enum {string} */
     apiAlias: 'calculated_price';
@@ -4794,6 +4822,22 @@ export type operations = {
       shopId?: string;
       token?: string;
     };
+    responseCode: 200;
+  };
+  'readBreadcrumb get /breadcrumb/{id}': {
+    contentType?: 'application/json';
+    accept?: 'application/json';
+    query?: {
+      /** UUID for referrer category only used for product breadcrumb */
+      referrerCategoryId?: string;
+      /** Type: category or product (optional - default: product) */
+      type?: 'product' | 'category';
+    };
+    pathParams: {
+      /** UUID for product or category */
+      id: string;
+    };
+    response: components['schemas']['BreadcrumbCollection'];
     responseCode: 200;
   };
   'readCategoryList post /category': {

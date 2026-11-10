@@ -21,6 +21,11 @@ export const shopwareErrorStatus = (err: unknown): number | undefined => (isShop
 export const shopwareErrorCodes = (err: unknown): string[] =>
   isShopwareApiError(err) ? (err.details?.errors ?? []).map((entry) => entry.code ?? '').filter(Boolean) : [];
 
+/** Whether a failed Store API call carries a violation of one of the given body fields (`/hash`, `/em`, …). */
+export const hasViolationAt = (err: unknown, pointers: string[]): boolean =>
+  isShopwareApiError(err) &&
+  (err.details?.errors ?? []).some((entry) => !!entry.source?.pointer && pointers.includes(entry.source.pointer));
+
 /**
  * Shopware names its constraint violations after the Symfony constraint error constant. Those with a
  * canonical counterpart map onto it; the rest — `CUSTOMER_EMAIL_NOT_UNIQUE` and other shop-specific
@@ -58,17 +63,22 @@ const CANONICAL_FIELD_NAMES: Record<string, string | string[]> = {
   salutationId: 'salutation',
 };
 
+/** Body field names of one Shopware route, keyed to the action input's names where they differ from {@link CANONICAL_FIELD_NAMES}. */
+export type FieldNames = Record<string, string | string[]>;
+
 /**
  * Turn a violation's JSON pointer into the canonical input path, so the storefront can attach the
  * error to the field it rendered. `prefix` places a pointer that is relative to a nested input —
  * the address actions send the address as the whole body, while the canonical input nests it.
+ * `fieldNames` renames the fields of a route whose body names differ from its action's input:
+ * change-password's `password` is the input's `currentPassword`.
  */
-export const toCanonicalFieldPath = (pointer: string, prefix: string[] = []): string[] => [
+export const toCanonicalFieldPath = (pointer: string, prefix: string[] = [], fieldNames: FieldNames = {}): string[] => [
   ...prefix,
   ...pointer
     .split('/')
     .filter(Boolean)
-    .flatMap((segment) => CANONICAL_FIELD_NAMES[segment] ?? segment),
+    .flatMap((segment) => fieldNames[segment] ?? CANONICAL_FIELD_NAMES[segment] ?? segment),
 ];
 
 /**
@@ -90,20 +100,28 @@ const overflowedColumn = (entry: ShopwareErrorEntry): string | undefined => {
  * `columnPointer` places an overflowed database column in the request body, as the JSON pointer a
  * violation would have carried; without it, or when it answers `undefined`, the error is rethrown.
  */
-export const throwAsInvalidField = (err: unknown, prefix: string[] = [], columnPointer?: (column: string) => string | undefined): never => {
+export const throwAsInvalidField = (
+  err: unknown,
+  prefix: string[] = [],
+  columnPointer?: (column: string) => string | undefined,
+  fieldNames?: FieldNames
+): never => {
   const errors = isShopwareApiError(err) ? (err.details?.errors ?? []) : [];
 
   if (shopwareErrorStatus(err) === 400) {
     const violation = errors.find((entry) => entry.code && entry.source?.pointer);
     if (violation) {
-      throw new InvalidFieldError(toInvalidFieldReason(violation.code!), toCanonicalFieldPath(violation.source!.pointer!, prefix));
+      throw new InvalidFieldError(
+        toInvalidFieldReason(violation.code!),
+        toCanonicalFieldPath(violation.source!.pointer!, prefix, fieldNames)
+      );
     }
   }
 
   if (columnPointer) {
     const column = errors.map(overflowedColumn).find(Boolean);
     const pointer = column ? columnPointer(column) : undefined;
-    if (pointer) throw new InvalidFieldError('TOO_LONG', toCanonicalFieldPath(pointer, prefix));
+    if (pointer) throw new InvalidFieldError('TOO_LONG', toCanonicalFieldPath(pointer, prefix, fieldNames));
   }
 
   throw err;
@@ -131,7 +149,8 @@ export const throwAsAccountError = (
     addressId,
     fieldPrefix = [],
     columnPointer,
-  }: { addressId?: string; fieldPrefix?: string[]; columnPointer?: (column: string) => string | undefined } = {}
+    fieldNames,
+  }: { addressId?: string; fieldPrefix?: string[]; columnPointer?: (column: string) => string | undefined; fieldNames?: FieldNames } = {}
 ): never => {
   const status = shopwareErrorStatus(err);
   if (status === 401 || status === 403) throw new UnauthenticatedError();
@@ -141,7 +160,7 @@ export const throwAsAccountError = (
   if (addressId && shopwareErrorCodes(err).some((code) => UNDELETABLE_ADDRESS_CODES.includes(code))) {
     throw new AddressNotDeletableError(addressId);
   }
-  return throwAsInvalidField(err, fieldPrefix, columnPointer);
+  return throwAsInvalidField(err, fieldPrefix, columnPointer, fieldNames);
 };
 
 /** Run an account call, rethrowing its failure through {@link throwAsAccountError}. */

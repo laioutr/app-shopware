@@ -1,101 +1,117 @@
-import { describe, expect, it, vi } from 'vitest';
-import categoryBreadcrumb from './breadcrumb.link';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import breadcrumbLink from './breadcrumb.link';
 
-// The link reaches Nuxt's auto-imports through this module, which a plain node run cannot resolve.
-vi.mock('../../middleware/defineShopware', () => ({ defineShopwareLink: (link: unknown) => link }));
+vi.mock('../../middleware/defineShopware', () => ({ defineShopwareLink: (definition: unknown) => definition }));
 
-type Item = { id: string; base: () => Record<string, unknown> };
-type Result = { links: { sourceId: string; entities: Item[] }[] };
-type Run = (args: Record<string, unknown>) => Promise<Result>;
+type Item = { id: string; base: Record<string, unknown> };
+type Run = (args: Record<string, unknown>) => Promise<{ links: { sourceId: string; entities: Item[] }[] }>;
 
-const category = (id: string, name: string, path: string, overrides: Record<string, unknown> = {}) => ({
+const apiError = (status: number) => Object.assign(new Error('Failed request'), { status, details: { errors: [] } });
+
+const crumb = (categoryId: string, name: string, seoPathInfo: string) => ({
+  apiAlias: 'breadcrumb',
+  categoryId,
+  name,
+  path: seoPathInfo,
+  type: 'page',
+  seoUrls: [{ seoPathInfo, isCanonical: true }],
+  translated: { categoryId, name, path: seoPathInfo, type: 'page' },
+});
+
+const category = (id: string, name: string, path: string) => ({
   id,
   name,
   translated: { name },
   path,
   type: 'page',
-  seoUrls: [{ seoPathInfo: `c/${id}/`, isCanonical: true }],
-  ...overrides,
+  seoUrls: [{ seoPathInfo: `${id}/`, isCanonical: true }],
 });
 
-const shop = [
-  category('main-root', 'ShopKategorien', ''),
-  category('moebel', 'Möbel', '|main-root|'),
-  category('baenke', 'Bänke', '|main-root|moebel|'),
-  category('eckbaenke', 'Eckbänke', '|main-root|moebel|baenke|'),
-  category('kollektionen', 'Kollektionen', '|main-root|', { type: 'folder', seoUrls: [] }),
-  category('landhaus', 'Landhaus', '|main-root|kollektionen|'),
-];
-
-const storefrontClient = {
-  invoke: vi.fn(async (operation: string, params?: { body?: { ids?: string[] } }) => {
-    if (operation === 'readCategoryList post /category') {
-      const ids = params?.body?.ids ?? [];
-      return { data: { elements: shop.filter((row) => ids.includes(row.id)) } };
-    }
-    throw new Error(`unexpected operation ${operation}`);
-  }),
+const shop = [category('living', 'Living', '|main-root|'), category('sofas', 'Sofas', '|main-root|living|')];
+const routeAnswers: Record<string, unknown> = {
+  sofas: [crumb('living', 'Wohnen', 'wohnen/'), crumb('sofas', 'Sofas', 'wohnen/sofas/')],
 };
 
-const trailsOf = async (entityIds: string[], context: Record<string, unknown> = {}) => {
-  const result = await (categoryBreadcrumb as unknown as { run: Run }).run({
+const invoke = vi.fn(async (operation: string, args: { pathParams?: { id: string }; body?: { ids: string[] } }) => {
+  if (operation === 'readBreadcrumb get /breadcrumb/{id}') {
+    const answer = routeAnswers[args.pathParams!.id];
+    if (!answer) throw apiError(404);
+    return { data: answer };
+  }
+  if (operation === 'readCategoryList post /category') {
+    return { data: { elements: shop.filter((row) => args.body!.ids.includes(row.id)) } };
+  }
+  throw new Error(`unexpected operation ${operation}`);
+});
+
+const trailsOf = async (entityIds: string[], shopwareVersion: unknown) => {
+  const { links } = await (breadcrumbLink as unknown as { run: Run }).run({
+    context: { storefrontClient: { invoke }, shopwareVersion, categoryRoots: { navigation: 'main-root' } },
     entityIds,
-    context: { storefrontClient, categoryRoots: { navigation: 'main-root', service: 'service-root' }, ...context },
-    passthrough: { get: () => undefined, has: () => false },
-    $entity: (entity: unknown) => entity,
+    $entity: (entity: { id: string; base: () => Record<string, unknown> }) => ({ id: entity.id, base: entity.base() }),
   });
-
-  return Object.fromEntries(result.links.map((link) => [link.sourceId, link.entities.map((item) => ({ id: item.id, ...item.base() }))]));
+  return Object.fromEntries(links.map((link) => [link.sourceId, link.entities]));
 };
+
+const operations = () => invoke.mock.calls.map(([operation]) => operation);
+
+beforeEach(() => {
+  invoke.mockClear();
+});
 
 describe('CategoryBreadcrumbLink', () => {
-  it('lists the ancestors below the navigation root, then the category as the current page', async () => {
-    const trails = await trailsOf(['eckbaenke']);
+  it("answers Shopware's own breadcrumb where the shop serves it, with the category as the current page", async () => {
+    const trails = await trailsOf(['sofas'], [6, 6, 10, 27]);
 
-    expect(trails.eckbaenke).toEqual([
+    expect(trails.sofas).toEqual([
       {
-        id: 'breadcrumb:moebel',
-        name: 'Möbel',
-        isCurrentPage: false,
-        link: { type: 'reference', reference: { type: 'Category', slug: 'c/moebel', id: 'moebel' } },
+        id: 'breadcrumb:living',
+        base: {
+          name: 'Wohnen',
+          isCurrentPage: false,
+          link: { type: 'reference', reference: { type: 'Category', slug: 'wohnen', id: 'living' } },
+        },
       },
       {
-        id: 'breadcrumb:baenke',
-        name: 'Bänke',
-        isCurrentPage: false,
-        link: { type: 'reference', reference: { type: 'Category', slug: 'c/baenke', id: 'baenke' } },
+        id: 'breadcrumb:sofas',
+        base: {
+          name: 'Sofas',
+          isCurrentPage: true,
+          link: { type: 'reference', reference: { type: 'Category', slug: 'wohnen/sofas', id: 'sofas' } },
+        },
       },
+    ]);
+    expect(operations()).toEqual(['readBreadcrumb get /breadcrumb/{id}']);
+  });
+
+  it('builds the breadcrumb from the category path on a release without the route, without asking for it', async () => {
+    const trails = await trailsOf(['sofas'], [6, 5, 6, 1]);
+
+    expect(trails.sofas?.map((item) => [item.id, item.base.isCurrentPage])).toEqual([
+      ['breadcrumb:living', false],
+      ['breadcrumb:sofas', true],
+    ]);
+    expect(operations()).not.toContain('readBreadcrumb get /breadcrumb/{id}');
+  });
+
+  it('builds the breadcrumb from the category path where the route fails', async () => {
+    const trails = await trailsOf(['living'], undefined);
+
+    expect(trails.living).toEqual([
       {
-        id: 'breadcrumb:eckbaenke',
-        name: 'Eckbänke',
-        isCurrentPage: true,
-        link: { type: 'reference', reference: { type: 'Category', slug: 'c/eckbaenke', id: 'eckbaenke' } },
+        id: 'breadcrumb:living',
+        base: {
+          name: 'Living',
+          isCurrentPage: true,
+          link: { type: 'reference', reference: { type: 'Category', slug: 'living', id: 'living' } },
+        },
       },
     ]);
   });
 
-  it('is the category alone for a top-level category', async () => {
-    const trails = await trailsOf(['moebel']);
+  it('leaves out a category neither the route nor the shop knows', async () => {
+    const trails = await trailsOf(['sofas', 'missing'], [6, 7, 0, 0]);
 
-    expect(trails.moebel).toEqual([expect.objectContaining({ id: 'breadcrumb:moebel', name: 'Möbel', isCurrentPage: true })]);
-  });
-
-  it('names a folder without linking it, as a folder has no page', async () => {
-    const trails = await trailsOf(['landhaus']);
-
-    expect(trails.landhaus?.[0]).toEqual({ id: 'breadcrumb:kollektionen', name: 'Kollektionen', isCurrentPage: false });
-  });
-
-  it('is the whole path while the category roots are unknown', async () => {
-    const trails = await trailsOf(['moebel'], { categoryRoots: undefined });
-
-    expect(trails.moebel?.map((item) => item.id)).toEqual(['breadcrumb:main-root', 'breadcrumb:moebel']);
-  });
-
-  it('resolves every source of a batch and leaves out a category the shop does not return', async () => {
-    const trails = await trailsOf(['eckbaenke', 'missing', 'landhaus']);
-
-    expect(Object.keys(trails)).toEqual(['eckbaenke', 'landhaus']);
-    expect(trails.landhaus?.map((item) => item.id)).toEqual(['breadcrumb:kollektionen', 'breadcrumb:landhaus']);
+    expect(Object.keys(trails)).toEqual(['sofas']);
   });
 });

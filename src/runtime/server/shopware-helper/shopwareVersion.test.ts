@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatShopwareVersion,
+  hasBreadcrumbRoute,
   isAtLeast,
   listingPageParams,
   parseShopwareVersion,
@@ -41,6 +42,19 @@ describe('isAtLeast', () => {
 
   it('answers false for an unknown version', () => {
     expect(isAtLeast(undefined, '6.0.0.0')).toBe(false);
+  });
+});
+
+describe('hasBreadcrumbRoute', () => {
+  it('answers true from 6.6.7, the release that added the route', () => {
+    expect(hasBreadcrumbRoute([6, 6, 6, 1])).toBe(false);
+    expect(hasBreadcrumbRoute([6, 5, 6, 1])).toBe(false);
+    expect(hasBreadcrumbRoute([6, 6, 7, 0])).toBe(true);
+    expect(hasBreadcrumbRoute([6, 7, 9, 1])).toBe(true);
+  });
+
+  it('answers true for an unknown version, which the app treats as current', () => {
+    expect(hasBreadcrumbRoute(undefined)).toBe(true);
   });
 });
 
