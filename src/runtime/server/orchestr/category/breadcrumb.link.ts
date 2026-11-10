@@ -23,15 +23,6 @@ const readCategories = async (storefrontClient: StorefrontClient, ids: string[])
   return response.data.elements ?? [];
 };
 
-/** The roots of the sales channel's category trees, in the order the shop's own breadcrumb tries them. */
-const readEntryPointIds = async (storefrontClient: StorefrontClient): Promise<string[]> => {
-  const { salesChannel } = (await storefrontClient.invoke('readContext get /context')).data;
-
-  return [salesChannel.navigationCategoryId, salesChannel.serviceCategoryId, salesChannel.footerCategoryId].filter(
-    (id): id is string => !!id
-  );
-};
-
 export default defineShopwareLink({
   implements: CategoryBreadcrumbLink,
   provides: [BreadcrumbItemBase],
@@ -43,10 +34,10 @@ export default defineShopwareLink({
   run: async ({ context, entityIds, $entity }) => {
     if (entityIds.length === 0) return { links: [] };
 
-    const { storefrontClient } = context;
-    const [entryPointIds, sources] = await Promise.all([readEntryPointIds(storefrontClient), readCategories(storefrontClient, entityIds)]);
+    const { storefrontClient, categoryRoots } = context;
+    const sources = await readCategories(storefrontClient, entityIds);
 
-    const trails = new Map(sources.map((category) => [category.id, categoryTrailIds(category, entryPointIds)]));
+    const trails = new Map(sources.map((category) => [category.id, categoryTrailIds(category, categoryRoots)]));
     const categories = new Map(sources.map((category) => [category.id, category]));
 
     // A path holds only ids, so the ancestors' names and slugs take a second read, shared by the batch.

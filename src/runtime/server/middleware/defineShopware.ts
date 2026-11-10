@@ -3,6 +3,7 @@ import type { ShopwareAdminClient } from '../client/shopwareAdminClientFactory';
 import type { ShopwareContext } from '../context/getShopwareContext';
 import type { DimensionUnit } from '../shopware-helper/dimensionsMapper';
 import type { ShopwareVersion } from '../shopware-helper/shopwareVersion';
+import type { CategoryRoots } from '../shopware-helper/system/getCategoryRoots';
 import type { ResolveCriteria } from '../types/criteria';
 import type { CustomFieldsConfig } from '../types/customFields';
 import type { ShopwareSettings } from '../types/settings';
@@ -11,6 +12,7 @@ import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory
 import { getShopwareContext } from '../context/getShopwareContext';
 import { withCustomFieldIncludes } from '../shopware-helper/customFields';
 import { defaultShopwareSettings } from '../shopware-helper/shopwareSettings';
+import { getCachedCategoryRoots } from '../shopware-helper/system/getCategoryRoots';
 import { getCachedShopwareVersion } from '../shopware-helper/system/getShopwareVersion';
 
 /**
@@ -21,6 +23,8 @@ export type ShopwareOrchestrContext = Omit<ShopwareContext, 'adminClient'> & {
   adminClient: ShopwareAdminClient;
   /** The connected shop's release; `undefined` when it cannot be read, which the app treats as current. */
   shopwareVersion: ShopwareVersion | undefined;
+  /** The roots of the sales channel's category trees; `undefined` when they cannot be read. */
+  categoryRoots: CategoryRoots | undefined;
   settings: ShopwareSettings;
   resolveCriteria: ResolveCriteria;
   customFields: CustomFieldsConfig | undefined;
@@ -38,7 +42,10 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
   })
   .extendRequest(async (args): Promise<{ context: ShopwareOrchestrContext }> => {
     const shopware = await getShopwareContext(args.event, args.clientEnv);
-    const shopwareVersion = await getCachedShopwareVersion(shopware.storefrontClient);
+    const [shopwareVersion, categoryRoots] = await Promise.all([
+      getCachedShopwareVersion(shopware.storefrontClient),
+      getCachedCategoryRoots(),
+    ]);
     const nitro = useNitroApp();
 
     const settings = { settings: defaultShopwareSettings() };
@@ -59,6 +66,7 @@ export const defineShopware = (defineOrchestr as typeof defineOrchestrMock)
         // which is what the media library reports on such a shop.
         adminClient: shopware.adminClient ?? shopwareAdminClientFactory(),
         shopwareVersion,
+        categoryRoots,
         settings: settings.settings,
         resolveCriteria,
         customFields,

@@ -19,6 +19,7 @@ const category = (id: string, name: string, path: string, overrides: Record<stri
 });
 
 const shop = [
+  category('main-root', 'ShopKategorien', ''),
   category('moebel', 'Möbel', '|main-root|'),
   category('baenke', 'Bänke', '|main-root|moebel|'),
   category('eckbaenke', 'Eckbänke', '|main-root|moebel|baenke|'),
@@ -28,13 +29,6 @@ const shop = [
 
 const storefrontClient = {
   invoke: vi.fn(async (operation: string, params?: { body?: { ids?: string[] } }) => {
-    if (operation === 'readContext get /context') {
-      return {
-        data: {
-          salesChannel: { navigationCategoryId: 'main-root', serviceCategoryId: 'service-root', footerCategoryId: undefined },
-        },
-      };
-    }
     if (operation === 'readCategoryList post /category') {
       const ids = params?.body?.ids ?? [];
       return { data: { elements: shop.filter((row) => ids.includes(row.id)) } };
@@ -43,10 +37,10 @@ const storefrontClient = {
   }),
 };
 
-const trailsOf = async (entityIds: string[]) => {
+const trailsOf = async (entityIds: string[], context: Record<string, unknown> = {}) => {
   const result = await (categoryBreadcrumb as unknown as { run: Run }).run({
     entityIds,
-    context: { storefrontClient },
+    context: { storefrontClient, categoryRoots: { navigation: 'main-root', service: 'service-root' }, ...context },
     passthrough: { get: () => undefined, has: () => false },
     $entity: (entity: unknown) => entity,
   });
@@ -90,6 +84,12 @@ describe('CategoryBreadcrumbLink', () => {
     const trails = await trailsOf(['landhaus']);
 
     expect(trails.landhaus?.[0]).toEqual({ id: 'breadcrumb:kollektionen', name: 'Kollektionen', isCurrentPage: false });
+  });
+
+  it('is the whole path while the category roots are unknown', async () => {
+    const trails = await trailsOf(['moebel'], { categoryRoots: undefined });
+
+    expect(trails.moebel?.map((item) => item.id)).toEqual(['breadcrumb:main-root', 'breadcrumb:moebel']);
   });
 
   it('resolves every source of a batch and leaves out a category the shop does not return', async () => {
