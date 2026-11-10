@@ -1,4 +1,6 @@
 import { createPassthroughToken } from '#imports';
+import type { ProductRow } from '../shopware-helper/productTargets';
+import type { MediaImage } from '@laioutr-core/core-types/common';
 import { ShopwareCategory, ShopwareProduct } from '../types/shopware';
 import { Schemas } from '../types/storeApiTypes';
 
@@ -30,7 +32,10 @@ export const suggestionResultsFragmentToken = createPassthroughToken<{
     link:
       | { type: 'reference'; reference: { type: string; id: string; slug: string } }
       | { type: 'pageType'; pageType: string; params: Record<string, string> };
+    cover?: MediaImage;
   }>;
+  /** The product rows the suggest read answered, for the suggestion's products link. */
+  products: ProductRow[];
 }>('@laioutr/app-shopware/completionResults');
 
 export const cartFragmentToken = createPassthroughToken<Schemas['Cart']>('@laioutr/app-shopware/cartFragment');

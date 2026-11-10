@@ -16,6 +16,9 @@ export default defineShopwareQuery(
   ProductSearchQuery,
   async ({ context, input, pagination, filter: selectedFilters, sorting, passthrough }) => {
     const { query } = input;
+    // Shopware refuses a search without a term, so a cleared search box answers an empty result
+    // instead of failing the page.
+    if (!query?.trim()) return { ids: [], total: 0 };
 
     const { swFilters, swBuiltInFilters } = selectedFilters ? mapSelectedFiltersToShopwareFilters(selectedFilters, context.currency) : {};
 
@@ -32,6 +35,7 @@ export default defineShopwareQuery(
         includes: {
           product: ['id', 'parentId'],
         },
+        'total-count-mode': context.settings.totalCountMode,
         'min-price': swBuiltInFilters?.['min-price'] as number | undefined,
         'max-price': swBuiltInFilters?.['max-price'] as number | undefined,
         manufacturer: swBuiltInFilters?.manufacturer as string | undefined,

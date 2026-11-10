@@ -44,6 +44,9 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
   validation errors arrive as `InvalidFieldError` with the canonical field path
 - Wishlist: the customer's Shopware wishlist as a canonical `ProductList`, with add and remove
   actions and links from each entry to its product and variant
+- Search and search suggestions on the Store API: `ProductSearchQuery` with filters, sorting and
+  paging, and `SuggestedSearchSearchQuery` with completions, brands, categories and the suggested
+  products as `Product` entities with price and image
 - Newsletter subscription and review submission as Orchestr actions
 - Breadcrumbs with every category level and its SEO URL, from Shopware's breadcrumb route or, on
   releases without it, the category tree; see [Catalog](#catalog)
