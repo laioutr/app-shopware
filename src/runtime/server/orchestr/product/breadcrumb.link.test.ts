@@ -62,7 +62,7 @@ const shopAnswering = (route: unknown[] | undefined) =>
   invoke.mockImplementation(async (operation: string, args: { body?: { ids: string[] } }) => {
     if (operation === 'readProduct post /product') return { data: { elements: [product] } };
     if (operation === 'readProductDetail post /product/{productId}') {
-      return { data: { product: { id: product.id, seoCategory: { id: 'cat-sofas' } } } };
+      return { data: { product: { id: product.id, seoCategory: { id: 'cat-sofas', path: '|main-root|cat-living|' } } } };
     }
     if (operation === 'readCategoryList post /category') {
       return { data: { elements: categories.filter((row) => args.body!.ids.includes(row.id)) } };
@@ -138,4 +138,28 @@ describe('ProductBreadcrumbLink', () => {
     expect(links[0]?.entities.map((entity) => entity.base.name)).toEqual(['Living', 'Sofas', 'Sofa Ada']);
     expect(operations()).not.toContain('readBreadcrumb get /breadcrumb/{id}');
   });
+
+  it('reads every category of the path in one request', async () => {
+    shopAnswering(undefined);
+
+    await run([6, 5, 6, 1]);
+
+    expect(operations().filter((operation) => operation === 'readCategoryList post /category')).toHaveLength(1);
+  });
+
+  it('asks for the main category alongside the product read, not after it', async () => {
+    let markDetailAsked!: () => void;
+    const detailAsked = new Promise<void>((resolve) => (markDetailAsked = resolve));
+    shopAnswering(undefined);
+    const answer = invoke.getMockImplementation()!;
+    invoke.mockImplementation(async (operation: string, args: unknown) => {
+      if (operation === 'readProduct post /product') await detailAsked;
+      if (operation === 'readProductDetail post /product/{productId}') markDetailAsked();
+      return answer(operation, args);
+    });
+
+    const { links } = await run([6, 5, 6, 1]);
+
+    expect(links[0]?.entities).toHaveLength(3);
+  }, 1000);
 });

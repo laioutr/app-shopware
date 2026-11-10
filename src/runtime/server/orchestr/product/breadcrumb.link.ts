@@ -5,9 +5,9 @@ import { productsFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareLink } from '../../middleware/defineShopware';
 import {
   type BreadcrumbItemData,
-  readCategoryTrails,
-  readProductMainCategoryId,
+  readProductMainCategory,
   readShopwareBreadcrumbs,
+  readTrailsOfPaths,
   toBreadcrumbItems,
 } from '../../shopware-helper/breadcrumb';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
@@ -43,27 +43,35 @@ export default defineShopwareLink({
       return response.data.elements ?? [];
     };
 
-    const [products, fromRoute] = await Promise.all([
-      passthrough.get(productsFragmentToken) ?? loadProducts(),
-      readShopwareBreadcrumbs(storefrontClient, shopwareVersion, entityIds, 'product'),
-    ]);
-    const routeOf = (productId: string) => fromRoute[entityIds.indexOf(productId)];
+    /**
+     * The category path of each product: Shopware's breadcrumb where it answers, else the product's
+     * main category with its path. On a release without the route nothing waits for it, so the main
+     * categories are read alongside the products.
+     */
+    const readPaths = async () => {
+      const fromRoute = await readShopwareBreadcrumbs(storefrontClient, shopwareVersion, entityIds, 'product');
+      const fallbackIds = entityIds.filter((_, index) => !fromRoute[index]);
+      // One read per product: the detail route takes a single id.
+      const mainCategories = await Promise.all(fallbackIds.map((id) => readProductMainCategory(storefrontClient, id)));
+      return { fromRoute, mainCategories: new Map(fallbackIds.map((id, index) => [id, mainCategories[index]])) };
+    };
 
-    const fallbackProducts = products.filter((product) => entityIds.includes(product.id) && !routeOf(product.id));
-    const mainCategoryIds = new Map(
-      await Promise.all(
-        fallbackProducts.map(async (product) => [product.id, await readProductMainCategoryId(storefrontClient, product.id)] as const)
-      )
-    );
-    const fromPath = await readCategoryTrails(storefrontClient, categoryRoots, [
-      ...new Set([...mainCategoryIds.values()].filter((id): id is string => !!id)),
+    const [products, { fromRoute, mainCategories }] = await Promise.all([
+      passthrough.get(productsFragmentToken) ?? loadProducts(),
+      readPaths(),
     ]);
+
+    const fromPath = await readTrailsOfPaths(
+      storefrontClient,
+      categoryRoots,
+      [...mainCategories.values()].filter((category) => category !== undefined)
+    );
 
     const categoryItemsOf = (product: ShopwareProduct): BreadcrumbItemData[] => {
-      const route = routeOf(product.id);
+      const route = fromRoute[entityIds.indexOf(product.id)];
       if (route) return toBreadcrumbItems(route);
-      const mainCategoryId = mainCategoryIds.get(product.id);
-      return (mainCategoryId && fromPath.get(mainCategoryId)) || [];
+      const mainCategory = mainCategories.get(product.id);
+      return (mainCategory && fromPath.get(mainCategory.id)) || [];
     };
 
     const toEntity = ({ id, ...base }: BreadcrumbItemData, isCurrentPage: boolean) =>

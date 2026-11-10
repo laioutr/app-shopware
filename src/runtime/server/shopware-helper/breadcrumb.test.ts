@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { readCategoryTrails, readProductMainCategoryId, readShopwareBreadcrumb, toBreadcrumbItems } from './breadcrumb';
+import { readCategoryTrails, readProductMainCategory, readShopwareBreadcrumb, readTrailsOfPaths, toBreadcrumbItems } from './breadcrumb';
 
 const crumb = (overrides: Record<string, unknown>) =>
   ({
@@ -142,13 +142,23 @@ describe('readCategoryTrails', () => {
 
     expect(trails.get('living')?.map((item) => item.id)).toEqual(['breadcrumb:main-root', 'breadcrumb:living']);
   });
+
+  it('builds a trail from a path already at hand, reading all of its categories in one request', async () => {
+    client.invoke.mockClear();
+
+    const trails = await readTrailsOfPaths(client as never, { navigation: 'main-root' }, [{ id: 'sofas', path: '|main-root|living|' }]);
+
+    expect(trails.get('sofas')?.map((item) => item.name)).toEqual(['Living', 'Sofas']);
+    expect(client.invoke).toHaveBeenCalledTimes(1);
+  });
 });
 
-describe('readProductMainCategoryId', () => {
-  it("reads the product's main category from the detail route", async () => {
-    const invoke = vi.fn().mockResolvedValue({ data: { product: { id: 'prod-1', seoCategory: { id: 'cat-sofas' } } } });
+describe('readProductMainCategory', () => {
+  it("reads the product's main category and its path from the detail route", async () => {
+    const seoCategory = { id: 'cat-sofas', path: '|main-root|cat-living|' };
+    const invoke = vi.fn().mockResolvedValue({ data: { product: { id: 'prod-1', seoCategory } } });
 
-    await expect(readProductMainCategoryId({ invoke } as never, 'prod-1')).resolves.toBe('cat-sofas');
+    await expect(readProductMainCategory({ invoke } as never, 'prod-1')).resolves.toEqual(seoCategory);
     expect(invoke).toHaveBeenCalledWith(
       'readProductDetail post /product/{productId}',
       expect.objectContaining({ pathParams: { productId: 'prod-1' } })
@@ -158,6 +168,6 @@ describe('readProductMainCategoryId', () => {
   it('answers undefined when the read fails', async () => {
     const invoke = vi.fn().mockRejectedValue(Object.assign(new Error('Not found'), { status: 404, details: { errors: [] } }));
 
-    await expect(readProductMainCategoryId({ invoke } as never, 'prod-1')).resolves.toBeUndefined();
+    await expect(readProductMainCategory({ invoke } as never, 'prod-1')).resolves.toBeUndefined();
   });
 });

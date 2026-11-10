@@ -94,17 +94,22 @@ export const readShopwareBreadcrumbs = (
     Promise.all(ids.map((id) => readShopwareBreadcrumb(storefrontClient, id, type)))
   : Promise.resolve(ids.map(() => undefined));
 
+/** A category's id and the ids above it, all a trail needs before its categories are read. */
+type CategoryPath = Pick<ShopwareCategory, 'id' | 'path'>;
+
 /**
- * The main category Shopware shows a product under in this sales channel. Only the detail route works
- * it out; the list route leaves `seoCategory` empty. `undefined`, with a warning, when the read fails.
+ * The main category Shopware shows a product under in this sales channel, with its path. Only the
+ * detail route works it out; the list route leaves `seoCategory` empty. `undefined`, with a warning,
+ * when the read fails.
  */
-export const readProductMainCategoryId = async (storefrontClient: StorefrontClient, productId: string): Promise<string | undefined> => {
+export const readProductMainCategory = async (storefrontClient: StorefrontClient, productId: string): Promise<CategoryPath | undefined> => {
   try {
     const response = await storefrontClient.invoke('readProductDetail post /product/{productId}', {
       pathParams: { productId },
-      body: { includes: { product: ['id', 'seoCategory'], category: ['id'] } },
+      body: { includes: { product: ['id', 'seoCategory'], category: ['id', 'path'] } },
     });
-    return response.data.product?.seoCategory?.id;
+    const seoCategory = response.data.product?.seoCategory;
+    return seoCategory ? { id: seoCategory.id, path: seoCategory.path } : undefined;
   } catch (err) {
     const reason = shopwareErrorStatus(err) ?? (err instanceof Error ? err.message : 'unknown error');
     logger.warn(`Main category of product ${productId} could not be read (${reason}); its breadcrumb shows the product alone`);
@@ -130,23 +135,21 @@ const readCategories = async (storefrontClient: StorefrontClient, ids: string[])
 };
 
 /**
- * Each category's breadcrumb built from its `path`, which works on every release: the ancestors below
- * the sales channel's root the path passes through, then the category. Links come from the SEO URLs
- * the Store API serves, the ones a slug resolves through. A category the shop does not return has no
- * trail.
+ * The breadcrumb of each category path: the ancestors below the sales channel's root the path passes
+ * through, then the category. Every category the paths name is read in one request, except those
+ * already at hand. Links come from the SEO URLs the Store API serves, the ones a slug resolves through.
  */
-export const readCategoryTrails = async (
+const toTrails = async (
   storefrontClient: StorefrontClient,
   roots: CategoryRoots | undefined,
-  categoryIds: string[]
+  paths: CategoryPath[],
+  atHand: ShopwareCategory[] = []
 ): Promise<Map<string, BreadcrumbItemData[]>> => {
-  const sources = await readCategories(storefrontClient, categoryIds);
-  const trailIds = new Map(sources.map((category) => [category.id, categoryTrailIds(category, roots)]));
-  const categories = new Map(sources.map((category) => [category.id, category]));
+  const trailIds = new Map(paths.map((category) => [category.id, categoryTrailIds(category, roots)]));
+  const categories = new Map(atHand.map((category) => [category.id, category]));
 
-  // A path holds only ids, so the ancestors' names and slugs take a second read, shared by the batch.
-  const ancestorIds = [...new Set([...trailIds.values()].flat())].filter((id) => !categories.has(id));
-  for (const ancestor of await readCategories(storefrontClient, ancestorIds)) categories.set(ancestor.id, ancestor);
+  const missingIds = [...new Set([...trailIds.values()].flat())].filter((id) => !categories.has(id));
+  for (const category of await readCategories(storefrontClient, missingIds)) categories.set(category.id, category);
 
   return new Map(
     [...trailIds].map(([sourceId, ids]) => [
@@ -158,3 +161,24 @@ export const readCategoryTrails = async (
     ])
   );
 };
+
+/**
+ * Each category's breadcrumb built from its `path`, which works on every release. The path holds only
+ * ids, so a category takes two reads: itself, then its ancestors, shared by the batch. A category the
+ * shop does not return has no trail.
+ */
+export const readCategoryTrails = async (
+  storefrontClient: StorefrontClient,
+  roots: CategoryRoots | undefined,
+  categoryIds: string[]
+): Promise<Map<string, BreadcrumbItemData[]>> => {
+  const sources = await readCategories(storefrontClient, categoryIds);
+  return toTrails(storefrontClient, roots, sources, sources);
+};
+
+/** The breadcrumb of each category whose path is already known, such as a product's main category: one read in all. */
+export const readTrailsOfPaths = (
+  storefrontClient: StorefrontClient,
+  roots: CategoryRoots | undefined,
+  paths: CategoryPath[]
+): Promise<Map<string, BreadcrumbItemData[]>> => toTrails(storefrontClient, roots, paths);
