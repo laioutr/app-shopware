@@ -449,9 +449,9 @@ describe your change, and merging the generated "Version Packages" PR publishes 
 The same workflow then runs `laioutr app release`, which tells the Laioutr Cockpit about the version
 and sends `laioutr.manifest.json`. Without it, an environment on the new version shows no
 Configuration → Shopware form, because Laioutr's registry never sees a package on npm. The call needs
-the repository secret `LAIOUTR_API_KEY`: an API key with `app:publish` from the organization that owns
-the app's listing. For a version published without it, run the same command from a checkout of that
-version:
+the GitHub secret `LAIOUTR_APP_PUBLISH_KEY`: an API key with `app:publish` from the organization that
+owns the app's listing, which the CLI reads as `LAIOUTR_API_KEY`. For a version published without it,
+run the same command from a checkout of that version:
 
 ```bash
 LAIOUTR_API_KEY=… npx @laioutr/cli@0.6.1 app release

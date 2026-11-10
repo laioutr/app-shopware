@@ -64,5 +64,5 @@ jobs:
       - name: Release to the Laioutr Cockpit
         if: steps.changesets.outputs.published == 'true'
         env:
-          LAIOUTR_API_KEY: ${{ secrets.LAIOUTR_API_KEY }}
+          LAIOUTR_API_KEY: ${{ secrets.LAIOUTR_APP_PUBLISH_KEY }}
         run: pnpm dlx @laioutr/cli@0.6.1 app release
