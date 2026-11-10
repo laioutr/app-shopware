@@ -25,6 +25,9 @@ vi.mock('#imports', () => ({
 vi.mock('../context/getShopwareContext', () => ({ getShopwareContext: async () => ({}) }));
 vi.mock('../client/shopwareAdminClientFactory', () => ({ shopwareAdminClientFactory: () => ({}) }));
 vi.mock('../shopware-helper/system/getShopwareVersion', () => ({ getCachedShopwareVersion: async () => undefined }));
+vi.mock('../shopware-helper/system/getCategoryRoots', () => ({
+  getCachedCategoryRoots: async () => ({ navigation: 'main-root', footer: 'footer-root' }),
+}));
 
 const contextOf = async () => {
   const { run } = defineShopware as unknown as { run: (args: unknown) => Promise<{ context: ShopwareOrchestrContext }> };
@@ -61,5 +64,13 @@ describe('resolveCriteria', () => {
 
     expect(seen).toEqual([['id']]);
     expect(criteria.includes.product).toEqual(['id', 'customFields']);
+  });
+});
+
+describe('categoryRoots', () => {
+  it("carries the sales channel's category roots", async () => {
+    const { categoryRoots } = await contextOf();
+
+    expect(categoryRoots).toEqual({ navigation: 'main-root', footer: 'footer-root' });
   });
 });
