@@ -4,7 +4,8 @@ import breadcrumbLink from './breadcrumb.link';
 vi.mock('../../middleware/defineShopware', () => ({ defineShopwareLink: (definition: unknown) => definition }));
 vi.mock('../../const/passthroughTokens', () => ({ productsFragmentToken: 'products' }));
 
-type Run = (args: Record<string, unknown>) => Promise<{ links: { sourceId: string; entities: unknown[] }[] }>;
+type Item = { id: string; base: Record<string, unknown> };
+type Run = (args: Record<string, unknown>) => Promise<{ links: { sourceId: string; entities: Item[] }[] }>;
 
 const apiError = (status: number) => Object.assign(new Error('Failed request'), { status, details: { errors: [] } });
 
@@ -13,13 +14,28 @@ const product = {
   name: 'Sofa Ada',
   translated: { name: 'Sofa Ada' },
   seoUrls: [{ seoPathInfo: 'sofa-ada/', isCanonical: true }],
-  seoCategory: {
+  // The list route leaves the main category empty; only the detail route works it out.
+  seoCategory: null,
+};
+
+const categories = [
+  {
+    id: 'cat-living',
+    name: 'Living',
+    translated: { name: 'Living' },
+    path: '|main-root|',
+    type: 'page',
+    seoUrls: [{ seoPathInfo: 'living/', isCanonical: true }],
+  },
+  {
     id: 'cat-sofas',
     name: 'Sofas',
     translated: { name: 'Sofas' },
+    path: '|main-root|cat-living|',
+    type: 'page',
     seoUrls: [{ seoPathInfo: 'living/sofas/', isCanonical: true }],
   },
-};
+];
 
 const crumb = (categoryId: string, name: string, seoPathInfo: string) => ({
   apiAlias: 'breadcrumb',
@@ -33,13 +49,29 @@ const crumb = (categoryId: string, name: string, seoPathInfo: string) => ({
 
 const invoke = vi.fn();
 const passthrough = { get: vi.fn() };
-const run = () =>
+const run = (shopwareVersion: unknown) =>
   (breadcrumbLink as unknown as { run: Run }).run({
-    context: { storefrontClient: { invoke } },
+    context: { storefrontClient: { invoke }, shopwareVersion, categoryRoots: { navigation: 'main-root' } },
     entityIds: ['prod-1'],
     passthrough,
-    $entity: (entity: { id: string; base: () => unknown }) => ({ id: entity.id, base: entity.base() }),
+    $entity: (entity: { id: string; base: () => Record<string, unknown> }) => ({ id: entity.id, base: entity.base() }),
   });
+
+/** A shop whose breadcrumb route answers with `route`, or fails when it is undefined. */
+const shopAnswering = (route: unknown[] | undefined) =>
+  invoke.mockImplementation(async (operation: string, args: { body?: { ids: string[] } }) => {
+    if (operation === 'readProduct post /product') return { data: { elements: [product] } };
+    if (operation === 'readProductDetail post /product/{productId}') {
+      return { data: { product: { id: product.id, seoCategory: { id: 'cat-sofas' } } } };
+    }
+    if (operation === 'readCategoryList post /category') {
+      return { data: { elements: categories.filter((row) => args.body!.ids.includes(row.id)) } };
+    }
+    if (operation === 'readBreadcrumb get /breadcrumb/{id}' && route) return { data: route };
+    throw apiError(404);
+  });
+
+const operations = () => invoke.mock.calls.map(([operation]) => operation);
 
 beforeEach(() => {
   invoke.mockReset();
@@ -47,11 +79,11 @@ beforeEach(() => {
 });
 
 describe('ProductBreadcrumbLink', () => {
-  it("walks Shopware's own breadcrumb down to the product", async () => {
+  it("walks Shopware's own breadcrumb down to the product, the current page", async () => {
     passthrough.get.mockReturnValue([product]);
-    invoke.mockResolvedValue({ data: [crumb('cat-living', 'Living', 'living/'), crumb('cat-sofas', 'Sofas', 'living/sofas/')] });
+    shopAnswering([crumb('cat-living', 'Wohnen', 'wohnen/'), crumb('cat-sofas', 'Sofas', 'wohnen/sofas/')]);
 
-    const { links } = await run();
+    const { links } = await run([6, 6, 10, 27]);
 
     expect(invoke).toHaveBeenCalledWith('readBreadcrumb get /breadcrumb/{id}', {
       pathParams: { id: 'prod-1' },
@@ -63,30 +95,47 @@ describe('ProductBreadcrumbLink', () => {
         entities: [
           {
             id: 'breadcrumb:cat-living',
-            base: { name: 'Living', link: { type: 'reference', reference: { type: 'Category', slug: 'living', id: 'cat-living' } } },
+            base: {
+              name: 'Wohnen',
+              isCurrentPage: false,
+              link: { type: 'reference', reference: { type: 'Category', slug: 'wohnen', id: 'cat-living' } },
+            },
           },
           {
             id: 'breadcrumb:cat-sofas',
-            base: { name: 'Sofas', link: { type: 'reference', reference: { type: 'Category', slug: 'living/sofas', id: 'cat-sofas' } } },
+            base: {
+              name: 'Sofas',
+              isCurrentPage: false,
+              link: { type: 'reference', reference: { type: 'Category', slug: 'wohnen/sofas', id: 'cat-sofas' } },
+            },
           },
           {
             id: 'breadcrumb:prod-1',
-            base: { name: 'Sofa Ada', link: { type: 'reference', reference: { type: 'Product', slug: 'sofa-ada', id: 'prod-1' } } },
+            base: {
+              name: 'Sofa Ada',
+              isCurrentPage: true,
+              link: { type: 'reference', reference: { type: 'Product', slug: 'sofa-ada', id: 'prod-1' } },
+            },
           },
         ],
       },
     ]);
   });
 
-  it("falls back to the product's main category when Shopware's breadcrumb cannot be read", async () => {
-    passthrough.get.mockReturnValue(undefined);
-    invoke.mockImplementation(async (operation: string) => {
-      if (operation === 'readProduct post /product') return { data: { elements: [product] } };
-      throw apiError(404);
-    });
+  it("builds the path of the product's main category where Shopware's breadcrumb cannot be read", async () => {
+    shopAnswering(undefined);
 
-    const { links } = await run();
+    const { links } = await run(undefined);
 
-    expect(links[0]?.entities.map((entity) => (entity as { id: string }).id)).toEqual(['breadcrumb:cat-sofas', 'breadcrumb:prod-1']);
+    expect(links[0]?.entities.map((entity) => entity.id)).toEqual(['breadcrumb:cat-living', 'breadcrumb:cat-sofas', 'breadcrumb:prod-1']);
+  });
+
+  it('builds the same path on a release without the route, without asking for it', async () => {
+    shopAnswering([crumb('cat-living', 'Wohnen', 'wohnen/')]);
+
+    const { links } = await run([6, 5, 6, 1]);
+
+    expect(links[0]?.entities.map((entity) => entity.base.name)).toEqual(['Living', 'Sofas', 'Sofa Ada']);
+    expect(operations()).not.toContain('readBreadcrumb get /breadcrumb/{id}');
   });
 });

@@ -45,8 +45,8 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
 - Wishlist: the customer's Shopware wishlist as a canonical `ProductList`, with add and remove
   actions and links from each entry to its product and variant
 - Newsletter subscription and review submission as Orchestr actions
-- Breadcrumbs from Shopware's own breadcrumb, with every category level and its SEO URL; see
-  [Catalog](#catalog)
+- Breadcrumbs with every category level and its SEO URL, from Shopware's breadcrumb route or, on
+  releases without it, the category tree; see [Catalog](#catalog)
 - The product's manufacturer as its canonical brand: name and website
 
 ## Requirements
@@ -391,12 +391,15 @@ The list's id is the customer's id, because Shopware keeps one wishlist per cust
 
 | Token | Shopware | What it does |
 | --- | --- | --- |
-| `ProductBreadcrumbLink` | `GET /breadcrumb/{id}` | The product's category path from below the navigation root, ending in the product. Each level links to its category by its SEO URL. |
-| `CategoryBreadcrumbLink` | `GET /breadcrumb/{id}?type=category` | The category's path down to the category itself. |
+| `ProductBreadcrumbLink` | `GET /breadcrumb/{id}` | The product's category path from below the navigation root, ending in the product as the current page. Each level links to its category by its SEO URL. |
+| `CategoryBreadcrumbLink` | `GET /breadcrumb/{id}?type=category` | The category's path down to the category itself, the current page. |
 
-- **Breadcrumbs are Shopware's own.** The route is experimental in Shopware and absent on older
-  releases. Where it cannot be read, the product breadcrumb falls back to the product's main category
-  and the product, and a category's breadcrumb is empty; both log a warning.
+- **Breadcrumbs are Shopware's own where the shop has the route.** Shopware added it in 6.6.7. On
+  older releases, and where a read fails (with a warning), the path is built from the category tree
+  instead: the category's `path` below the navigation, service or footer root it sits under, read
+  through `/category`. For a product that is the path of its main category. A shop whose version is
+  known to predate the route is never asked for it.
+- A page links to its category, a link category to its external URL; a folder is named, not linked.
 
 ## Customer accounts
 

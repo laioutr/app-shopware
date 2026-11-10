@@ -3,27 +3,19 @@ import { BreadcrumbItemBase } from '@laioutr-core/canonical-types/entity/breadcr
 import type { ShopwareProduct } from '../../types/shopware';
 import { productsFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareLink } from '../../middleware/defineShopware';
-import { type BreadcrumbItemData, readShopwareBreadcrumb, toBreadcrumbItems } from '../../shopware-helper/breadcrumb';
+import {
+  type BreadcrumbItemData,
+  readCategoryTrails,
+  readProductMainCategoryId,
+  readShopwareBreadcrumbs,
+  toBreadcrumbItems,
+} from '../../shopware-helper/breadcrumb';
 import { entitySlug } from '../../shopware-helper/mappers/slugMapper';
 import { swTranslated } from '../../shopware-helper/swTranslated';
 
-/** The product's main category alone, the breadcrumb this app answers when Shopware's own cannot be read. */
-const seoCategoryItems = (product: ShopwareProduct): BreadcrumbItemData[] => {
-  const seoCategory = product.seoCategory;
-  if (!seoCategory?.id) return [];
-  return [
-    {
-      id: `breadcrumb:${seoCategory.id}`,
-      name: swTranslated(seoCategory, 'name'),
-      link: { type: 'reference', reference: { type: 'Category', slug: entitySlug(seoCategory), id: seoCategory.id } },
-    },
-  ];
-};
-
 /**
- * The product's category path, ending in the product. The path is Shopware's own breadcrumb, which
- * walks the main category up to the navigation root with each level's SEO URL; where that read
- * fails, the main category alone stands in for it.
+ * The product's category path, ending in the product as the current page. The path is Shopware's own
+ * breadcrumb where the shop serves it, else the path of the product's main category.
  */
 export default defineShopwareLink({
   implements: ProductBreadcrumbLink,
@@ -34,36 +26,54 @@ export default defineShopwareLink({
     staleMaxAge: '1 hour',
   },
   run: async ({ context, entityIds, passthrough, $entity }) => {
+    const { storefrontClient, shopwareVersion, categoryRoots } = context;
+
     const loadProducts = async () => {
-      const response = await context.storefrontClient.invoke('readProduct post /product', {
+      const response = await storefrontClient.invoke('readProduct post /product', {
         body: {
           ids: entityIds,
           associations: {
             seoUrls: {},
           },
           includes: {
-            product: ['id', 'name', 'translated', 'seoCategory', 'seoUrls'],
-            category: ['id', 'name', 'translated', 'seoUrls'],
+            product: ['id', 'name', 'translated', 'seoUrls'],
           },
         },
       });
       return response.data.elements ?? [];
     };
 
-    const [products, breadcrumbs] = await Promise.all([
+    const [products, fromRoute] = await Promise.all([
       passthrough.get(productsFragmentToken) ?? loadProducts(),
-      // One read per product: the route takes a single id.
-      Promise.all(entityIds.map((id) => readShopwareBreadcrumb(context.storefrontClient, id, 'product'))),
+      readShopwareBreadcrumbs(storefrontClient, shopwareVersion, entityIds, 'product'),
+    ]);
+    const routeOf = (productId: string) => fromRoute[entityIds.indexOf(productId)];
+
+    const fallbackProducts = products.filter((product) => entityIds.includes(product.id) && !routeOf(product.id));
+    const mainCategoryIds = new Map(
+      await Promise.all(
+        fallbackProducts.map(async (product) => [product.id, await readProductMainCategoryId(storefrontClient, product.id)] as const)
+      )
+    );
+    const fromPath = await readCategoryTrails(storefrontClient, categoryRoots, [
+      ...new Set([...mainCategoryIds.values()].filter((id): id is string => !!id)),
     ]);
 
-    const toEntity = ({ id, ...base }: BreadcrumbItemData) => $entity({ id, base: () => base });
+    const categoryItemsOf = (product: ShopwareProduct): BreadcrumbItemData[] => {
+      const route = routeOf(product.id);
+      if (route) return toBreadcrumbItems(route);
+      const mainCategoryId = mainCategoryIds.get(product.id);
+      return (mainCategoryId && fromPath.get(mainCategoryId)) || [];
+    };
+
+    const toEntity = ({ id, ...base }: BreadcrumbItemData, isCurrentPage: boolean) =>
+      $entity({ id, base: () => ({ ...base, isCurrentPage }) });
 
     return {
       links: products
         .filter((rawProduct) => entityIds.includes(rawProduct.id))
         .map((rawProduct) => {
-          const breadcrumb = breadcrumbs[entityIds.indexOf(rawProduct.id)];
-          const categoryItems = breadcrumb ? toBreadcrumbItems(breadcrumb) : seoCategoryItems(rawProduct);
+          const categoryItems = categoryItemsOf(rawProduct);
 
           const productItem: BreadcrumbItemData = {
             id: `breadcrumb:${rawProduct.id}`,
@@ -73,7 +83,7 @@ export default defineShopwareLink({
 
           return {
             sourceId: rawProduct.id,
-            entities: [...categoryItems, productItem].map(toEntity),
+            entities: [...categoryItems.map((item) => toEntity(item, false)), toEntity(productItem, true)],
           };
         }),
     };

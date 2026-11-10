@@ -23,6 +23,9 @@ export const isAtLeast = (version: ShopwareVersion | undefined, minimum: `${numb
   return true;
 };
 
+/** Whether the shop serves the `/breadcrumb/{id}` Store API route, which 6.6.7 added. An unknown version is taken to. */
+export const hasBreadcrumbRoute = (version: ShopwareVersion | undefined): boolean => !version || isAtLeast(version, '6.6.7.0');
+
 /**
  * The Store API route a product search reads.
  *
