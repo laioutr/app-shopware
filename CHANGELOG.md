@@ -1,5 +1,32 @@
 # @laioutr/app-shopware
 
+## 0.22.0
+
+### Minor Changes
+
+- e295586: Search and search suggestions on the Store API are more complete and no longer fail on edge cases.
+
+  - `SuggestedSearchProductsLink` is implemented, so a search flyout can show the suggested products as `Product` entities with price and image.
+  - Product entries in the suggestions carry a `cover`, and a variant's entry is titled by its inherited name instead of an empty one.
+  - The suggestion answers its `SuggestedSearchBase` (`query`).
+  - An empty or blank search term answers an empty result instead of an error from Shopware, in both `ProductSearchQuery` and `SuggestedSearchSearchQuery`.
+  - `ProductSearchQuery` uses the configured `totalCountMode`, as category listings already did.
+
+- 0e660df: Customers can finish a password reset, confirm a double opt-in registration, and change their password and email address.
+
+  Now implemented: `AuthResetPasswordAction`, `AuthConfirmEmailAction`, `CustomerChangePasswordAction` and `CustomerChangeEmailAction`. Reset and confirmation take the link the customer opened from Shopware's mail and read `hash` and `em` from it. An expired or unknown recovery link throws `PasswordResetTokenInvalidError` with its reason, an unknown confirmation link `EmailConfirmationTokenInvalidError`, a wrong current password `CurrentPasswordInvalidError`, and the password policy `InvalidFieldError` on `newPassword`. A confirmation signs the customer in and persists their context token; a password or email change keeps them signed in with whatever token Shopware answers with.
+
+### Patch Changes
+
+- 317d112: Breadcrumbs show the whole category path, on category and product pages alike.
+
+  - **`CategoryBreadcrumbLink`** delivers its items and no longer fails the query it is part of. Before, a query requesting it threw `NonResolvableComponentsError` for `BreadcrumbItem`, so every section bound to the category, such as the category header and navigation, received nothing. The trail lists the category's ancestors below the sales channel's root, then the category itself as the current page.
+  - **`ProductBreadcrumbLink`** walks every category level down to the product, the current page, where it showed the main category alone.
+  - **Where the path comes from:** Shopware's own breadcrumb route on Shopware 6.6.7 and later, the release that added it. On older releases, or where that route fails, the path is built from the category tree, below the navigation, service or footer root the category sits under; Shopware 6.5 is never asked for the missing route.
+  - **Links:** each item carries its translated name; a page links to its category by its SEO URL, a link category to its external URL, and a folder, which has no page, is not linked.
+
+  Handlers built with `defineShopware` receive the sales channel's roots as `context.categoryRoots` — `{ navigation, service?, footer? }`, read once a day per shop, or `undefined` while Shopware cannot be reached.
+
 ## 0.21.0
 
 ### Minor Changes
