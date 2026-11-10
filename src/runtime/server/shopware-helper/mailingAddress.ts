@@ -3,8 +3,9 @@ import type { StorefrontClient } from '../types/shopware';
 import type { Schemas } from '../types/storeApiTypes';
 import type { SwSystemEntities } from './system/getSystemEntities';
 import type { MailingAddress } from '@laioutr-core/canonical-types';
+import type { z } from 'zod/v4';
 
-export type CanonicalAddress = (typeof MailingAddress)['_zod']['output'];
+export type CanonicalAddress = z.output<typeof MailingAddress>;
 
 type Country = SwSystemEntities['countries'][number];
 type Salutation = SwSystemEntities['salutations'][number];
