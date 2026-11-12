@@ -25,6 +25,13 @@ export const definition = defineSection({
           description:
             'The page this section sits on. Used to bring the customer back here when a payment fails or is cancelled, so they can choose another method without leaving the site.',
         },
+        {
+          type: 'text',
+          name: 'loadingLabel',
+          label: 'Loading Text',
+          description:
+            'Shown while the checkout loads. Leave empty to use the built-in text in the page’s language (German or English).',
+        },
       ],
     },
   ],
@@ -108,6 +115,7 @@ const onAuthChanged = async (payload: AuthChangedPayload) => {
     :finish-url="finishUrl"
     :checkout-url="checkoutUrl"
     :retry-order-id="retryOrderId"
+    :loading-label="loadingLabel"
     @checkout-finish="onCheckoutFinish"
     @auth-changed="onAuthChanged"
   />

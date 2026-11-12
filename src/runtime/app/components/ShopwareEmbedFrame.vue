@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, useRuntimeConfig } from '#imports';
+import { computed, onBeforeUnmount, ref, useI18n, useRuntimeConfig } from '#imports';
 import type { AuthChangedPayload, BridgePageLoadedPayload } from '../const/bridge';
 import {
   CHECKOUT_CONFIRM_ROUTE,
@@ -9,6 +9,7 @@ import {
   RETRY_ORDER_QUERY_KEY,
 } from '../../shared/const/checkout';
 import { useShopwareEmbedBridge } from '../composables/useShopwareEmbedBridge';
+import { checkoutMessages } from '../lib/checkoutMessages';
 import { createOrderHandoffRefresher } from '../lib/createOrderHandoffRefresher';
 
 /**
@@ -34,7 +35,13 @@ const props = defineProps<{
   checkoutUrl?: string;
   /** Order whose payment failed, re-framed on the storefront's order-edit page. */
   retryOrderId?: string;
+  /** Replaces the built-in loading text; empty keeps it. */
+  loadingLabel?: string;
 }>();
+
+const { locale } = useI18n();
+const messages = computed(() => checkoutMessages(locale.value));
+const loadingText = computed(() => props.loadingLabel || messages.value.loading);
 
 const storefrontOrigin = computed(() => useRuntimeConfig().public['@laioutr/app-shopware']?.storefrontOrigin ?? '');
 
@@ -139,17 +146,17 @@ const frameStyle = computed(() => ({ height: height.value ? `${height.value}px` 
 <template>
   <div class="shopware-embed-frame">
     <div v-if="!storefrontOrigin" class="shopware-embed-frame__notice">
-      The Shopware storefront URL is not configured, so the checkout cannot be embedded.
+      {{ messages.notConfigured }}
     </div>
     <template v-else>
       <div v-if="!loaded" class="shopware-embed-frame__loading" role="status">
         <LLoadingSpinner variant="row" />
-        <span class="shopware-embed-frame__loading-label">Loading checkout…</span>
+        <span class="shopware-embed-frame__loading-label">{{ loadingText }}</span>
       </div>
       <iframe
         ref="frameRef"
         :src="frameSrc"
-        title="Checkout"
+        :title="messages.frameTitle"
         class="shopware-embed-frame__iframe"
         :style="frameStyle"
         @load="onFrameLoad"
