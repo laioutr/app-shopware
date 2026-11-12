@@ -1,4 +1,4 @@
-import { ReviewBase } from '@laioutr-core/canonical-types/entity/review';
+import { ReviewBase, ReviewContent, ReviewReviewer } from '@laioutr-core/canonical-types/entity/review';
 import { currentProductIdsToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { toRequestCriteria } from '../../shopware-helper/criteria';
@@ -7,7 +7,7 @@ import { ShopwareProductReview } from '../../types/shopware';
 export default defineShopwareComponentResolver({
   label: 'Shopware Product Review Connector',
   entityType: 'Review',
-  provides: [ReviewBase],
+  provides: [ReviewBase, ReviewReviewer, ReviewContent],
   cache: {
     ttl: '1 day',
     swr: true,
@@ -48,6 +48,9 @@ export default defineShopwareComponentResolver({
             createdAt: new Date(review.createdAt),
             rating: review.points,
           }),
+          content: () => review.content,
+          // The name the reviewer gave; a review created in the Shopware admin can have none.
+          reviewer: () => ({ name: review.externalUser ?? '' }),
         })
       ),
     };
