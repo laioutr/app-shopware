@@ -6,7 +6,14 @@ import {
   UnauthenticatedError,
 } from '@laioutr-core/canonical-types/ecommerce';
 
-type ShopwareErrorEntry = { code?: string; status?: string; detail?: string; source?: { pointer?: string } };
+type ShopwareErrorEntry = {
+  code?: string;
+  status?: string;
+  detail?: string;
+  source?: { pointer?: string };
+  /** A violation's constraint parameters; PHP serializes an empty map as an empty array. */
+  meta?: { parameters?: Record<string, string> | unknown[] };
+};
 
 /** The parts of `@shopware/api-client`'s `ApiClientError` the mapping reads. */
 type ShopwareApiError = { status?: number; details?: { errors?: ShopwareErrorEntry[] } };
@@ -17,14 +24,27 @@ const isShopwareApiError = (err: unknown): err is ShopwareApiError =>
 /** The HTTP status of a failed Store API call, or `undefined` for any other error. */
 export const shopwareErrorStatus = (err: unknown): number | undefined => (isShopwareApiError(err) ? err.status : undefined);
 
+/** The error entries of a failed Store API call, or none for any other error. */
+export const shopwareErrorEntries = (err: unknown): ShopwareErrorEntry[] => (isShopwareApiError(err) ? (err.details?.errors ?? []) : []);
+
 /** The error codes of a failed Store API call (`CHECKOUT__CUSTOMER_NOT_LOGGED_IN`, `VIOLATION::IS_BLANK_ERROR`, …). */
 export const shopwareErrorCodes = (err: unknown): string[] =>
-  isShopwareApiError(err) ? (err.details?.errors ?? []).map((entry) => entry.code ?? '').filter(Boolean) : [];
+  shopwareErrorEntries(err)
+    .map((entry) => entry.code ?? '')
+    .filter(Boolean);
+
+/**
+ * A context without a customer, coded `CHECKOUT__CUSTOMER_NOT_LOGGED_IN` before Shopware 6.7 and
+ * `FRAMEWORK__ROUTING_CUSTOMER_NOT_LOGGED_IN` since.
+ */
+export const isCustomerNotLoggedIn = (err: unknown) =>
+  shopwareErrorCodes(err).some(
+    (code) => code === 'CHECKOUT__CUSTOMER_NOT_LOGGED_IN' || code === 'FRAMEWORK__ROUTING_CUSTOMER_NOT_LOGGED_IN'
+  );
 
 /** Whether a failed Store API call carries a violation of one of the given body fields (`/hash`, `/em`, …). */
 export const hasViolationAt = (err: unknown, pointers: string[]): boolean =>
-  isShopwareApiError(err) &&
-  (err.details?.errors ?? []).some((entry) => !!entry.source?.pointer && pointers.includes(entry.source.pointer));
+  shopwareErrorEntries(err).some((entry) => !!entry.source?.pointer && pointers.includes(entry.source.pointer));
 
 /**
  * Shopware names its constraint violations after the Symfony constraint error constant. Those with a
@@ -92,10 +112,17 @@ const overflowedColumn = (entry: ShopwareErrorEntry): string | undefined => {
   return column?.replace(/_([a-z0-9])/g, (_, char: string) => char.toUpperCase());
 };
 
+/** The length or value a violation names as allowed, such as the minimum of a text that is too short. */
+const limitOf = (violation: ShopwareErrorEntry): number | undefined => {
+  const parameters = violation.meta?.parameters;
+  const limit = Array.isArray(parameters) ? Number.NaN : Number(parameters?.['{{ limit }}']);
+  return Number.isFinite(limit) ? limit : undefined;
+};
+
 /**
  * Rethrow a Store API validation failure as the canonical {@link InvalidFieldError} for its first
- * violation; any other error is rethrown unchanged. The canonical error names one field, and the
- * first is the one Shopware's own storefront highlights first.
+ * violation, with the limit Shopware names; any other error is rethrown unchanged. The canonical
+ * error names one field, and the first is the one Shopware's own storefront highlights first.
  *
  * `columnPointer` places an overflowed database column in the request body, as the JSON pointer a
  * violation would have carried; without it, or when it answers `undefined`, the error is rethrown.
@@ -106,14 +133,15 @@ export const throwAsInvalidField = (
   columnPointer?: (column: string) => string | undefined,
   fieldNames?: FieldNames
 ): never => {
-  const errors = isShopwareApiError(err) ? (err.details?.errors ?? []) : [];
+  const errors = shopwareErrorEntries(err);
 
   if (shopwareErrorStatus(err) === 400) {
     const violation = errors.find((entry) => entry.code && entry.source?.pointer);
     if (violation) {
       throw new InvalidFieldError(
         toInvalidFieldReason(violation.code!),
-        toCanonicalFieldPath(violation.source!.pointer!, prefix, fieldNames)
+        toCanonicalFieldPath(violation.source!.pointer!, prefix, fieldNames),
+        limitOf(violation)
       );
     }
   }

@@ -34,8 +34,8 @@ importers:
         specifier: ^2.37.1
         version: 2.37.1(e995bc762d65bc8cd8bed7ecacb10f0f)
       '@laioutr-core/canonical-types':
-        specifier: ^0.42.0
-        version: 0.42.0
+        specifier: ^0.44.0
+        version: 0.44.0
       '@laioutr-core/core-types':
         specifier: ^0.81.0
         version: 0.81.1
@@ -1353,8 +1353,14 @@ packages:
   '@laioutr-core/canonical-types@0.42.0':
     resolution: {integrity: sha512-5VBSzUu+iQ+uYjA9cCPyErMXakgsHdd+cRWmk5M5x5egl8/KqheReZ1o8D/pzg5/weHNmADAxXa6cbfvW1743g==}
 
+  '@laioutr-core/canonical-types@0.44.0':
+    resolution: {integrity: sha512-xdI5UF40IQBNgLBJB2qkvHOxHsA6Y+aAstuC/9rLIKpBjm+qvfE/bi49i8rq1iyZi4PwXJyWJdsnbwN8ZuEx9Q==}
+
   '@laioutr-core/core-types@0.81.1':
     resolution: {integrity: sha512-hiknWKjcgvIw14VMsi7M973zHOhNP+OwoqkfAkUx1EEV9qpPdOWwLmY+mLBezJCKwEl+7LblnGHMKnUj9eQ9Ag==}
+
+  '@laioutr-core/core-types@0.83.0':
+    resolution: {integrity: sha512-RdDoF2Io1679XbizOel25pHOCf7lGUeX5G1NkWjSoR6cuFHoZ+SgILUTh/9GeM4LQpLd5KbyX7TYZ28WSfCU/Q==}
 
   '@laioutr-core/devtools@0.81.1':
     resolution: {integrity: sha512-jiiWxKdfkCe0C6JcBoEO5C55MWgTcuPdF+1NRrrY/ep6ByxBZ8gQ1ve0J2W3BdzBc5WJU1s8kixXBJzEyh76Aw==}
@@ -9224,7 +9230,24 @@ snapshots:
       type-fest: 5.8.0
       zod: 3.25.61
 
+  '@laioutr-core/canonical-types@0.44.0':
+    dependencies:
+      '@ebec/http': 2.3.0
+      '@laioutr-core/core-types': 0.83.0
+      '@screeny05/ts-money': 1.1.0
+      ebec: 2.3.0
+      schema-dts: 2.1.0
+      type-fest: 5.8.0
+      zod: 3.25.61
+
   '@laioutr-core/core-types@0.81.1':
+    dependencies:
+      '@laioutr/expression': 1.2.0
+      ebec: 2.3.0
+      type-fest: 5.8.0
+      zod: 3.25.61
+
+  '@laioutr-core/core-types@0.83.0':
     dependencies:
       '@laioutr/expression': 1.2.0
       ebec: 2.3.0
