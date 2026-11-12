@@ -11,6 +11,7 @@ import type { defineOrchestrMock } from '@laioutr-core/orchestr/types';
 import { shopwareAdminClientFactory } from '../client/shopwareAdminClientFactory';
 import { getShopwareContext } from '../context/getShopwareContext';
 import { withCustomFieldIncludes } from '../shopware-helper/customFields';
+import { isAdminConfigured } from '../shopware-helper/shopwareContext';
 import { defaultShopwareSettings } from '../shopware-helper/shopwareSettings';
 import { getCachedCategoryRoots } from '../shopware-helper/system/getCategoryRoots';
 import { getCachedShopwareVersion } from '../shopware-helper/system/getShopwareVersion';
@@ -82,3 +83,6 @@ export const defineShopwareComponentResolver = defineShopware.componentResolver;
 // Orchestr's public types omit the template-provider type, so the inferred one cannot be named.
 export const defineShopwareQueryTemplateProvider: typeof defineShopware.queryTemplateProvider = defineShopware.queryTemplateProvider;
 export const defineShopwarePageIndex = defineShopware.pageIndex;
+
+/** `isAvailable` for an action that needs the Admin API integration. */
+export const adminApiIsConfigured = () => isAdminConfigured(useRuntimeConfig()['@laioutr/app-shopware']);

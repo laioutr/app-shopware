@@ -5,6 +5,7 @@ import { throwAsReviewError } from './reviewErrors';
 import {
   InvalidFieldError,
   ReviewAlreadyExistsError,
+  ReviewNotFoundError,
   ReviewsDisabledError,
   UnauthenticatedError,
 } from '@laioutr-core/canonical-types/ecommerce';
@@ -51,6 +52,18 @@ describe('throwAsReviewError', () => {
 
     expect(error).toBeInstanceOf(ReviewAlreadyExistsError);
     expect((error as ReviewAlreadyExistsError).data).toEqual({ productId: 'p1' });
+  });
+
+  it("reports an update of a review that is no longer the customer's, ahead of any field violation", () => {
+    const error = thrownBy(
+      refusal(400, [
+        violation('VIOLATION::TOO_SHORT_ERROR', '/title', { '{{ limit }}': '5' }),
+        violation('VIOLATION::ENTITY_DOES_NOT_EXISTS', '/id'),
+      ])
+    );
+
+    expect(error).toBeInstanceOf(ReviewNotFoundError);
+    expect((error as ReviewNotFoundError).data).toEqual({ productId: 'p1' });
   });
 
   it('names the field and the minimum of a text that is too short', () => {

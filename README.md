@@ -47,7 +47,8 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
 - Search and search suggestions on the Store API: `ProductSearchQuery` with filters, sorting and
   paging, and `SuggestedSearchSearchQuery` with completions, brands, categories and the suggested
   products as `Product` entities with price and image
-- Newsletter subscription and review submission as Orchestr actions
+- Newsletter subscription, review submission, and reading and changing the customer's own review as
+  Orchestr actions; see [Reviews](#reviews)
 - Breadcrumbs with every category level and its SEO URL, from Shopware's breadcrumb route or, on
   releases without it, the category tree; see [Catalog](#catalog)
 - The product's manufacturer as its canonical brand: name and website
@@ -56,7 +57,8 @@ See [laioutr.com](https://laioutr.com) for more information about Laioutr.
 
 - A Shopware 6 instance with the Store API enabled
 - An [Admin API integration](https://developer.shopware.com/docs/guides/integrations-api/) — used
-  for the media library and for reading the sales channel's currency and language
+  for the media library, for reading the sales channel's currency and language, and for finding the
+  customer's own review, which needs the role permission "Reviews: Read"
 - [`LaioutrConnector`](https://github.com/laioutr/shopware-laioutr-connector), the companion
   Shopware plugin. Required for checkout: it exposes the `connect-session` route that redeems the
   single-use handoff code and adopts the cart into a storefront session. Without it, product,
@@ -424,6 +426,21 @@ templates must keep the parameter names. Each action that needs a customer throw
 | Token | Shopware | Notes |
 | --- | --- | --- |
 | `SubscribeAction` | `POST /newsletter/subscribe` | Needs `storefrontUrl`, which Shopware builds the double opt-in link from. |
+
+## Reviews
+
+| Token | Shopware | Notes |
+| --- | --- | --- |
+| `CreateReviewAction` | `POST /product/{productId}/review` | A second review of the product throws `ReviewAlreadyExistsError`, reviews switched off in the sales channel `ReviewsDisabledError`. |
+| `GetOwnReviewAction` | Admin API `POST /search/product-review` | The session customer's newest review of the product or of one of its variants, `null` without one. `published` is Shopware's approval. |
+| `UpdateOwnReviewAction` | `POST /product/{productId}/review` with the review's `id` | Keeps the stored reviewer name and email and the variant the review is on. The review takes the language and sales channel of the storefront that edits it, Shopware saves it as not approved and sends its review mail again, as an edit in Shopware's own storefront does. Answers the review as Shopware stored it. Without a review, `ReviewNotFoundError`. |
+
+The Store API cannot filter reviews by their customer, so the two own-review actions need the Admin
+API integration, with the role permission "Reviews: Read" (`product_review:read` and `product:read`).
+Without the integration the storefront does not offer them, and a call answers 501. Without the
+permission a call fails with a message that names it. Each throws `UnauthenticatedError` for a
+visitor who is not logged in or only checked out as a guest. Only the update reports reviews switched
+off in the sales channel.
 
 ## Exports
 
