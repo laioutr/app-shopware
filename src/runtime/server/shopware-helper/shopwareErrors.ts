@@ -46,6 +46,10 @@ export const isCustomerNotLoggedIn = (err: unknown) =>
 export const hasViolationAt = (err: unknown, pointers: string[]): boolean =>
   shopwareErrorEntries(err).some((entry) => !!entry.source?.pointer && pointers.includes(entry.source.pointer));
 
+/** Whether a failed Store API call carries the violation `code` on the body field at `pointer`. */
+export const hasViolation = (err: unknown, code: string, pointer: string): boolean =>
+  shopwareErrorEntries(err).some((entry) => entry.code === code && entry.source?.pointer === pointer);
+
 /**
  * Shopware names its constraint violations after the Symfony constraint error constant. Those with a
  * canonical counterpart map onto it; the rest — `CUSTOMER_EMAIL_NOT_UNIQUE` and other shop-specific
