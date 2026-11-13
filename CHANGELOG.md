@@ -1,5 +1,34 @@
 # @laioutr/app-shopware
 
+## 0.23.0
+
+### Minor Changes
+
+- 94c2464: `GetOwnReviewAction` and `UpdateOwnReviewAction`: a logged-in customer reads their own review of a product, with whether the shop approved it, and changes its title, text and rating. The change keeps the reviewer name and email, and Shopware holds it back until it is approved again. Both need the Admin API integration with the role permission "Reviews: Read"; without the integration the storefront does not offer them. Requires `@laioutr-core/canonical-types` 0.45.0 and `@laioutr-core/frontend-core`, `orchestr`, `core-types` and `kit` 0.84.0.
+- 6dba8f2: `CreateReviewAction` throws the canonical error for each refusal Shopware reports, and `InvalidFieldError` from every Shopware form carries the `limit` Shopware names, such as the minimum length of a text that is too short.
+
+  **Breaking:** `CreateReviewAction` no longer resolves a refused review as `success: false`. It throws `UnauthenticatedError` for an expired session, `ReviewsDisabledError` when the sales channel has reviews switched off, `ReviewAlreadyExistsError` for a second review by the same customer, and `InvalidFieldError` naming the field for any other violation. Any other failure fails the call.
+
+  ```ts
+  // before
+  const { success } = await fetchAction(CreateReviewAction, review);
+  if (!success) showReviewFailed();
+
+  // after
+  try {
+    await fetchAction(CreateReviewAction, review);
+  } catch (error) {
+    if (actionErrorOf(error, ReviewAlreadyExistsError)) showAlreadyReviewed();
+    else throw error;
+  }
+  ```
+
+- 889ee86: The Shopware Checkout section shows its loading text, frame title and configuration notice in the page's language: German on German pages, English everywhere else. A new "Loading Text" field on the section replaces the loading text per language.
+
+### Patch Changes
+
+- 6c10848: Reviews resolve `ReviewReviewer` and `ReviewContent`: the name the reviewer gave and the full review text. A section that asks for them, such as `SectionProductReviews`, no longer fails its product query on a Shopware shop.
+
 ## 0.22.0
 
 ### Minor Changes
