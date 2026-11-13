@@ -26,7 +26,7 @@
       },
       {
         "label": "Admin API",
-        "description": "An integration for what the Store API does not offer: the media library, the sales channel's currency and language, the customer's own product review (role permission "Reviews: Read"), and before Shopware 6.6.10.5 which customer custom fields a customer may write. Shopware admin → Settings → System → Integrations.",
+        "description": "An integration for what the Store API does not offer: the media library, the sales channel's currency and language, the customer's own product review (role permission \"Reviews: Read\"), and before Shopware 6.6.10.5 which customer custom fields a customer may write. Shopware admin → Settings → System → Integrations.",
         "fields": [
           {
             "name": "adminEndpoint",
