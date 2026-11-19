@@ -91,7 +91,7 @@ export default defineNuxtConfig({
 | `storefrontUrl` | for checkout, registration, password recovery | Storefront base URL where `LaioutrConnector` is installed. Its origin is exposed publicly so the embedded checkout can pin `postMessage` traffic. Shopware also builds the links in its registration, password-reset and newsletter mails from it, so it must be a domain of the sales channel. |
 | `checkoutLoginCallbackUrl` | no | Absolute URL the storefront returns to after a login inside checkout. Defaults to the request origin; point it at the project's IdP login route for external-IdP projects. |
 | `checkoutLogoutCallbackUrl` | no | Absolute URL the storefront returns to after a logout inside checkout. Point it at the IdP's RP-logout route so a storefront logout ends the external session too. |
-| `customFields` | no | Shopware custom fields to expose, per entity: `product`, `variant`, `category` and `customer`. See [Custom fields](#custom-fields). |
+| `customFields` | no | Shopware custom fields to expose, per entity: `product`, `variant`, `category` and `customer`, and the cart's extensions under `cart`. See [Custom fields](#custom-fields). |
 | `dimensionUnit` | no | The unit the shop enters product width, height and length in: `mm` (default, as Shopware's admin labels them) or `cm`. See [Product specifications and flags](#product-specifications-and-flags). |
 
 `accessToken`, `adminClientId` and `adminClientSecret` are secrets and stay server-side: they land
@@ -164,7 +164,8 @@ with the entity and maps them unchanged into the canonical `customFields` slot:
     "product": { "include": ["energyLabel", "gpsr_*"] },
     "variant": { "include": ["datasheet"] },
     "category": { "include": ["teaser"] },
-    "customer": { "include": ["loyaltyTier"] }
+    "customer": { "include": ["loyaltyTier"] },
+    "cart": { "include": ["minimumOrderValueDifference"] }
   }
 }
 ```
@@ -175,6 +176,7 @@ with the entity and maps them unchanged into the canonical `customFields` slot:
 | `variant` | `ProductVariantBase.customFields` — the variant's own, inherited from the parent where it has none |
 | `category` | `CategoryBase.customFields` |
 | `customer` | `Customer.customFields` of the signed-in customer that `CustomerGetCurrentAction` answers |
+| `cart` | `CartBase.customFields` — the cart's `extensions`, which Shopware plugins fill (a minimum order value per shipping method, bonus points), each without its `apiAlias` |
 
 `*` matches any run of characters: `gpsr_*` takes a whole set, `*` takes everything. Values come
 from `translated`, so a field without a value in the visitor's language falls back as it does in
