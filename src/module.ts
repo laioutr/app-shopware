@@ -41,7 +41,8 @@ export interface ModuleOptions {
   /**
    * Shopware custom fields to expose in the canonical `customFields` slots — `product` on
    * `ProductBase`, `variant` on `ProductVariantBase`, `category` on `CategoryBase` and `customer` on
-   * the `Customer` that `CustomerGetCurrentAction` answers. Nothing is exposed by default: custom
+   * the `Customer` that `CustomerGetCurrentAction` answers, and the cart's `extensions` under `cart` on
+   * `CartBase`. Nothing is exposed by default: custom
    * fields often carry data a storefront must not publish.
    */
   customFields?: CustomFieldsConfig;

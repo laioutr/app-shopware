@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { customFieldMatcher, pickCustomFields, withCustomFieldIncludes } from './customFields';
+import { customFieldMatcher, pickCartExtensions, pickCustomFields, withCustomFieldIncludes } from './customFields';
 import type { ShopwareCriteria } from '../types/criteria';
 
 describe('customFieldMatcher', () => {
@@ -75,6 +75,45 @@ describe('pickCustomFields', () => {
 
     expect(pickCustomFields(customer, { customer: { include: ['loyaltyTier'] } }, 'customer')).toEqual({ loyaltyTier: 'gold' });
     expect(pickCustomFields(customer, { product: { include: ['*'] } }, 'customer')).toBeUndefined();
+  });
+});
+
+describe('pickCartExtensions', () => {
+  const cart = {
+    extensions: {
+      minimumOrderValueDifference: { apiAlias: 'array_struct', difference: 12.5 },
+      bonus_points: { apiAlias: 'array_struct', points: 40 },
+      internalPricing: { apiAlias: 'array_struct', margin: 0.42 },
+    },
+  };
+
+  it('returns undefined while nothing is whitelisted for the cart', () => {
+    expect(pickCartExtensions(cart, undefined)).toBeUndefined();
+    expect(pickCartExtensions(cart, { product: { include: ['*'] } })).toBeUndefined();
+    expect(pickCartExtensions(cart, { cart: { include: [] } })).toBeUndefined();
+  });
+
+  it('keeps only whitelisted extensions, without the apiAlias Shopware adds to each', () => {
+    expect(pickCartExtensions(cart, { cart: { include: ['minimumOrderValueDifference', 'bonus_*'] } })).toEqual({
+      minimumOrderValueDifference: { difference: 12.5 },
+      bonus_points: { points: 40 },
+    });
+  });
+
+  it('passes a value that is not an object on as it is', () => {
+    expect(pickCartExtensions({ extensions: { flags: ['a'], note: 'x' } }, { cart: { include: ['*'] } })).toEqual({
+      flags: ['a'],
+      note: 'x',
+    });
+  });
+
+  it('returns an empty object for a cart without extensions', () => {
+    expect(pickCartExtensions({ extensions: [] }, { cart: { include: ['*'] } })).toEqual({});
+    expect(pickCartExtensions({}, { cart: { include: ['*'] } })).toEqual({});
+  });
+
+  it('exposes nothing for a cart whitelist that is not a list of names', () => {
+    expect(pickCartExtensions(cart, { cart: { include: 'minimum*' } } as never)).toBeUndefined();
   });
 });
 

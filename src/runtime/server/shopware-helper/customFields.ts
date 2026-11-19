@@ -68,6 +68,31 @@ export const pickCustomFields = (
   return Object.fromEntries(Object.entries(raw as Record<string, unknown>).filter(([key]) => matches(key)));
 };
 
+const withoutApiAlias = (value: unknown): unknown => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const { apiAlias: _apiAlias, ...rest } = value as Record<string, unknown>;
+  return rest;
+};
+
+/**
+ * The whitelisted `extensions` of a Shopware cart. Shopware serialises an empty extension map as `[]`,
+ * and tags each struct with an `apiAlias` that means nothing to a storefront.
+ */
+export const pickCartExtensions = (rawCart: unknown, config: CustomFieldsConfig | undefined): Record<string, unknown> | undefined => {
+  const include = includeFor(config, 'cart');
+  if (include.length === 0) return undefined;
+
+  const extensions = (rawCart as { extensions?: unknown } | null | undefined)?.extensions;
+  if (!extensions || typeof extensions !== 'object' || Array.isArray(extensions)) return {};
+
+  const matches = customFieldMatcher(include);
+  return Object.fromEntries(
+    Object.entries(extensions as Record<string, unknown>)
+      .filter(([key]) => matches(key))
+      .map(([key, value]) => [key, withoutApiAlias(value)])
+  );
+};
+
 /** Per read, the Shopware entity whose `includes` it projects and the whitelists its rows are mapped with. */
 const PROJECTION_BY_TARGET: Partial<Record<ShopwareCriteriaTarget, { entity: string; whitelists: CustomFieldsEntity[] }>> = {
   product: { entity: 'product', whitelists: ['product', 'variant'] },

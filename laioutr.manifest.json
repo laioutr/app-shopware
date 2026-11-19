@@ -90,7 +90,7 @@
             "name": "customFields",
             "type": "json",
             "label": "Custom fields",
-            "description": "The Shopware custom fields the storefront may read, per entity: product, variant, category and customer, each with an include list of field names, where * matches any run of characters. Nothing is exposed while this is empty. Custom fields often hold purchasing or ERP data, so list the fields the storefront shows rather than *. A product with variants usually keeps its fields on the variant, so list those under variant."
+            "description": "The Shopware custom fields the storefront may read, per entity: product, variant, category and customer, and the cart's extensions under cart, each with an include list of field names, where * matches any run of characters. Nothing is exposed while this is empty. Custom fields often hold purchasing or ERP data, so list the fields the storefront shows rather than *. A product with variants usually keeps its fields on the variant, so list those under variant."
           }
         ]
       }

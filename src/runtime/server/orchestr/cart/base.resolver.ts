@@ -6,6 +6,7 @@ import { cartFragmentToken } from '../../const/passthroughTokens';
 import { defineShopwareComponentResolver } from '../../middleware/defineShopware';
 import { cartMessagesOf } from '../../shopware-helper/cartErrors';
 import { mapCartCost } from '../../shopware-helper/cartMapper';
+import { pickCartExtensions } from '../../shopware-helper/customFields';
 import { getCart } from '../../shopware-helper/getCart';
 
 export default defineShopwareComponentResolver({
@@ -33,7 +34,7 @@ export default defineShopwareComponentResolver({
       entities: [
         $entity({
           id: cart.token ?? '',
-          base: () => ({ totalQuantity, checkoutLink }),
+          base: () => ({ totalQuantity, checkoutLink, customFields: pickCartExtensions(cart, context.customFields) }),
           cost: () => mapCartCost(cart, context.currency),
           messages: () => ({ messages: cartMessagesOf(cart) }),
         }),
